@@ -1,6 +1,6 @@
 ---
 name: check-third-party-docs
-description: "Esta skill debe usarse cuando el usuario pide \"investiga documentación de\", \"consulta documentación de\", \"quiero integrar X en\", \"cómo integrar\", \"implementar X en proyecto\", \"qué librería para\", \"instalar\", \"configurar\", \"error con\", o menciona agregar funcionalidad que requiere dependencias especializadas (validación con zod, procesamiento imágenes con sharp, colas con bull, caché con ioredis, formularios con react-hook-form). IMPORTANTE: Invocar esta skill en lugar de usar Context7 MCP directamente - la skill proporciona framework de decisión sobre cuándo usar Context7 vs dependency-docs-collector agent según complejidad."
+description: "Esta skill debe usarse cuando el usuario pide \"investiga documentación de\", \"consulta documentación de\", \"quiero integrar X en\", \"cómo integrar\", \"implementar X en proyecto\", \"qué librería para\", \"instalar\", \"configurar\", \"error con\", o menciona agregar funcionalidad que requiere dependencias especializadas (validación con zod, procesamiento imágenes con sharp, colas con bull, caché con ioredis, formularios con react-hook-form). IMPORTANTE: Invocar esta skill en lugar de usar Context7 MCP directamente - la skill proporciona framework de decisión sobre cuándo usar Context7 vs dependency-docs-collector agent según complejidad. No usar para paquetes ampliamente conocidos como express, react, vue, lodash, axios, jest; Claude tiene datos de entrenamiento suficientes para estos. Usar solo para paquetes especializados, plugins de framework, o librerías poco conocidas."
 model: claude-haiku-4-5-20251001
 version: 0.1.0
 user-invocable: true
@@ -187,20 +187,6 @@ Context7 is **only** for third-party packages:
 - Framework plugins: `next-pwa`, `@auth/core`, `prisma` adapters
 - Specialized libraries: `pdfkit`, `winston` transports, `yup`
 
-### When to Skip This Skill
-
-Answer directly for widely-known packages:
-
-- Common: `express`, `react`, `vue`, `lodash`, `axios`, `jest`
-- Claude has sufficient training data for these
-
-Use this skill for:
-
-- Specialized/niche packages
-- Framework-specific plugins
-- Lesser-known libraries
-- Unfamiliar packages
-
 ## Quick Reference
 
 ### Context7 Tools
@@ -219,7 +205,7 @@ Use this skill for:
 
 **dependency-docs-collector**
 
-- Task tool: `subagent_type: "claudefiles:dependency-docs-collector"`
+- Task tool: `subagent_type: "dotclaudefiles:dependency-docs-collector"`
 - Use for: New features, migrations, alternatives, troubleshooting, multi-package setups
 
 ## Common Patterns Summary
