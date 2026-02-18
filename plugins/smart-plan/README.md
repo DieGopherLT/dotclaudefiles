@@ -1,6 +1,6 @@
 # smart-plan
 
-Workflow inteligente de 6+3 fases para desarrollo de features con 6 agentes especializados, paralelizacion, analisis semantico via LSP, y quality gates automaticos. Incluye 6 fases de planning (Discovery → Implementation) y 3 fases post-implementacion ejecutadas via skill separada.
+Workflow inteligente para planear y ejecutar features con 6 agentes especializados, paralelizacion, analisis semantico via LSP, y quality gates automaticos. La skill `plan-feature` guia el planning en 5 fases, genera un plan autocontenido, e invoca automaticamente `smart-delegation` para ejecutar la implementacion.
 
 ## Instalacion
 
@@ -10,11 +10,19 @@ Workflow inteligente de 6+3 fases para desarrollo de features con 6 agentes espe
 
 ## Uso
 
+Invocar la skill de planning describiendo la feature en lenguaje natural:
+
 ```
-/smart-plan <descripcion del feature>
+Planea la feature: <descripcion del feature>
 ```
 
-## Workflow de 6 Fases (Planning)
+La skill `plan-feature` se activa automaticamente por contexto e invoca `smart-delegation` al aprobar el plan. Para ejecutar un plan ya existente manualmente:
+
+```
+/smart-plan:smart-delegation
+```
+
+## Workflow de Planning - 5 Fases (skill plan-feature)
 
 | Fase | Nombre | Descripcion |
 |------|--------|-------------|
@@ -22,10 +30,9 @@ Workflow inteligente de 6+3 fases para desarrollo de features con 6 agentes espe
 | 2 | Codebase Exploration | 2 code-explorer + 1 code-indexer en paralelo |
 | 3 | Clarifying Questions | Elimina TODA ambiguedad antes de disenar |
 | 4 | Architecture Design | 2-3 code-architect con enfoques distintos |
-| 5 | Plan Mode | Plan formal con dependencias, aprobado por usuario |
-| 6 | Implementation | code-implementer agents ejecutan en paralelo por grupos |
+| 5 | Plan Mode | Plan formal con dependencias y plantilla, aprobado por usuario |
 
-**Nota**: El plan generado en Fase 5 incluye instrucciones para invocar `/smart-plan:post-implementation` al finalizar la implementacion.
+**Nota**: Al aprobar el plan, `plan-feature` invoca `smart-delegation` automaticamente. El plan incluye instrucciones para `/smart-plan:post-implementation` al finalizar la implementacion.
 
 ## Post-Implementation (3 Fases - Sesion Separada)
 

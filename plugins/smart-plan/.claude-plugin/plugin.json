@@ -1,7 +1,7 @@
 {
   "name": "smart-plan",
-  "version": "1.3.0",
-  "description": "Workflow inteligente de 6 fases para desarrollo de features con 6 agentes especializados, paralelizacion, analisis semantico via LSP. Incluye skill de post-implementacion reutilizable para quality review, refactoring automatico, y finalizacion.",
+  "version": "1.4.0",
+  "description": "Workflow inteligente para planear y ejecutar features con 6 agentes especializados, paralelizacion, y analisis semantico via LSP. Incluye skill plan-feature (5 fases: discovery, exploration, clarification, architecture, plan mode), skill post-implementation, y smart-delegation para ejecutar planes.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"

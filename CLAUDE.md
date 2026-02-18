@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a **mono-repo for Claude Code plugins** containing three specialized plugins:
 
 1. **dotclaudefiles** - Core productivity plugin (3 agents, 9 commands, 6 skills, hooks, output-styles)
-2. **smart-plan** - Intelligent 9-phase feature development workflow (6 agents, 1 command)
+2. **smart-plan** - Intelligent feature planning and execution workflow (6 agents, 2 commands, 2 skills)
 3. **tdd** - Test-Driven Development automation (4 agents, 2 commands, 1 skill, language rules)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
@@ -42,12 +42,13 @@ Core productivity plugin with daily-use commands, quality agents, and specialize
 
 ### smart-plan
 
-Intelligent 9-phase feature development workflow with LSP-powered semantic analysis:
+Intelligent feature planning and execution workflow with LSP-powered semantic analysis:
 
-- **Workflow Phases**: Discovery → Exploration → Clarification → Architecture → Plan → Implementation → Review → Refactoring → Finalization
+- **Planning Phases (skill plan-feature)**: Discovery → Exploration → Clarification → Architecture → Plan Mode
 - **Agents**: `code-explorer`, `code-indexer`, `code-architect`, `code-implementer`, `code-reviewer`, `code-refactorer`
-- **Command**: `/smart-plan <feature-description>`
-- **Key Features**: Parallel agent execution, LSP semantic analysis, confidence-scored reviews (≥80%), automatic refactoring
+- **Commands**: `/smart-delegation` (execute approved plan), `/smart-review` (quality review)
+- **Skills**: `plan-feature` (5-phase planning + auto-invokes smart-delegation after approval), `post-implementation` (quality review + refactoring + finalization)
+- **Key Features**: Parallel agent execution, LSP semantic analysis, plan template in references/, confidence-scored reviews (>=80%), automatic refactoring
 
 ### tdd
 
@@ -71,11 +72,11 @@ Test-Driven Development automation with strict Red-Green-Refactor enforcement:
 
 **Use smart-plan when:**
 
-- Implementing complex features that span multiple files/modules
-- Need LSP-powered semantic analysis of the codebase
-- Want parallel execution of exploration and implementation tasks
-- Require confidence-scored code reviews (≥80%)
-- Need automatic refactoring based on review findings
+- Planning complex features that span multiple files/modules
+- Need LSP-powered semantic analysis before implementation
+- Want a structured plan with parallelization groups and model recommendations
+- Need to execute an approved plan with parallel implementer agents
+- Require confidence-scored code reviews (>=80%) and automatic refactoring
 
 **Use tdd when:**
 
