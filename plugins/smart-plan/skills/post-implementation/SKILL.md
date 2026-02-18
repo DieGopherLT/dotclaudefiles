@@ -1,7 +1,6 @@
 ---
 name: post-implementation
 description: Esta skill debe usarse cuando el usuario pide "haz review de los cambios", "review the changes", "aplica el post-implementacion", "apply post-implementation", "run post-implementation", o cuando el plan aprobado instruye "invoke /smart-plan:post-implementation". Ejecuta workflow post-implementacion despues de que el codigo este completo con quality review (3 reviewers paralelos), auto-fix de issues (confianza >= 80%), documentacion del feature, y commit opcional. Puede usarse despues de cualquier implementacion, no solo smart-plan.
-version: 1.0.0
 ---
 
 # Post-Implementation Procedure
