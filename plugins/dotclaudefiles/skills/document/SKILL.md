@@ -1,90 +1,60 @@
 ---
 name: document
-description: Esta skill debe usarse cuando el usuario pide "documentar un patrón", "documentar un problema", "documentar una decisión", "documentar guías", "documentar la sesión", "crear documentación de", o quiere capturar conocimiento técnico de la sesión usando plantillas estructuradas.
+description: Esta skill debe usarse cuando el usuario pide "documentar un patrón", "documentar un problema", "documentar una decisión", "documentar guías", "documentar la sesión", "documentar el conocimiento de la sesión", "document session knowledge", "capturar lo aprendido en la sesión", "crear documentación de", o quiere capturar conocimiento técnico de la sesión usando plantillas estructuradas.
 version: 1.0.0
 ---
 
 # Document Skill
 
-## Purpose
-
-Generate structured technical documentation for specific knowledge elements discovered or created during development sessions. Unlike the journal command (which captures full sessions), this skill creates targeted documentation for:
-
-- **Code patterns** that worked particularly well
-- **Complex problems** and their solutions
-- **Architectural decisions** and trade-offs
-- **Design guidelines** and standards
-- **Any technical knowledge** worth preserving
-
-## When to Use
-
-Invoke this skill when the user wants to document:
-
-1. **Successful pattern**: "Document the retry pattern we implemented"
-2. **Problem solved**: "Document how we fixed the race condition"
-3. **Decision made**: "Document why we chose PostgreSQL"
-4. **Guidelines created**: "Document our button component standards"
-5. **General knowledge**: "Document this integration approach"
-
-**Key difference from `/journal`**: This skill creates focused, categorized documentation for specific elements, while `/journal` captures entire session summaries.
+Generate structured technical documentation for specific knowledge elements discovered during development sessions.
 
 ## Documentation Types
 
 ### Pattern Documentation
-For reusable code patterns, techniques, or solutions.
 
-**Trigger phrases:**
-- "Document the pattern we used for..."
-- "Save this pattern"
-- "Document this technique"
+For reusable code patterns, techniques, or solutions.
 
 **Template:** `references/templates/pattern.md`
 
 **Example:** `examples/pattern-example.md` (Retry with Exponential Backoff)
 
 ### Problem-Solution Documentation
-For complex bugs, race conditions, or difficult technical challenges.
 
-**Trigger phrases:**
-- "Document how we solved..."
-- "Document this bug fix"
-- "Save this problem solution"
+For complex bugs, race conditions, or difficult technical challenges.
 
 **Template:** `references/templates/problem-solution.md`
 
 **Example:** `examples/problem-solution-example.md` (Race Condition in Cache)
 
 ### Decision Documentation
-For architectural decisions, technology choices, or trade-off analysis.
 
-**Trigger phrases:**
-- "Document the decision to..."
-- "Document why we chose..."
-- "Save this architectural decision"
+For architectural decisions, technology choices, or trade-off analysis.
 
 **Template:** `references/templates/decision.md`
 
 **Example:** `examples/decision-example.md` (PostgreSQL vs MongoDB)
 
 ### Guidelines Documentation
-For design systems, code standards, or team conventions.
 
-**Trigger phrases:**
-- "Document guidelines for..."
-- "Create design system docs for..."
-- "Document our standards"
+For design systems, code standards, or team conventions.
 
 **Template:** `references/templates/guidelines.md`
 
 **Example:** `examples/guidelines-example.md` (Button Component Guidelines)
 
-### Free-Form Documentation
-For anything that doesn't fit other categories.
+### Session Knowledge Documentation
 
-**Trigger phrases:**
-- "Document this"
-- "Save these notes"
-- "Create documentation about..."
+For sessions focused on discussion, research, or analysis with no code changes.
+
+Guard: Check your own session context. If no code was modified in this session, automatically select this type without prompting the user.
+
+**Template:** `references/templates/session-knowledge.md`
+
+**Storage:** `.claude/docs/sessions/`
+
+### Free-Form Documentation
+
+For anything that doesn't fit other categories.
 
 **Template:** `references/templates/free-form.md`
 
@@ -94,12 +64,18 @@ Follow these steps to create documentation:
 
 ### Step 1: Identify Document Type
 
+Before identifying type: if this is a session documentation request, check your own context.
+
+- If no code was modified in this session -> automatically use Session Knowledge (no git needed).
+- If code was modified -> Session Knowledge is still an option but proceed with normal type selection.
+
 Determine which type of documentation fits the user's intent:
 
 - **Pattern**: Reusable solution or technique
 - **Problem-Solution**: Bug fix or challenge resolved
 - **Decision**: Choice between alternatives with rationale
 - **Guidelines**: Standards or conventions
+- **Session Knowledge**: Discussion, research, or analysis session with no code changes
 - **Free-Form**: Doesn't fit other categories
 
 Ask user if type is ambiguous: "Is this a pattern, problem-solution, or decision?"
@@ -112,6 +88,7 @@ Read the corresponding template from `references/templates/{type}.md` (use absol
 - `problem-solution.md` for problems
 - `decision.md` for decisions
 - `guidelines.md` for guidelines
+- `session-knowledge.md` for session knowledge
 - `free-form.md` for free-form
 
 Templates contain structure and field descriptions.
@@ -121,18 +98,21 @@ Templates contain structure and field descriptions.
 Extract information from session context:
 
 **Auto-detect:**
+
 - Current timestamp (YYYY-MM-DD HH:MM:SS)
 - Project name (from git repo or directory)
-- Related commit hash (if in git repo)
+- Related commit hash (if in git repo and applicable)
 - Relevant files modified/discussed
 
 **Ask user if needed:**
+
 - Document title
 - Tags for categorization
 - Additional context not in session
 - Custom instructions for content
 
 **Use conversation context:**
+
 - Code discussed during session
 - Problems encountered and solutions
 - Decisions made and alternatives considered
@@ -149,6 +129,7 @@ Populate template with gathered information:
 5. Add appropriate tags
 
 **Content quality guidelines:**
+
 - Be specific and technical
 - Include code examples where applicable
 - Explain rationale, not just what was done
@@ -160,12 +141,14 @@ Populate template with gathered information:
 **Default location:** `.claude/docs/{category}/{filename}.md`
 
 **Directory structure:**
+
 ```
 .claude/docs/
 ├── patterns/
 ├── problems/
 ├── decisions/
 ├── guidelines/
+├── sessions/
 └── free-form/
 ```
 
@@ -174,6 +157,7 @@ Populate template with gathered information:
 Example: `20260115-142345-retry-pattern.md`
 
 **User can override:**
+
 - Custom directory path
 - Custom filename
 - Root directory if preferred
@@ -184,15 +168,25 @@ Example: `20260115-142345-retry-pattern.md`
 2. Show user the path and brief summary
 3. Offer to open file for review/edits
 
+### Step 7: Git Ignore Check
+
+After writing the file:
+
+1. Run: `git check-ignore -q <file_path>`
+2. If file IS ignored: proceed normally, nothing to do.
+3. If file is NOT ignored:
+   - Add the parent directory expression to `.gitignore` (e.g. `.claude/docs/`)
+   - Inform the user that `.gitignore` was updated to exclude generated docs.
+
 ## Metadata Fields
 
 All documents include standard metadata:
 
 - **Timestamp**: Auto-generated (YYYY-MM-DD HH:MM:SS)
 - **Project**: Auto-detected from git or directory name
-- **Category**: Document type (Pattern/Problem-Solution/Decision/Guidelines/Free-Form)
+- **Category**: Document type (Pattern/Problem-Solution/Decision/Guidelines/Session Knowledge/Free-Form)
 - **Tags**: Comma-separated tags for search
-- **Related Commit**: Git commit hash if available
+- **Related Commit**: Git commit hash if available (not applicable for Session Knowledge)
 
 ### Tag Suggestions
 
@@ -215,6 +209,7 @@ These are suggested tag categories. Use relevant tags based on actual content.
 **User says:** "Document the retry pattern we implemented for the HTTP client"
 
 **Actions:**
+
 1. Identify type: Pattern
 2. Load `references/templates/pattern.md`
 3. Extract from session:
@@ -225,7 +220,7 @@ These are suggested tag categories. Use relevant tags based on actual content.
    - Timestamp: 2026-01-15 14:23:45
    - Project: payment-service
    - Commit: a3f7d92
-5. Ask user: "What should we call this pattern?" → "Retry with Exponential Backoff"
+5. Ask user: "What should we call this pattern?" -> "Retry with Exponential Backoff"
 6. Generate document in `.claude/docs/patterns/20260115-142345-retry-pattern.md`
 7. Include: context, implementation, benefits, trade-offs
 
@@ -234,6 +229,7 @@ These are suggested tag categories. Use relevant tags based on actual content.
 **User says:** "Document how we fixed that race condition in the cache"
 
 **Actions:**
+
 1. Identify type: Problem-Solution
 2. Load `references/templates/problem-solution.md`
 3. Extract from session:
@@ -250,13 +246,14 @@ These are suggested tag categories. Use relevant tags based on actual content.
 **User says:** "Document why we chose PostgreSQL over MongoDB"
 
 **Actions:**
+
 1. Identify type: Decision
 2. Load `references/templates/decision.md`
 3. Extract from session:
    - Options considered
    - Pros/cons of each
    - Decision rationale
-4. Ask user about status: "Is this Proposed or Accepted?" → "Accepted"
+4. Ask user about status: "Is this Proposed or Accepted?" -> "Accepted"
 5. Generate document in `.claude/docs/decisions/20260114-091530-postgresql-choice.md`
 6. Include: context, options, rationale, consequences, review criteria
 
@@ -270,9 +267,11 @@ Detailed templates with field descriptions:
 - **`references/templates/problem-solution.md`** - Problem-solution template
 - **`references/templates/decision.md`** - Decision documentation template
 - **`references/templates/guidelines.md`** - Guidelines template
+- **`references/templates/session-knowledge.md`** - Session knowledge template
 - **`references/templates/free-form.md`** - Free-form template
 
 Each template file includes:
+
 - When to use guidance
 - Full template structure
 - Field descriptions
@@ -319,6 +318,7 @@ Refer to examples when generating documents to match quality and detail level.
 - Filename format: `YYYYMMDD-HHMMSS-slug.md` for chronological sorting
 - Metadata enables search and filtering later
 - Templates are guidelines - adapt content to fit actual needs
+- Session Knowledge type does not require git context - use session memory directly
 - Free-form template for anything that doesn't fit other categories
 - Always include code examples when documenting technical content
 - Document trade-offs honestly - perfect solutions don't exist
