@@ -1,7 +1,7 @@
 {
   "name": "smart-plan",
-  "version": "1.5.0",
-  "description": "Workflow inteligente para planear y ejecutar features con 6 agentes especializados, paralelizacion, y analisis semantico via LSP. Incluye: skill plan-feature (5 fases de planning), skill smart-delegation (orquestacion de code-implementers en oleadas paralelas), y skill post-implementation (quality review, refactoring, y finalizacion).",
+  "version": "1.6.0",
+  "description": "Workflow inteligente para planear y ejecutar features con 6 agentes especializados, paralelizacion, y analisis semantico via LSP. Incluye: skill plan-feature (5 fases de planning), skill smart-interview (entrevista estructurada para requerimientos cuantificables), skill smart-delegation (orquestacion de code-implementers en oleadas paralelas), y skill post-implementation (quality review, refactoring, y finalizacion).",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"

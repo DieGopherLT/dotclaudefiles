@@ -10,6 +10,32 @@ Use this template as the base structure when writing the plan in Phase 5 (Plan M
 
 [2-3 sentence description of what is being built, why, and the chosen architecture approach. Include the key trade-offs that led to choosing this approach over alternatives.]
 
+## Repository Context
+
+| Repository | Base Branch | Feature Branch |
+|------------|-------------|----------------|
+| `repo-name` | `<base-branch>` | `feat/feature-name` |
+
+<!-- For multi-repo plans, add one row per repository. Feature branch must follow feat/<name> convention. -->
+
+## Requirements
+
+[This section is populated by the smart-interview phase. Do not write it manually — it is filled using the structured output from Phase 3.]
+
+### Functional Requirements
+
+[Filled by smart-interview — measurable, testable outcomes with acceptance criteria.]
+
+### Business Rules
+
+[Filled by smart-interview — condition/constraint pairs that translate directly into conditional logic.]
+
+### User/System Flows
+
+[Filled by smart-interview — ordered sequences with explicit branches and error paths.]
+
+---
+
 ## Architecture Approach
 
 **Chosen approach**: [Minimal Changes | Clean Architecture | Pragmatic Balance]

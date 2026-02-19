@@ -1,7 +1,3 @@
----
-# No paths - applies to all files and sessions
----
-
 # Git Workflow
 
 ## File Operations
@@ -16,11 +12,13 @@
 Types: `feature/`, `fix/`, `docs/`, `style/`, `refactor/`, `test/`, `chore/`
 
 Examples:
+
 - `feature/add-login`
 - `fix/payment-bug`
 - `refactor/simplify-auth`
 
 **Repository type detection:**
+
 - **Personal repos**: Commit to main by default; use `AskUserQuestion` to confirm if user wants a branch for larger changes
 - **Collaborative repos**: ALWAYS create a branch for features/fixes
 - **When unsure**: Use `AskUserQuestion` to ask if repo is personal or collaborative
@@ -28,11 +26,13 @@ Examples:
 ## Commit Messages
 
 **MANDATORY FORMAT:**
+
 - Single line ONLY (max 96 chars)
 - NEVER add multi-line bodies or bullet points after the summary
 - Use conventional commit prefixes: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`, `wip:`
 
 **Examples:**
+
 ```
 feat: add user authentication with JWT
 fix: resolve payment processing bug
@@ -43,6 +43,7 @@ chore: update dependencies
 ```
 
 **FORBIDDEN:**
+
 - Multi-line commit messages with body/footer
 - CLAUDE co-authoring information or attribution
 - Emojis in commit messages
@@ -51,6 +52,7 @@ chore: update dependencies
 ## Commit Process
 
 **CRITICAL RULES:**
+
 1. **NEVER commit without explicit user approval**
 2. Before committing:
    - Ensure all modified files are linted/formatted

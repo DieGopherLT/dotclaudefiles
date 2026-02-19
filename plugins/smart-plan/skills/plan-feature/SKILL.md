@@ -18,7 +18,7 @@ Operate as the **Smart Plan orchestrator**. Orchestrate the planning of a featur
 1. Create tasks (TaskCreate) for all 5 phases:
    - Phase 1: Discovery
    - Phase 2: Codebase Exploration
-   - Phase 3: Clarifying Questions
+   - Phase 3: Smart Interview
    - Phase 4: Architecture Design
    - Phase 5: Plan Mode
 2. Set up task dependencies: each phase is blocked by the previous one
@@ -65,31 +65,15 @@ Operate as the **Smart Plan orchestrator**. Orchestrate the planning of a featur
 
 ---
 
-## Phase 3: Clarifying Questions
+## Phase 3: Smart Interview
 
-**Goal**: Eliminate ALL ambiguity before designing architecture.
+**Goal**: Elicit quantifiable requirements, business rules, and flows before designing architecture.
 
 1. Mark Phase 3 as in_progress
-2. Review: exploration findings + original feature request
-3. Identify EVERYTHING that is not explicitly specified:
-   - Configuration requirements and defaults
-   - Functional requirements and acceptance criteria
-   - Constraints (performance, compatibility, platform)
-   - Edge cases and error scenarios
-   - Integration points with existing features
-   - Backward compatibility requirements
-   - External dependencies needed
-   - Data format and validation rules
-   - UI/UX preferences (if applicable)
-   - Testing expectations
-4. Use **AskUserQuestion** for each group of related questions (batch related questions together, max 4 questions per call)
-5. **DO NOT proceed until every question is answered**
-6. If the user responds with "lo que tu creas" or similar:
-   - Provide your specific recommendation with reasoning
-   - Ask for explicit confirmation: "Confirmo esta decision?"
-   - Only proceed after confirmation
-7. Document all decisions made
-8. Mark Phase 3 as completed
+2. Invoke the **Skill tool** with `smart-plan:smart-interview`
+   - The skill will identify gaps, conduct structured interview rounds, and consolidate confirmed results
+   - The results will be structured and ready for the `## Requirements` section of the plan
+3. Mark Phase 3 as completed
 
 ---
 
@@ -158,16 +142,20 @@ Operate as the **Smart Plan orchestrator**. Orchestrate the planning of a featur
 **Goal**: Write a comprehensive, self-contained implementation plan using the plan template.
 
 1. Mark Phase 5 as in_progress
-2. Read the plan template from `references/plan-template.md` (relative to this skill's directory) for structure guidance
-3. Call **EnterPlanMode** directly (do NOT launch a Plan sub-agent; operate as the planner directly)
-4. Write the plan using the template structure as a base
-5. Ensure the plan is fully self-contained: anyone reading it must be able to execute it without additional context
-6. Call **ExitPlanMode** to request user approval
-7. If the user requests changes, modify the plan and re-submit
-8. Mark Phase 5 as completed after approval
-9. Invoke the **Skill tool** with `smart-plan:smart-delegation` to execute the approved plan
-
-**Note**: smart-delegation reads the plan and decides whether to delegate tasks to code-implementer sub-agents or implement directly, based on its own delegation criteria (3+ files, inter-file dependencies, new abstractions).
+2. Invoke the **Skill tool** with `smart-plan:smart-delegation` — it will provide delegation guidelines to embed in the plan (task grouping, parallelization, model recommendations)
+3. Resolve branch context for every repository involved in the plan:
+   - If the initial prompt specified the repository/repositories and base branch(es): use them directly
+   - If not: use **AskUserQuestion** to ask for each repository: which base branch to use, and confirm the `feat/<name>` branch name
+4. Read the plan template from `references/plan-template.md` (relative to this skill's directory) for structure guidance
+5. Call **EnterPlanMode** directly (do NOT launch a Plan sub-agent; operate as the planner directly)
+6. Write the plan using the template structure as a base:
+   - Fill `## Repository Context` with the resolved branch information
+   - Incorporate the delegation guidelines from step 2
+   - Fill the `## Requirements` section with the requirements, rules, and flows produced by Phase 3 (smart-interview)
+7. Ensure the plan is fully self-contained: anyone reading it must be able to execute it without additional context
+8. Call **ExitPlanMode** to request user approval
+9. If the user requests changes, modify the plan and re-submit
+10. Mark Phase 5 as completed after approval
 
 ---
 
