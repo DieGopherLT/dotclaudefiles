@@ -1,10 +1,11 @@
 ---
-paths: **/*.{html,tsx,jsx}
+paths:
+  - "**/*.html"
+  - "**/*.tsx"
+  - "**/*.jsx"
 ---
 
 # HTML Semantics
-
-Guidelines for writing semantic and accessible HTML.
 
 ## Structural elements
 
@@ -13,8 +14,6 @@ Guidelines for writing semantic and accessible HTML.
 - Use `<article>` for self-contained, independently distributable content (blog posts, comments, widgets).
 - Use `<aside>` for tangentially related content (sidebars, pull quotes).
 - Avoid generic `<div>` elements when semantic alternatives exist.
-
-### Structural elements examples
 
 ```html
 <main>
@@ -33,35 +32,6 @@ Guidelines for writing semantic and accessible HTML.
 - Every `<section>`, `<article>`, and `<aside>` can have its own `<header>` and `<footer>`.
 - Page-level `<header>` contains site branding and main navigation.
 - Page-level `<footer>` contains site-wide information (copyright, links).
-- Section-level headers/footers contain content specific to that section.
-
-### Sectioning content examples
-
-```html
-<!-- Page level -->
-<header>
-  <h1>Site Name</h1>
-  <nav><!-- main navigation --></nav>
-</header>
-
-<main>
-  <!-- Section level -->
-  <article>
-    <header>
-      <h2>Article Title</h2>
-      <p>By Author • Date</p>
-    </header>
-    <p>Content...</p>
-    <footer>
-      <p>Tags: HTML, CSS</p>
-    </footer>
-  </article>
-</main>
-
-<footer>
-  <p>&copy; 2026 Company</p>
-</footer>
-```
 
 ## Navigation
 
@@ -69,17 +39,26 @@ Guidelines for writing semantic and accessible HTML.
 - Not every group of links needs `<nav>` (e.g., footer links can be a simple list).
 - Prefer one main `<nav>` inside the page `<header>` for primary navigation.
 
-### Navigation examples
+## Heading hierarchy
+
+- One `<h1>` per page.
+- Never skip heading levels (`h1 → h3` is invalid; always `h1 → h2 → h3`).
+- Use CSS for visual sizing — headings define structure, not style.
+
+## Interactive elements
+
+- Use `<button>` for actions (submit, toggle, open modal).
+- Use `<a href>` for navigation (links to pages or anchors).
+- Never use `<div>` or `<span>` with click handlers — they are not keyboard accessible.
 
 ```html
-<header>
-  <nav aria-label="Main navigation">
-    <ul>
-      <li><a href="/">Home</a></li>
-      <li><a href="/about">About</a></li>
-    </ul>
-  </nav>
-</header>
+<!-- Bad -->
+<div onClick={handleDelete}>Delete</div>
+<a onClick={openModal}>Open</a>
+
+<!-- Good -->
+<button type="button" onClick={openModal}>Open</button>
+<a href="/about">About</a>
 ```
 
 ## Lists and text
@@ -89,17 +68,18 @@ Guidelines for writing semantic and accessible HTML.
 - Never use `<br>` for spacing; use CSS margins/padding instead.
 - Use `<strong>` for importance, `<em>` for emphasis (not `<b>` or `<i>` unless purely stylistic).
 
-### Lists and text examples
+## Accessibility
+
+- Always include `alt` on `<img>`: descriptive text for meaningful images, empty `alt=""` for decorative ones.
+- Associate every `<input>` with a `<label>` using `for`/`htmlFor` — never rely on `placeholder` alone.
+- Prefer native HTML over ARIA — use ARIA only when no native element covers the need.
 
 ```html
-<!-- Definition list -->
-<dl>
-  <dt>HTML</dt>
-  <dd>HyperText Markup Language</dd>
-  <dt>CSS</dt>
-  <dd>Cascading Style Sheets</dd>
-</dl>
+<!-- Images -->
+<img src="logo.png" alt="Company logo" />
+<img src="bg.png" alt="" />
 
-<!-- Emphasis -->
-<p>This is <strong>very important</strong> and <em>emphasized</em>.</p>
+<!-- Form labels -->
+<label htmlFor="email">Email</label>
+<input id="email" type="email" />
 ```

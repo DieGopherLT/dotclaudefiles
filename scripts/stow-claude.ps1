@@ -102,23 +102,46 @@ if (-not (Test-Path $ClaudeTarget)) {
     $null = New-Item -ItemType Directory -Path $ClaudeTarget -Force
 }
 
-# Handle rules/ directory symlink (this one SHOULD be a directory symlink)
-# Unlike the Claude directory itself, rules/ contains only repo-managed content
+# Handle rules/ subdirectory symlinks
+# Each managed subdirectory inside rules/ gets its own symlink
 $RulesSource = Join-Path $SourceDir ".claude\rules"
 $RulesTarget = Join-Path $ClaudeTarget "rules"
 
-if (Test-Path $RulesSource) {
-    if ((Test-Path $RulesTarget) -and ((Get-Item $RulesTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-        Write-Host "rules/ symlink already exists" -ForegroundColor Green
-    } elseif (Test-Path $RulesTarget) {
-        Write-Host "rules/ exists as real directory, backing up..." -ForegroundColor Yellow
-        $BackupPath = "$RulesTarget.backup.$BackupTimestamp"
-        Move-Item -Path $RulesTarget -Destination $BackupPath -Force
-        $null = New-Item -ItemType SymbolicLink -Path $RulesTarget -Target $RulesSource -Force
-        Write-Host "rules/ symlink created" -ForegroundColor Green
-    } else {
-        $null = New-Item -ItemType SymbolicLink -Path $RulesTarget -Target $RulesSource -Force
-        Write-Host "rules/ symlink created" -ForegroundColor Green
+# Ensure rules/ exists as a real directory
+if (-not (Test-Path $RulesTarget)) {
+    $null = New-Item -ItemType Directory -Path $RulesTarget -Force
+    Write-Host "rules/ directory created" -ForegroundColor Green
+}
+
+# Remove stale broken file symlinks from old structure
+foreach ($f in @("css.md", "go.md", "html-semantics.md", "react.md", "ts.md")) {
+    $stalePath = Join-Path $RulesTarget $f
+    if ((Test-Path $stalePath -PathType Leaf) -and ((Get-Item $stalePath -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+        $staleTarget = (Get-Item $stalePath -Force).Target
+        if (-not (Test-Path $staleTarget)) {
+            Remove-Item -Path $stalePath -Force
+            Write-Host "Removed stale symlink: rules/$f" -ForegroundColor Yellow
+        }
+    }
+}
+
+# Create symlinks for each managed subdirectory
+foreach ($subdir in @("code-standards", "languages", "tools")) {
+    $SubSource = Join-Path $RulesSource $subdir
+    $SubTarget = Join-Path $RulesTarget $subdir
+    if (Test-Path $SubSource) {
+        if ((Test-Path $SubTarget) -and ((Get-Item $SubTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+            Write-Host "rules/$subdir symlink already exists" -ForegroundColor Green
+        } elseif (Test-Path $SubTarget) {
+            Write-Host "rules/$subdir exists as real directory, backing up..." -ForegroundColor Yellow
+            $BackupPath = "$SubTarget.backup.$BackupTimestamp"
+            Move-Item -Path $SubTarget -Destination $BackupPath -Force
+            $null = New-Item -ItemType SymbolicLink -Path $SubTarget -Target $SubSource -Force
+            Write-Host "rules/$subdir symlink created" -ForegroundColor Green
+        } else {
+            $null = New-Item -ItemType SymbolicLink -Path $SubTarget -Target $SubSource -Force
+            Write-Host "rules/$subdir symlink created" -ForegroundColor Green
+        }
     }
 }
 
@@ -236,18 +259,20 @@ foreach ($File in $FilesToLink) {
     }
 }
 
-# Verify rules symlink if source exists
-if (Test-Path $RulesSource) {
-    if ((Test-Path $RulesTarget) -and ((Get-Item $RulesTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-        $LinkTarget = (Get-Item $RulesTarget -Force).Target
-        Write-Host "rules/ symlink created" -ForegroundColor Green
-        Write-Host "  $RulesTarget -> $LinkTarget" -ForegroundColor Gray
-    } else {
-        Write-Host "Error: rules/ symlink not created" -ForegroundColor Red
-        $Errors++
+# Verify rules subdirectory symlinks
+foreach ($subdir in @("code-standards", "languages", "tools")) {
+    $SubSource = Join-Path $RulesSource $subdir
+    $SubTarget = Join-Path $RulesTarget $subdir
+    if (Test-Path $SubSource) {
+        if ((Test-Path $SubTarget) -and ((Get-Item $SubTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+            $LinkTarget = (Get-Item $SubTarget -Force).Target
+            Write-Host "rules/$subdir symlink verified" -ForegroundColor Green
+            Write-Host "  $SubTarget -> $LinkTarget" -ForegroundColor Gray
+        } else {
+            Write-Host "Error: rules/$subdir symlink not created" -ForegroundColor Red
+            $Errors++
+        }
     }
-} else {
-    Write-Host "rules/ skipped (no rules in module)" -ForegroundColor DarkGray
 }
 
 Write-Host ""

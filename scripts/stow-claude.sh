@@ -55,6 +55,41 @@ if [ $BACKED_UP -gt 0 ]; then
     echo ""
 fi
 
+RULES_SOURCE="${DOTFILES_DIR}/${MODULE}/.claude/rules"
+RULES_TARGET="${TARGET}/.claude/rules"
+
+# Ensure rules/ exists as a real directory
+mkdir -p "${RULES_TARGET}"
+
+# Remove stale broken file symlinks from old structure
+for f in css.md go.md html-semantics.md react.md ts.md; do
+    if [ -L "${RULES_TARGET}/${f}" ] && [ ! -e "${RULES_TARGET}/${f}" ]; then
+        rm "${RULES_TARGET}/${f}"
+        echo "Removed stale symlink: rules/${f}"
+    fi
+done
+
+# Create symlinks for each managed subdirectory inside rules/
+for subdir in code-standards languages tools; do
+    sub_source="${RULES_SOURCE}/${subdir}"
+    sub_target="${RULES_TARGET}/${subdir}"
+    if [ -d "${sub_source}" ]; then
+        if [ -L "${sub_target}" ]; then
+            echo "✓ rules/${subdir} symlink already exists"
+        elif [ -d "${sub_target}" ]; then
+            echo "⚠️  rules/${subdir} exists as real directory, backing up..."
+            mv "${sub_target}" "${sub_target}.backup.${BACKUP_TIMESTAMP}"
+            ln -s "${sub_source}" "${sub_target}"
+            echo "✓ rules/${subdir} symlink created"
+        else
+            ln -s "${sub_source}" "${sub_target}"
+            echo "✓ rules/${subdir} symlink created"
+        fi
+    fi
+done
+
+echo ""
+
 # Execute stow (without --adopt to preserve module version)
 echo "Running stow..."
 stow -d "$DOTFILES_DIR" -t "$TARGET" "$MODULE"
@@ -79,6 +114,19 @@ else
     echo "✗ Error: ccstatusline settings.json symlink not created"
     ERRORS=$((ERRORS + 1))
 fi
+
+for subdir in code-standards languages tools; do
+    sub_source="${DOTFILES_DIR}/${MODULE}/.claude/rules/${subdir}"
+    sub_target="${TARGET}/.claude/rules/${subdir}"
+    if [ -d "${sub_source}" ]; then
+        if [ -L "${sub_target}" ]; then
+            echo "✓ rules/${subdir} symlink verified"
+        else
+            echo "✗ Error: rules/${subdir} symlink not created"
+            ERRORS=$((ERRORS + 1))
+        fi
+    fi
+done
 
 echo ""
 if [ $ERRORS -eq 0 ]; then

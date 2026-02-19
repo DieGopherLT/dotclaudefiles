@@ -75,22 +75,33 @@ if not test -d "$TARGET/.claude"
     mkdir -p "$TARGET/.claude"
 end
 
-# Handle rules/ directory symlink (this one SHOULD be a directory symlink)
-# Unlike ~/.claude itself, rules/ contains only repo-managed content
+# Handle rules/ subdirectory symlinks
+# Each managed subdirectory inside rules/ gets its own symlink
 set RULES_SOURCE "$DOTFILES_DIR/$MODULE/.claude/rules"
 set RULES_TARGET "$TARGET/.claude/rules"
 
-if test -d $RULES_SOURCE
-    if test -L $RULES_TARGET
-        echo "✓ rules/ symlink already exists"
-    else if test -d $RULES_TARGET
-        echo "⚠️  rules/ exists as real directory, backing up..."
-        mv $RULES_TARGET "$RULES_TARGET.backup.$BACKUP_TIMESTAMP"
-        ln -s $RULES_SOURCE $RULES_TARGET
-        echo "✓ rules/ symlink created"
-    else
-        ln -s $RULES_SOURCE $RULES_TARGET
-        echo "✓ rules/ symlink created"
+# Ensure rules/ exists as a real directory
+if not test -d $RULES_TARGET
+    mkdir -p $RULES_TARGET
+    echo "✓ rules/ directory created"
+end
+
+# Create symlinks for each managed subdirectory
+for subdir in code-standards languages tools
+    set SUB_SOURCE "$RULES_SOURCE/$subdir"
+    set SUB_TARGET "$RULES_TARGET/$subdir"
+    if test -d $SUB_SOURCE
+        if test -L $SUB_TARGET
+            echo "✓ rules/$subdir symlink already exists"
+        else if test -d $SUB_TARGET
+            echo "⚠️  rules/$subdir exists as real directory, backing up..."
+            mv $SUB_TARGET "$SUB_TARGET.backup.$BACKUP_TIMESTAMP"
+            ln -s $SUB_SOURCE $SUB_TARGET
+            echo "✓ rules/$subdir symlink created"
+        else
+            ln -s $SUB_SOURCE $SUB_TARGET
+            echo "✓ rules/$subdir symlink created"
+        end
     end
 end
 
@@ -150,14 +161,17 @@ else
     set ERRORS (math $ERRORS + 1)
 end
 
-if test -L "$TARGET/.claude/rules"
-    echo "✓ rules/ symlink created"
-    echo "  "(ls -la "$TARGET/.claude/rules")
-else if not test -d "$DOTFILES_DIR/$MODULE/.claude/rules"
-    echo "⊘ rules/ skipped (no rules in module)"
-else
-    echo "✗ Error: rules/ symlink not created"
-    set ERRORS (math $ERRORS + 1)
+for subdir in code-standards languages tools
+    set SUB_SOURCE "$DOTFILES_DIR/$MODULE/.claude/rules/$subdir"
+    set SUB_TARGET "$TARGET/.claude/rules/$subdir"
+    if test -d $SUB_SOURCE
+        if test -L $SUB_TARGET
+            echo "✓ rules/$subdir symlink verified"
+        else
+            echo "✗ Error: rules/$subdir symlink not created"
+            set ERRORS (math $ERRORS + 1)
+        end
+    end
 end
 
 if test -L "$TARGET/.config/ccstatusline/settings.json"
