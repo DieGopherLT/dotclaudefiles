@@ -1,7 +1,7 @@
 ---
 name: dockerify
 description: Use this agent when dockerizing applications, creating Dockerfiles, containerizing projects, or setting up Docker configurations. Generates production-ready multi-stage builds following official Docker best practices with Alpine-first strategy.
-tools: Glob, Grep, Read, Write, Edit, Bash, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs, WebFetch, WebSearch, mcp__seq-think__sequentialthinking
+tools: Glob, Grep, Read, Write, Edit, Bash, mcp__plugin_dotclaudefiles_context7__resolve-library-id, mcp__plugin_dotclaudefiles_context7__query-docs, WebFetch, WebSearch, mcp__seq-think__sequentialthinking
 model: opus
 color: green
 ---

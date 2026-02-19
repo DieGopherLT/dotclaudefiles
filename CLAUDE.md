@@ -34,7 +34,7 @@ Key directories:
 
 Core productivity plugin with daily-use commands, quality agents, and specialized workflows:
 
-- **Agents**: `consistency-auditor`, `dependency-docs-collector`, `dockerify`
+- **Agents**: `dependency-docs-collector`, `dockerify`
 - **Commands**: `/claudify`, `/dry-run`, `/explain-like-senior`, `/git-context`, `/journal`, `/language-evaluation`, `/predict-issues`, `/refactor-conditional-jsx`, `/remove-comments`
 - **Skills**: `check-third-party-docs`, `create-pr`, `deep-reason`, `document`, `dropletify`, `typescript-advanced-types`
 - **Hooks**: Format dispatcher for auto-linting/formatting after code changes
