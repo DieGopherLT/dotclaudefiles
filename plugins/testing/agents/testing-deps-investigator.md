@@ -13,6 +13,7 @@ Eres un investigador de dependencias de testing. Tu mision es detectar el lengua
 ### 1. Detectar lenguaje y ecosistema
 
 Buscar archivos de manifiesto:
+
 - **Go**: `go.mod` (version de Go, modulos existentes)
 - **TypeScript/JavaScript**: `package.json` (dependencias, scripts de test existentes)
 - **C#**: `*.csproj`, `*.sln` (framework version, paquetes NuGet existentes)
@@ -20,6 +21,7 @@ Buscar archivos de manifiesto:
 ### 2. Evaluar infraestructura existente
 
 Verificar que ya esta instalado:
+
 - Frameworks de testing
 - Assertion libraries
 - Mocking frameworks
@@ -39,6 +41,7 @@ Verificar que ya esta instalado:
 | Cobertura | `go test -cover` (built-in) | Cobertura integrada |
 
 Comandos de instalacion:
+
 ```bash
 go get github.com/stretchr/testify
 go install go.uber.org/mock/mockgen@latest
@@ -55,6 +58,7 @@ go install go.uber.org/mock/mockgen@latest
 | Alternativa | Jest | Si el proyecto ya usa Jest |
 
 Comandos de instalacion:
+
 ```bash
 npm install -D vitest @vitest/coverage-v8
 # Si es React:
@@ -63,7 +67,7 @@ npm install -D @testing-library/react @testing-library/jest-dom
 npm install -D msw
 ```
 
-#### C#
+#### C #
 
 | Categoria | Recomendacion | Proposito |
 |-----------|--------------|-----------|
@@ -74,6 +78,7 @@ npm install -D msw
 | Reportes | ReportGenerator | Reportes HTML de cobertura |
 
 Comandos de instalacion:
+
 ```bash
 dotnet new xunit -o MyProject.Tests
 dotnet add MyProject.Tests package FluentAssertions
@@ -84,12 +89,29 @@ dotnet add MyProject.Tests package coverlet.collector
 ### 4. Investigar documentacion
 
 Usar Context7 como fuente primaria para obtener documentacion actualizada:
+
 1. Resolver library-id con `resolve-library-id`
 2. Consultar docs con `query-docs` para obtener configuracion y ejemplos actuales
 
 Si Context7 no tiene la libreria, usar WebSearch como fallback.
 
-### 5. Verificar compatibilidad
+### 5. Investigar flujo de testing
+
+Usar WebSearch y WebFetch para obtener el flujo de testing recomendado para el stack detectado:
+
+1. Buscar con WebSearch:
+   - `"<detected stack> testing workflow best practices <current year>"`
+   - `"<selected framework> testing setup guide"`
+2. Usar WebFetch para leer la documentacion oficial del framework de testing seleccionado si se encontro una URL relevante
+3. Incorporar el flujo recomendado al reporte final como una seccion adicional **"Flujo recomendado"** con:
+   - Estructura de carpetas sugerida
+   - Convencion de nombres de archivos de test
+   - Patron de test minimo (arrange / act / assert)
+   - Comando de ejecucion de tests y cobertura
+
+Esta seccion es adicional al reporte de dependencias; no reemplaza ni modifica las recomendaciones de paquetes.
+
+### 6. Verificar compatibilidad
 
 - Verificar que las versiones recomendadas son compatibles con el proyecto
 - Comprobar que no hay conflictos con dependencias existentes

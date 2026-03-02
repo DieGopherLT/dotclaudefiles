@@ -1,0 +1,15 @@
+{
+  "name": "TDD Knowledge Base",
+  "version": "2.0.0",
+  "abstract": "Test-Driven Development system with strict Red-Green-Refactor enforcement. Covers the 3 Iron Laws, anti-patterns, cycle mechanics, and multi-language coverage strategies.",
+  "resources": {
+    "anti-patterns": "../../references/anti-patterns.md",
+    "rg-refactor": "../../references/rg-refactor.md",
+    "coverage": "../../references/coverage.md",
+    "project-rules-template": "../../references/project-rules-template.md"
+  },
+  "skills": {
+    "add-testing": "Full pipeline for adding tests to existing projects",
+    "tdd-feature": "New feature development with strict TDD"
+  }
+}
