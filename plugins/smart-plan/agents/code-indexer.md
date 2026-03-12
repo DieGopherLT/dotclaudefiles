@@ -1,7 +1,7 @@
 ---
 name: code-indexer
 description: Este agente debe usarse cuando se necesita construir un mapa semantico del codebase usando LSP exclusivamente. Analiza dependencias de tipos, interfaces, call hierarchy y relaciones entre simbolos para archivos .ts/.js/.tsx/.jsx/.go. Complementa al code-explorer con informacion semantica profunda que la busqueda textual no puede proporcionar.
-tools: LSP, Glob, Grep, Read, LS
+tools: LSP, Glob, Grep, Read
 model: sonnet
 color: cyan
 ---

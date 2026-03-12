@@ -25,21 +25,24 @@ If the plan includes external dependencies, install them directly using Bash:
 
 ## Step 3: Create Implementation Tasks
 
-Use TaskCreate for each implementation task from the plan:
+Group plan tasks by semantic domain before creating Task entries. A semantic batch is a set of files that belong to the same module, layer, or feature slice and are implemented as a unit by a single sub-agent. **Never create a sub-agent per file.**
+
+Use TaskCreate for each semantic batch:
 
 - Set up dependencies with addBlockedBy/addBlocks matching the plan
-- Include the parallelization group in task metadata
+- Include the parallelization group and the list of files in the batch in task metadata
 
 ## Step 4: Launch Parallel Implementers
 
-For each parallelization group, launch code-implementer sub-agents (Task tool, subagent_type=smart-plan:code-implementer) for all tasks in that group simultaneously.
+For each parallelization group, launch code-implementer sub-agents (Agent tool, subagent_type=smart-plan:code-implementer) for all tasks in that group simultaneously.
 
 Each implementer receives:
 
 ```
-Implement the following task from the approved plan:
+Implement the following semantic batch from the approved plan:
 
-Task: [task description]
+Task ID: [task id from TaskCreate]
+Batch description: [what this batch accomplishes as a unit]
 Files to create: [list]
 Files to modify: [list]
 
@@ -50,6 +53,11 @@ Project conventions:
 [key conventions from exploration]
 
 IMPORTANT:
+- Use TaskGet at the start to read your task state, then TaskUpdate to mark it in-progress
+- Update the task with TaskUpdate after completing each file in the batch
+- Mark the task completed with TaskUpdate when all files in the batch are done
+- Use TaskList to check sibling tasks if you need coordination context
+- Use TaskCreate only if you discover genuinely unplanned work that must be tracked
 - ONLY modify the files listed above
 - Do NOT compile or run tests during intermediate steps
 - Do NOT install dependencies
@@ -78,17 +86,18 @@ Execute each parallelization wave sequentially:
 
 ## Concurrency Model
 
-Parallelization follows the **readers-writer lock pattern**:
+Parallelization follows the **readers-writer lock pattern** at the semantic batch level — never at the individual file level:
 
 - **Readers** (read-only tasks): any number can run concurrently
-- **Writers** (tasks that modify files): require exclusive access per file. Two writers can run concurrently only if they touch no common files
+- **Writers** (tasks that modify files): require exclusive access per file. Two writers can run concurrently only if their batches touch no common files
 
 ---
 
 ## Rules
 
 - **Always track progress**: Update tasks (TaskUpdate) as each step starts and completes
-- **Prefer delegation for 3+ files**: Implement directly only for simple changes; delegate to code-implementer sub-agents otherwise
+- **Semantic batching is mandatory**: Never create a sub-agent per file. Group by module/layer/feature slice. One sub-agent handles an entire semantic batch
+- **Prefer delegation for 5+ files**: Implement directly only for simple changes; delegate to code-implementer sub-agents otherwise
 - **Consolidate agent outputs**: After agents return, synthesize their findings before presenting to user
 - **Fail gracefully**: If an agent fails or returns poor results, inform user and offer to retry or adjust
 - **Be transparent**: Show the user what is happening at each step; do not work silently

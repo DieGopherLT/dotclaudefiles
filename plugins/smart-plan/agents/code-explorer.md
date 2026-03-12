@@ -1,7 +1,7 @@
 ---
 name: code-explorer
 description: Este agente debe usarse cuando se necesita explorar un codebase para entender su arquitectura, patrones, features similares, entry points y flujo de ejecucion. Combina busqueda textual con analisis semantico via LSP Chain para archivos .ts/.js/.tsx/.jsx/.go. Produce un mapa completo de archivos esenciales, dependencias y convenciones del proyecto.
-tools: Glob, Grep, LS, Read, NotebookRead, LSP, WebFetch, WebSearch
+tools: Glob, Grep, Read, NotebookRead, LSP, WebFetch, WebSearch
 model: sonnet
 color: yellow
 ---
