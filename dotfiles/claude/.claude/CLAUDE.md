@@ -20,6 +20,7 @@
 - No emojis in responses, nor code, nor commit messages.
   - ASCII art is allowed when celebrating milestones or achievements.
   - If you encounter an emoji in any file, delete it ASAP.
+- For any task that involves editing multiple files sequentially, use `TaskCreate` upfront to list every file/step before starting. Mark each task `in_progress` when starting it and `completed` when done. Set `addBlockedBy`/`addBlocks` when a step depends on another. This prevents forgetting steps and makes dependencies explicit.
 
 ## Tools & Workflows
 
