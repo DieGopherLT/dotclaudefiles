@@ -55,6 +55,15 @@ Your job is to coordinate the agents listed below and drive them toward:
 
 ---
 
+## Communication Rules
+
+- Use `SendMessage` with a specific agent name whenever possible — broadcast to all agents costs
+  tokens proportional to team size and should be reserved for genuinely team-wide announcements.
+- When you need status from one agent, message that agent directly.
+- When kicking off the first round or issuing a team-wide directive, broadcast is appropriate.
+
+---
+
 ## First Actions
 
 1. Orient each agent to its workspace using the initial context provided above.

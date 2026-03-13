@@ -8,6 +8,30 @@ user-invocable: true
 
 Extract team configuration from context or user input, then generate a structured TeamLead prompt.
 
+## Phase 0: Pre-flight
+
+Before gathering configuration, orient the user on two setup decisions:
+
+### 0.1 Display Mode
+
+Ask which display mode they prefer, or infer from context:
+
+- **`auto`** — split-panes if tmux is available, falls back to in-process. Best for most setups.
+- **`in-process`** — all teammates run inside the current terminal; switch with Shift+Down.
+- **`tmux`** — forces split-panes; requires tmux.
+
+If unsure, default to `auto` and mention it.
+
+### 0.2 Team Size & Task Budget
+
+Share these guidelines so the user can plan their team accordingly:
+
+- **Optimal team size**: 3–5 teammates. More than 5 increases token cost and coordination overhead significantly.
+- **Task budget per teammate**: 5–6 tasks each keeps everyone productive without overloading any agent.
+- **File ownership**: each teammate should own different files — parallel edits to the same file cause conflicts.
+
+---
+
 ## Phase 1: Gather Configuration
 
 Gather the following before generating the prompt. Extract from context first; use `AskUserQuestion` for anything missing.
@@ -19,6 +43,10 @@ For each agent on the team, collect:
 - **Role name**: What this agent represents (e.g., "Frontend Engineer", "Backend Engineer", "QA")
 - **Responsibilities**: What this agent is accountable for
 - **Workspace path**: Absolute path to the repo/directory on the filesystem where this agent works
+- **Model** (optional): Which Claude model to assign to this agent. Recommendations:
+  - `haiku` — research, QA, simple review tasks
+  - `sonnet` — general implementation (default if unspecified)
+  - `opus` — complex architectural decisions, critical reviews
 
 ### 1.2 Initial Context
 
@@ -99,6 +127,15 @@ Describe what the team should accomplish and list the first concrete actions the
 
 Present the generated TeamLead prompt to the user in a code block so they can copy it directly.
 Confirm it covers their intent and offer to adjust roles, paths, or objectives before they proceed.
+
+After presenting the prompt, include this limitations note as a brief callout — not inside the prompt itself:
+
+```
+Note: Claude Code agent teams are experimental. Keep in mind:
+- /resume does not restore teammates — if the session closes, the team is gone.
+- Teammates cannot spawn their own teams (no nested teams).
+- Only one team can be active per session.
+```
 
 Use [`references/teamlead-prompt-template.md`](references/teamlead-prompt-template.md) as the
 structural template for the generated prompt. It defines the exact sections and ordering to follow.
