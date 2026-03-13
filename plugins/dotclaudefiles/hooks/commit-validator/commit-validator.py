@@ -53,10 +53,8 @@ def deny(commit_msg: str, errors: list[str]) -> None:
         f'Allowed types: feat, fix, docs, style, refactor, test, chore, wip\n'
         f'Example: feat: add user authentication with JWT'
     )
-    print(json.dumps({
-        'hookSpecificOutput': {'permissionDecision': 'deny'},
-        'systemMessage': system_msg,
-    }))
+    print(system_msg, file=sys.stderr)
+    sys.exit(2)
 
 
 def main() -> None:
