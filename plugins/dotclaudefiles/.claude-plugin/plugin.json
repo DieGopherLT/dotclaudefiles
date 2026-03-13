@@ -1,6 +1,6 @@
 {
   "name": "dotclaudefiles",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "description": "Diego's curated Claude Code commands, agents, skills, and MCP servers. Includes custom slash commands for code review, testing, scaffolding, security scanning, specialized agents for quality auditing and UI implementation, plus sequential-thinking MCP server.",
   "author": {
     "name": "Diego",

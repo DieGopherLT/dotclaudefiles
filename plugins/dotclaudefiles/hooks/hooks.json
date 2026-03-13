@@ -1,12 +1,24 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git add:*)|Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/commit-validator/commit-validator.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/format-dispatcher.sh",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/format-dispatcher/format-dispatcher.sh",
             "timeout": 30
           }
         ]
