@@ -39,7 +39,7 @@ def run_commitlint(commit_msg: str, config_file: str, runner: list[str]) -> list
     return [
         line.strip()
         for line in result.stdout.splitlines()
-        if re.match(r'^\s*(error|warning)\b', line)
+        if re.match(r'^\s*[\u2716\u26A0]', line)
     ]
 
 
