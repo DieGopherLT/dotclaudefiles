@@ -6,6 +6,8 @@
 - Booleans: use `is`/`has`/`should` prefix (`isActive`, `hasPermission`, `shouldRender`)
 - No abbreviations unless universally known (`url`, `id`, `http` are fine; `usr`, `mgr`, `prod` are not)
 - File names: match the primary export (`UserProfile.tsx`, `authService.ts`, `payment.go`)
+  - Use kebab-case for file names (`user-helpers.ts`, `auth-service.ts`, `payment.go`) for better readability and consistency across platforms.
+  - Avoid using camelCase for file names, as it can lead to issues on case-sensitive file systems and is less common in many programming communities.
 
 ## Variable and function naming
 
