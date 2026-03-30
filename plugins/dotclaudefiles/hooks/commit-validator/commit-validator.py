@@ -45,7 +45,7 @@ def run_commitlint(commit_msg: str, config_file: str, runner: list[str]) -> list
 
 def deny(commit_msg: str, errors: list[str]) -> None:
     error_list = '\n'.join(f'  - {e}' for e in errors)
-    system_msg = (
+    reason = (
         f'Commit message validation failed.\n\n'
         f'Message: "{commit_msg}"\n\n'
         f'Errors:\n{error_list}\n\n'
@@ -53,8 +53,15 @@ def deny(commit_msg: str, errors: list[str]) -> None:
         f'Allowed types: feat, fix, docs, style, refactor, test, chore, wip\n'
         f'Example: feat: add user authentication with JWT'
     )
-    print(system_msg, file=sys.stderr)
-    sys.exit(2)
+    response = {
+        'hookSpecificOutput': {
+            'hookEventName': 'PreToolUse',
+            'permissionDecision': 'deny',
+            'permissionDecisionReason': reason,
+        }
+    }
+    print(json.dumps(response))
+    sys.exit(0)
 
 
 def main() -> None:
