@@ -1,0 +1,19 @@
+{
+  "name": "react-dev",
+  "version": "1.0.0",
+  "description": "React development helpers plugin. Includes JSX refactoring (clsx + conditional rendering) and tools to split large components into manageable pieces.",
+  "author": {
+    "name": "Diego",
+    "url": "https://github.com/DieGopherLT"
+  },
+  "repository": "https://github.com/DieGopherLT/dotclaudefiles",
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "jsx",
+    "refactoring",
+    "clsx",
+    "components",
+    "code-splitting"
+  ]
+}
