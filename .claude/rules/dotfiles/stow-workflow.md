@@ -13,10 +13,10 @@ The `dotfiles/claude/` directory uses **GNU Stow** for symlink management:
 - **Source of truth**: Files in `dotfiles/claude/` override local versions
 - **Setup scripts**: `scripts/stow-claude.{sh,fish,ps1}` create symlinks to `$HOME`
 - **Automatic backups**: Existing files are backed up before symlinking
-- **Managed files**:
+- **Managed symlinks**:
   - `~/.claude/CLAUDE.md` → User preferences and code standards
+  - `~/.claude/rules/` → Entire rules directory (code-standards, languages, tools, etc.)
   - `~/.config/ccstatusline/settings.json` → Status line configuration
-  - Language-specific rules in `.claude/rules/`
 
 ## Stow Setup
 
@@ -45,6 +45,7 @@ Scripts will:
 When using `config-sync-analyzer`, symlinks are automatically excluded:
 
 - `~/.claude/CLAUDE.md` (symlinked via stow)
+- `~/.claude/rules/` (symlinked via stow, entire directory)
 - `~/.config/ccstatusline/settings.json` (symlinked via stow)
 
 ## System Files Never Synced

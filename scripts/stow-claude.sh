@@ -26,24 +26,39 @@ echo "Source: $DOTFILES_DIR"
 echo "Target: $TARGET"
 echo ""
 
-# Backup and remove existing files (if they exist and are not symlinks)
-# This ensures the module version is always used (module is source of truth)
+# Ensure target directories exist as real directories.
+# Stow uses tree folding: if a directory does not exist in the target, it creates
+# a symlink to the entire source directory. For ~/.claude and ~/.config/ccstatusline
+# this would cause ALL runtime data to be written into the repo.
+# Pre-creating them as real directories forces stow to descend and link individually.
+mkdir -p "${TARGET}/.claude"
+mkdir -p "${TARGET}/.config/ccstatusline"
 
 BACKED_UP=0
 
-# Check CLAUDE.md
+# CLAUDE.md - must be a symlink, back up if it is a real file
 if [ -f "${TARGET}/.claude/CLAUDE.md" ] && [ ! -L "${TARGET}/.claude/CLAUDE.md" ]; then
     BACKUP_FILE="${TARGET}/.claude/CLAUDE.md.backup.${BACKUP_TIMESTAMP}"
-    echo "📦 Backing up existing CLAUDE.md..."
+    echo "Backing up existing CLAUDE.md..."
     mv "${TARGET}/.claude/CLAUDE.md" "$BACKUP_FILE"
     echo "   Saved to: $BACKUP_FILE"
     BACKED_UP=$((BACKED_UP + 1))
 fi
 
-# Check ccstatusline settings
+# rules/ - must be a symlink (stow folding). Back up and remove if it is a real directory
+# so stow can fold it into a single symlink pointing to the entire dotfiles rules/ tree.
+if [ -d "${TARGET}/.claude/rules" ] && [ ! -L "${TARGET}/.claude/rules" ]; then
+    BACKUP_FILE="${TARGET}/.claude/rules.backup.${BACKUP_TIMESTAMP}"
+    echo "Backing up existing rules/ directory..."
+    mv "${TARGET}/.claude/rules" "$BACKUP_FILE"
+    echo "   Saved to: $BACKUP_FILE"
+    BACKED_UP=$((BACKED_UP + 1))
+fi
+
+# ccstatusline settings.json - must be a symlink, back up if it is a real file
 if [ -f "${TARGET}/.config/ccstatusline/settings.json" ] && [ ! -L "${TARGET}/.config/ccstatusline/settings.json" ]; then
     BACKUP_FILE="${TARGET}/.config/ccstatusline/settings.json.backup.${BACKUP_TIMESTAMP}"
-    echo "📦 Backing up existing ccstatusline settings..."
+    echo "Backing up existing ccstatusline settings..."
     mv "${TARGET}/.config/ccstatusline/settings.json" "$BACKUP_FILE"
     echo "   Saved to: $BACKUP_FILE"
     BACKED_UP=$((BACKED_UP + 1))
@@ -51,92 +66,47 @@ fi
 
 if [ $BACKED_UP -gt 0 ]; then
     echo ""
-    echo "ℹ️  $BACKED_UP file(s) backed up. The module version will be used (module is source of truth)."
+    echo "$BACKED_UP file(s) backed up. The module version will be used (module is source of truth)."
     echo ""
 fi
 
-RULES_SOURCE="${DOTFILES_DIR}/${MODULE}/.claude/rules"
-RULES_TARGET="${TARGET}/.claude/rules"
-
-# Ensure rules/ exists as a real directory
-mkdir -p "${RULES_TARGET}"
-
-# Remove stale broken file symlinks from old structure
-for f in css.md go.md html-semantics.md react.md ts.md; do
-    if [ -L "${RULES_TARGET}/${f}" ] && [ ! -e "${RULES_TARGET}/${f}" ]; then
-        rm "${RULES_TARGET}/${f}"
-        echo "Removed stale symlink: rules/${f}"
-    fi
-done
-
-# Create symlinks for each managed subdirectory inside rules/
-for subdir in code-standards languages tools; do
-    sub_source="${RULES_SOURCE}/${subdir}"
-    sub_target="${RULES_TARGET}/${subdir}"
-    if [ -d "${sub_source}" ]; then
-        if [ -L "${sub_target}" ]; then
-            echo "✓ rules/${subdir} symlink already exists"
-        elif [ -d "${sub_target}" ]; then
-            echo "⚠️  rules/${subdir} exists as real directory, backing up..."
-            mv "${sub_target}" "${sub_target}.backup.${BACKUP_TIMESTAMP}"
-            ln -s "${sub_source}" "${sub_target}"
-            echo "✓ rules/${subdir} symlink created"
-        else
-            ln -s "${sub_source}" "${sub_target}"
-            echo "✓ rules/${subdir} symlink created"
-        fi
-    fi
-done
-
-echo ""
-
-# Execute stow (without --adopt to preserve module version)
 echo "Running stow..."
 stow -d "$DOTFILES_DIR" -t "$TARGET" "$MODULE"
 
-# Validate symlinks were created
 echo ""
 echo "Verifying symlinks..."
 ERRORS=0
 
 if [ -L "${TARGET}/.claude/CLAUDE.md" ]; then
-    echo "✓ CLAUDE.md symlink created"
-    echo "  $(ls -la "${TARGET}/.claude/CLAUDE.md")"
+    echo "  CLAUDE.md symlink verified"
 else
-    echo "✗ Error: CLAUDE.md symlink not created"
+    echo "  Error: CLAUDE.md symlink not created"
+    ERRORS=$((ERRORS + 1))
+fi
+
+if [ -L "${TARGET}/.claude/rules" ]; then
+    echo "  rules/ symlink verified"
+else
+    echo "  Error: rules/ symlink not created"
     ERRORS=$((ERRORS + 1))
 fi
 
 if [ -L "${TARGET}/.config/ccstatusline/settings.json" ]; then
-    echo "✓ ccstatusline settings.json symlink created"
-    echo "  $(ls -la "${TARGET}/.config/ccstatusline/settings.json")"
+    echo "  ccstatusline settings.json symlink verified"
 else
-    echo "✗ Error: ccstatusline settings.json symlink not created"
+    echo "  Error: ccstatusline settings.json symlink not created"
     ERRORS=$((ERRORS + 1))
 fi
 
-for subdir in code-standards languages tools; do
-    sub_source="${DOTFILES_DIR}/${MODULE}/.claude/rules/${subdir}"
-    sub_target="${TARGET}/.claude/rules/${subdir}"
-    if [ -d "${sub_source}" ]; then
-        if [ -L "${sub_target}" ]; then
-            echo "✓ rules/${subdir} symlink verified"
-        else
-            echo "✗ Error: rules/${subdir} symlink not created"
-            ERRORS=$((ERRORS + 1))
-        fi
-    fi
-done
-
 echo ""
 if [ $ERRORS -eq 0 ]; then
-    echo "✅ All symlinks created successfully!"
+    echo "All symlinks created successfully!"
     echo ""
     echo "Your configuration is now managed by stow."
     echo "Edit files in: $DOTFILES_DIR/$MODULE/"
     echo "Changes will be reflected immediately in $TARGET"
     exit 0
 else
-    echo "❌ Failed to create $ERRORS symlink(s)"
+    echo "Failed to create $ERRORS symlink(s)"
     exit 1
 fi

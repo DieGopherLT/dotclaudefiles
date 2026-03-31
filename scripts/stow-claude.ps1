@@ -49,15 +49,8 @@ Write-Host "Target: $TargetBase"
 Write-Host ""
 
 # ============================================================
-# CRITICAL: Prevent tree folding disaster
+# Prevent disaster: ensure critical directories are real, not symlinks
 # ============================================================
-# If a target directory is a symlink to an entire directory instead of
-# individual files, ALL Claude Code runtime data would be written into the repo.
-#
-# Solution: Ensure target directories exist as real directories BEFORE creating symlinks.
-# ============================================================
-
-Write-Host "Preparing target directories (preventing tree folding)..." -ForegroundColor Cyan
 
 $ClaudeTarget = Join-Path $TargetBase ".claude"
 $CcStatusLineTarget = Join-Path $TargetBase ".config\ccstatusline"
@@ -96,56 +89,12 @@ if ((Test-Path $CcStatusLineTarget) -and ((Get-Item $CcStatusLineTarget -Force).
     exit 1
 }
 
-# Ensure Claude directory exists (real directory, not symlink)
+# Ensure target directories exist as real directories
 if (-not (Test-Path $ClaudeTarget)) {
     Write-Host "Creating $ClaudeTarget directory..."
     $null = New-Item -ItemType Directory -Path $ClaudeTarget -Force
 }
 
-# Handle rules/ subdirectory symlinks
-# Each managed subdirectory inside rules/ gets its own symlink
-$RulesSource = Join-Path $SourceDir ".claude\rules"
-$RulesTarget = Join-Path $ClaudeTarget "rules"
-
-# Ensure rules/ exists as a real directory
-if (-not (Test-Path $RulesTarget)) {
-    $null = New-Item -ItemType Directory -Path $RulesTarget -Force
-    Write-Host "rules/ directory created" -ForegroundColor Green
-}
-
-# Remove stale broken file symlinks from old structure
-foreach ($f in @("css.md", "go.md", "html-semantics.md", "react.md", "ts.md")) {
-    $stalePath = Join-Path $RulesTarget $f
-    if ((Test-Path $stalePath -PathType Leaf) -and ((Get-Item $stalePath -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-        $staleTarget = (Get-Item $stalePath -Force).Target
-        if (-not (Test-Path $staleTarget)) {
-            Remove-Item -Path $stalePath -Force
-            Write-Host "Removed stale symlink: rules/$f" -ForegroundColor Yellow
-        }
-    }
-}
-
-# Create symlinks for each managed subdirectory
-foreach ($subdir in @("code-standards", "languages", "tools")) {
-    $SubSource = Join-Path $RulesSource $subdir
-    $SubTarget = Join-Path $RulesTarget $subdir
-    if (Test-Path $SubSource) {
-        if ((Test-Path $SubTarget) -and ((Get-Item $SubTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-            Write-Host "rules/$subdir symlink already exists" -ForegroundColor Green
-        } elseif (Test-Path $SubTarget) {
-            Write-Host "rules/$subdir exists as real directory, backing up..." -ForegroundColor Yellow
-            $BackupPath = "$SubTarget.backup.$BackupTimestamp"
-            Move-Item -Path $SubTarget -Destination $BackupPath -Force
-            $null = New-Item -ItemType SymbolicLink -Path $SubTarget -Target $SubSource -Force
-            Write-Host "rules/$subdir symlink created" -ForegroundColor Green
-        } else {
-            $null = New-Item -ItemType SymbolicLink -Path $SubTarget -Target $SubSource -Force
-            Write-Host "rules/$subdir symlink created" -ForegroundColor Green
-        }
-    }
-}
-
-# Ensure ccstatusline directory exists
 if (-not (Test-Path $CcStatusLineTarget)) {
     Write-Host "Creating $CcStatusLineTarget directory..."
     $null = New-Item -ItemType Directory -Path $CcStatusLineTarget -Force
@@ -153,41 +102,39 @@ if (-not (Test-Path $CcStatusLineTarget)) {
 
 Write-Host ""
 
-# Track backups
 $BackedUp = 0
+$RulesSource = Join-Path $SourceDir ".claude\rules"
+$RulesTarget = Join-Path $ClaudeTarget "rules"
 
-# Define files to symlink with their paths relative to source/target
-$FilesToLink = @(
-    @{
-        Source = ".claude\CLAUDE.md"
-        Target = ".claude\CLAUDE.md"
-        Description = "CLAUDE.md"
-    },
-    @{
-        Source = ".config\ccstatusline\settings.json"
-        Target = ".config\ccstatusline\settings.json"
-        Description = "ccstatusline settings.json"
-    }
-)
+# CLAUDE.md - must be a symlink, back up if it is a real file
+$ClaudeMdTarget = Join-Path $ClaudeTarget "CLAUDE.md"
+if ((Test-Path $ClaudeMdTarget) -and -not ((Get-Item $ClaudeMdTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+    $BackupFile = "$ClaudeMdTarget.backup.$BackupTimestamp"
+    Write-Host "Backing up existing CLAUDE.md..." -ForegroundColor Yellow
+    Move-Item -Path $ClaudeMdTarget -Destination $BackupFile -Force
+    Write-Host "   Saved to: $BackupFile" -ForegroundColor Gray
+    $BackedUp++
+}
 
-# Backup existing files if they exist and are not symlinks
-foreach ($File in $FilesToLink) {
-    $TargetPath = Join-Path $TargetBase $File.Target
+# rules/ - must be a symlink. Back up and remove if it is a real directory
+# so we can create a single symlink pointing to the entire dotfiles rules/ tree.
+if ((Test-Path $RulesTarget) -and -not ((Get-Item $RulesTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+    $BackupFile = "$RulesTarget.backup.$BackupTimestamp"
+    Write-Host "Backing up existing rules/ directory..." -ForegroundColor Yellow
+    Move-Item -Path $RulesTarget -Destination $BackupFile -Force
+    Write-Host "   Saved to: $BackupFile" -ForegroundColor Gray
+    $BackedUp++
+}
 
-    if ((Test-Path $TargetPath) -and -not ((Get-Item $TargetPath -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-        $BackupFile = "$TargetPath.backup.$BackupTimestamp"
-        Write-Host "Backing up existing $($File.Description)..." -ForegroundColor Yellow
-
-        # Ensure parent directory exists for backup
-        $BackupParent = Split-Path -Parent $BackupFile
-        if (-not (Test-Path $BackupParent)) {
-            $null = New-Item -ItemType Directory -Path $BackupParent -Force
-        }
-
-        Move-Item -Path $TargetPath -Destination $BackupFile -Force
-        Write-Host "   Saved to: $BackupFile" -ForegroundColor Gray
-        $BackedUp++
-    }
+# ccstatusline settings.json - must be a symlink, back up if it is a real file
+$SettingsTarget = Join-Path $CcStatusLineTarget "settings.json"
+$SettingsSource = Join-Path $SourceDir ".config\ccstatusline\settings.json"
+if ((Test-Path $SettingsTarget) -and -not ((Get-Item $SettingsTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+    $BackupFile = "$SettingsTarget.backup.$BackupTimestamp"
+    Write-Host "Backing up existing ccstatusline settings..." -ForegroundColor Yellow
+    Move-Item -Path $SettingsTarget -Destination $BackupFile -Force
+    Write-Host "   Saved to: $BackupFile" -ForegroundColor Gray
+    $BackedUp++
 }
 
 if ($BackedUp -gt 0) {
@@ -200,78 +147,60 @@ if ($BackedUp -gt 0) {
 Write-Host "Creating symbolic links..." -ForegroundColor Cyan
 $Errors = 0
 
-foreach ($File in $FilesToLink) {
-    $SourcePath = Join-Path $SourceDir $File.Source
-    $TargetPath = Join-Path $TargetBase $File.Target
-    $TargetParent = Split-Path -Parent $TargetPath
+# Define all symlinks to create: Source (in dotfiles) -> Target (in $HOME)
+$SymlinksToCreate = @(
+    @{
+        Source = Join-Path $SourceDir ".claude\CLAUDE.md"
+        Target = $ClaudeMdTarget
+        Description = "CLAUDE.md"
+    },
+    @{
+        Source = $RulesSource
+        Target = $RulesTarget
+        Description = "rules/"
+    },
+    @{
+        Source = $SettingsSource
+        Target = $SettingsTarget
+        Description = "ccstatusline settings.json"
+    }
+)
 
-    # Ensure source file exists
-    if (-not (Test-Path $SourcePath)) {
-        Write-Host "Error: Source file not found: $SourcePath" -ForegroundColor Red
+foreach ($Link in $SymlinksToCreate) {
+    # Verify source exists
+    if (-not (Test-Path $Link.Source)) {
+        Write-Host "  Error: Source not found: $($Link.Source)" -ForegroundColor Red
         $Errors++
         continue
     }
 
-    # Ensure target parent directory exists
-    if (-not (Test-Path $TargetParent)) {
-        Write-Host "  Creating directory: $TargetParent" -ForegroundColor Gray
-        $null = New-Item -ItemType Directory -Path $TargetParent -Force
+    # Remove existing symlink so it can be recreated cleanly
+    if ((Test-Path $Link.Target) -and ((Get-Item $Link.Target -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+        Remove-Item -Path $Link.Target -Force
     }
 
-    # Remove existing symlink if it exists
-    if (Test-Path $TargetPath) {
-        $Item = Get-Item $TargetPath -Force
-        if ($Item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
-            Remove-Item -Path $TargetPath -Force
-        }
-    }
-
-    # Create symbolic link
+    # Create symlink
     try {
-        $null = New-Item -ItemType SymbolicLink -Path $TargetPath -Target $SourcePath -Force
-        Write-Host "Created symlink for $($File.Description)" -ForegroundColor Green
+        $null = New-Item -ItemType SymbolicLink -Path $Link.Target -Target $Link.Source -Force
+        Write-Host "  $($Link.Description) symlink created" -ForegroundColor Green
     } catch {
-        Write-Host "Error creating symlink for $($File.Description): $_" -ForegroundColor Red
+        Write-Host "  Error creating symlink for $($Link.Description): $_" -ForegroundColor Red
         $Errors++
     }
 }
 
-# Validate symlinks were created
+# Verify symlinks
 Write-Host ""
 Write-Host "Verifying symlinks..." -ForegroundColor Cyan
 
-foreach ($File in $FilesToLink) {
-    $TargetPath = Join-Path $TargetBase $File.Target
-
-    if (Test-Path $TargetPath) {
-        $Item = Get-Item $TargetPath -Force
-        if ($Item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
-            $LinkTarget = $Item.Target
-            Write-Host "$($File.Description) symlink created" -ForegroundColor Green
-            Write-Host "  $TargetPath -> $LinkTarget" -ForegroundColor Gray
-        } else {
-            Write-Host "Error: $($File.Description) exists but is not a symlink" -ForegroundColor Red
-            $Errors++
-        }
+foreach ($Link in $SymlinksToCreate) {
+    if ((Test-Path $Link.Target) -and ((Get-Item $Link.Target -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+        $LinkTarget = (Get-Item $Link.Target -Force).Target
+        Write-Host "  $($Link.Description) symlink verified" -ForegroundColor Green
+        Write-Host "    $($Link.Target) -> $LinkTarget" -ForegroundColor Gray
     } else {
-        Write-Host "Error: $($File.Description) symlink not created" -ForegroundColor Red
+        Write-Host "  Error: $($Link.Description) symlink not created" -ForegroundColor Red
         $Errors++
-    }
-}
-
-# Verify rules subdirectory symlinks
-foreach ($subdir in @("code-standards", "languages", "tools")) {
-    $SubSource = Join-Path $RulesSource $subdir
-    $SubTarget = Join-Path $RulesTarget $subdir
-    if (Test-Path $SubSource) {
-        if ((Test-Path $SubTarget) -and ((Get-Item $SubTarget -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-            $LinkTarget = (Get-Item $SubTarget -Force).Target
-            Write-Host "rules/$subdir symlink verified" -ForegroundColor Green
-            Write-Host "  $SubTarget -> $LinkTarget" -ForegroundColor Gray
-        } else {
-            Write-Host "Error: rules/$subdir symlink not created" -ForegroundColor Red
-            $Errors++
-        }
     }
 }
 
