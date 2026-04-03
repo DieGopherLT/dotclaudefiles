@@ -39,6 +39,20 @@ Context information:
 - Under what conditions?
 - Which components were involved?
 
+### Environment
+
+- Runtime/language version
+- OS or platform
+- Relevant dependency versions
+
+## Reproduction Steps
+
+Steps to reliably trigger the problem:
+
+1. Step 1
+2. Step 2
+3. Expected vs actual result
+
 ## Investigation Process
 
 Steps taken to investigate:
@@ -94,53 +108,13 @@ Measures to prevent similar problems in the future:
 - Lesson 3
 ```
 
-## Field Descriptions
+## Field Guidance
 
-### Metadata
-- **Timestamp**: Auto-generated current date/time
-- **Project**: Auto-detected from directory or git repo
-- **Category**: Always "Problem-Solution"
-- **Tags**: Relevant tags (bug type, component, severity)
-- **Related Commit**: Git commit hash with the fix
-- **Severity**: Impact level (Low/Medium/High/Critical)
+Notes that add context beyond what the template structure already shows:
 
-### Problem Statement
-Clear, concise description of what went wrong. Focus on observable behavior and impact.
-
-### Context
-Environmental and situational details:
-- When/where did it occur?
-- What conditions triggered it?
-- What systems were affected?
-
-### Investigation Process
-Step-by-step investigation journey. Include:
-- Hypotheses tested
-- Tools used (logs, profilers, debuggers)
-- Key findings at each step
-- Dead ends explored
-
-### Root Cause
-Fundamental reason for the problem. Be specific and technical.
-
-### Solution
-Complete solution description:
-- **Approach**: Why this solution over alternatives
-- **Implementation**: Code showing the fix
-- **Files Modified**: What changed and why
-
-### Verification
-Evidence the problem is solved:
-- Automated tests added
-- Manual testing performed
-- Metrics showing improvement
-
-### Prevention
-Future-proofing measures:
-- New tests to catch regressions
-- Process improvements
-- Documentation updates
-- Monitoring additions
-
-### Lessons Learned
-Key takeaways from this experience. What would you do differently next time?
+- **Metadata**: Timestamp and Project are auto-detected. Severity reflects user-facing impact, not code complexity.
+- **Environment**: Include only versions relevant to the bug. Skip if the problem is environment-independent.
+- **Reproduction Steps**: Minimal steps to trigger the issue. If non-deterministic, describe the conditions that increase likelihood.
+- **Investigation Process**: Include dead ends explored -- they save time for anyone encountering a similar issue. Mention tools used (logs, profilers, debuggers).
+- **Root Cause**: Be specific and technical. "Race condition" is not enough; explain which operations race and why.
+- **Lessons Learned**: What would you do differently next time? What signals did you miss early on?

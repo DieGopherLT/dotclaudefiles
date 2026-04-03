@@ -20,9 +20,9 @@ Use this template for sessions that generated knowledge but no code changes.
 - **Category**: Session Knowledge
 - **Tags**: {comma_separated_tags}
 
-## What We Explored
+## Session Summary
 
-{topics_discussed_researched_or_analyzed}
+{high_level_summary_of_the_conversation}
 
 ## Key Knowledge Gained
 
@@ -42,5 +42,16 @@ Use this template for sessions that generated knowledge but no code changes.
 
 ## References
 
-{relevant_resources_links_or_documents_mentioned}
+{links_people_slack_channels_or_documents_consulted}
 ```
+
+## Field Guidance
+
+Notes that add context beyond what the template structure already shows:
+
+- **Metadata**: Timestamp and Project are auto-detected. No Related Commit needed since session knowledge captures discussion, not code changes.
+- **Session Summary**: High-level recap of the conversation -- what was discussed, what the starting point was, and the general direction it took. Keep it to 2-4 sentences.
+- **Key Knowledge Gained**: The non-obvious insights. Skip things that are easily searchable; focus on conclusions that required reasoning or context to reach.
+- **Conclusions / Decisions**: Include brief rationale for each. A decision without a "why" loses value over time.
+- **Open Questions**: Unresolved items worth revisiting. Mark urgency if relevant.
+- **References**: Primarily links (docs, articles, PRs). Can also include people consulted, Slack threads, or other non-link sources when relevant.

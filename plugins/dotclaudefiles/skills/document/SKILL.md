@@ -18,6 +18,8 @@ For reusable code patterns, techniques, or solutions.
 
 **Example:** `examples/pattern-example.md` (Retry with Exponential Backoff)
 
+**Memory type:** `reference`
+
 ### Problem-Solution Documentation
 
 For complex bugs, race conditions, or difficult technical challenges.
@@ -25,6 +27,8 @@ For complex bugs, race conditions, or difficult technical challenges.
 **Template:** `references/templates/problem-solution.md`
 
 **Example:** `examples/problem-solution-example.md` (Race Condition in Cache)
+
+**Memory type:** `project`
 
 ### Decision Documentation
 
@@ -34,6 +38,8 @@ For architectural decisions, technology choices, or trade-off analysis.
 
 **Example:** `examples/decision-example.md` (PostgreSQL vs MongoDB)
 
+**Memory type:** `project`
+
 ### Guidelines Documentation
 
 For design systems, code standards, or team conventions.
@@ -41,6 +47,8 @@ For design systems, code standards, or team conventions.
 **Template:** `references/templates/guidelines.md`
 
 **Example:** `examples/guidelines-example.md` (Button Component Guidelines)
+
+**Memory type:** `feedback`
 
 ### Session Knowledge Documentation
 
@@ -50,13 +58,7 @@ Guard: Check your own session context. If no code was modified in this session, 
 
 **Template:** `references/templates/session-knowledge.md`
 
-**Storage:** `.claude/docs/sessions/`
-
-### Free-Form Documentation
-
-For anything that doesn't fit other categories.
-
-**Template:** `references/templates/free-form.md`
+**Memory type:** `project`
 
 ## Documentation Process
 
@@ -76,7 +78,6 @@ Determine which type of documentation fits the user's intent:
 - **Decision**: Choice between alternatives with rationale
 - **Guidelines**: Standards or conventions
 - **Session Knowledge**: Discussion, research, or analysis session with no code changes
-- **Free-Form**: Doesn't fit other categories
 
 Ask user if type is ambiguous: "Is this a pattern, problem-solution, or decision?"
 
@@ -89,7 +90,6 @@ Read the corresponding template from `references/templates/{type}.md` (use absol
 - `decision.md` for decisions
 - `guidelines.md` for guidelines
 - `session-knowledge.md` for session knowledge
-- `free-form.md` for free-form
 
 Templates contain structure and field descriptions.
 
@@ -118,38 +118,55 @@ Extract information from session context:
 - Decisions made and alternatives considered
 - Patterns implemented
 
-### Step 4: Generate Document
+### Step 4: Save to Memory
 
-Populate template with gathered information:
+The primary output is a project memory entry. Map document type to memory type:
 
-1. Fill metadata section automatically
-2. Structure main content based on template
-3. Include code examples from session
-4. Reference relevant files
-5. Add appropriate tags
+| Document Type | Memory Type | Rationale |
+|---------------|-------------|-----------|
+| Pattern | `reference` | Reusable knowledge pointer |
+| Problem-Solution | `project` | Context about ongoing work |
+| Decision | `project` | Architectural context |
+| Guidelines | `feedback` | Guides future behavior |
+| Session Knowledge | `project` | Session context |
+
+1. Structure the memory content using the template as a guide, but adapt to memory conventions:
+   - Lead with the fact or rule
+   - Add **Why:** line with motivation
+   - Add **How to apply:** line with guidance
+   - Keep concise -- memory entries are not full documents
+2. Write the memory file to the project memory directory using `{type}_{slug}.md` naming
+3. Add the entry to `MEMORY.md` index
 
 **Content quality guidelines:**
 
 - Be specific and technical
-- Include code examples where applicable
 - Explain rationale, not just what was done
 - Document trade-offs and alternatives
 - Keep it concise but complete
 
-### Step 5: Determine Storage Location
+### Step 5: Ask About Exportable Copy
 
-**Default location:** `.claude/docs/{category}/{filename}.md`
+Ask the user: "Do you want an exportable copy for sharing with colleagues?"
+
+- If **no** -> skip to Step 8
+- If **yes** -> proceed to Step 6
+
+### Step 6: Write Exportable Copy
+
+Generate a full document using the template and write it to the project.
+
+**Default location:** `.claude/sessions/{category}/{filename}.md`
 
 **Directory structure:**
 
 ```
-.claude/docs/
+.claude/sessions/
 ├── patterns/
 ├── problems/
 ├── decisions/
 ├── guidelines/
-├── sessions/
-└── free-form/
+└── knowledge/
 ```
 
 **Filename format:** `{YYYYMMDD-HHMMSS}-{slug}.md`
@@ -160,23 +177,21 @@ Example: `20260115-142345-retry-pattern.md`
 
 - Custom directory path
 - Custom filename
-- Root directory if preferred
-
-### Step 6: Write and Confirm
-
-1. Write document to determined location
-2. Show user the path and brief summary
-3. Offer to open file for review/edits
 
 ### Step 7: Git Ignore Check
 
-After writing the file:
+Only runs if Step 6 produced a file.
 
 1. Run: `git check-ignore -q <file_path>`
 2. If file IS ignored: proceed normally, nothing to do.
 3. If file is NOT ignored:
-   - Add the parent directory expression to `.gitignore` (e.g. `.claude/docs/`)
+   - Add the parent directory expression to `.gitignore` (e.g. `.claude/sessions/`)
    - Inform the user that `.gitignore` was updated to exclude generated docs.
+
+### Step 8: Confirm
+
+1. Show the memory entry path and a brief summary of what was stored
+2. If an exportable copy was created, show that path too
 
 ## Metadata Fields
 
@@ -184,7 +199,7 @@ All documents include standard metadata:
 
 - **Timestamp**: Auto-generated (YYYY-MM-DD HH:MM:SS)
 - **Project**: Auto-detected from git or directory name
-- **Category**: Document type (Pattern/Problem-Solution/Decision/Guidelines/Session Knowledge/Free-Form)
+- **Category**: Document type (Pattern/Problem-Solution/Decision/Guidelines/Session Knowledge)
 - **Tags**: Comma-separated tags for search
 - **Related Commit**: Git commit hash if available (not applicable for Session Knowledge)
 
@@ -268,7 +283,6 @@ Detailed templates with field descriptions:
 - **`references/templates/decision.md`** - Decision documentation template
 - **`references/templates/guidelines.md`** - Guidelines template
 - **`references/templates/session-knowledge.md`** - Session knowledge template
-- **`references/templates/free-form.md`** - Free-form template
 
 Each template file includes:
 
@@ -286,7 +300,7 @@ Complete, real-world examples in `examples/`:
 - **`examples/decision-example.md`** - Database Choice (PostgreSQL vs MongoDB)
 - **`examples/guidelines-example.md`** - Button Component Design Guidelines
 
-Refer to examples when generating documents to match quality and detail level.
+Refer to examples when generating exportable documents to match quality and detail level.
 
 ## Best Practices
 
@@ -314,11 +328,10 @@ Refer to examples when generating documents to match quality and detail level.
 
 ## Notes
 
-- Documentation saved in `.claude/docs/` by default (can be overridden)
-- Filename format: `YYYYMMDD-HHMMSS-slug.md` for chronological sorting
-- Metadata enables search and filtering later
+- Primary output is a project memory entry -- always saved to memory first
+- Exportable copies saved in `.claude/sessions/` only when user requests them for sharing
+- Filename format for exports: `YYYYMMDD-HHMMSS-slug.md` for chronological sorting
 - Templates are guidelines - adapt content to fit actual needs
 - Session Knowledge type does not require git context - use session memory directly
-- Free-form template for anything that doesn't fit other categories
 - Always include code examples when documenting technical content
 - Document trade-offs honestly - perfect solutions don't exist
