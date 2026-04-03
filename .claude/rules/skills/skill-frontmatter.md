@@ -4,7 +4,9 @@ paths:
   - "**/commands/**"
 ---
 
-# Skill Frontmatter Reference
+# Skill Frontmatter - Quick Reference
+
+For the full skill creation process: **invoke `/skill-creator`**. This file is a quick-reference for frontmatter fields and configuration behaviors.
 
 ## Fields
 
@@ -13,12 +15,12 @@ paths:
 | `name` | string | No | nombre del directorio | Identificador kebab-case. Se convierte en `/slash-command`. |
 | `description` | string | Recomendado | primer parrafo del body | Cuando usar la skill. Claude lo lee para decidir activacion automatica. |
 | `model` | string | No | modelo por defecto | Modelo especifico para esta skill. Ver IDs validos abajo. |
-| `version` | string | No | — | Version de la skill (semver). Informativo. |
+| `version` | string | No | -- | Version de la skill (semver). Informativo. |
 | `user-invocable` | bool | No | `true` | `false` = oculta del menu `/`, solo Claude puede invocarla. |
 | `disable-model-invocation` | bool | No | `false` | `true` = Claude no la activa automaticamente; solo invocacion manual. |
-| `allowed-tools` | string | No | — | Herramientas permitidas sin pedir permiso. Comma-separated. Soporta especificadores: `Bash(git *)`. |
-| `argument-hint` | string | No | — | Hint en autocomplete, ej: `[filename] [format]`. |
-| `context` | string | No | — | `fork` = ejecuta la skill en subagente aislado. |
+| `allowed-tools` | string | No | -- | Herramientas permitidas sin pedir permiso. Comma-separated. Soporta especificadores: `Bash(git *)`. |
+| `argument-hint` | string | No | -- | Hint en autocomplete, ej: `[filename] [format]`. |
+| `context` | string | No | -- | `fork` = ejecuta la skill en subagente aislado. |
 | `agent` | string | No | `general-purpose` | Tipo de subagente cuando `context: fork`. Opciones: `Explore`, `Plan`, `general-purpose`, o nombre de agente custom. |
 
 ## Model IDs validos
@@ -49,6 +51,8 @@ claude-haiku-4-5-20251001
 
 ## Ejemplos rapidos
 
+Nota: los descriptions aqui usan ingles por brevedad. En skills reales, aplicar la convencion de idioma de `skill-body-content.md` (description en espanol).
+
 ```yaml
 # Skill manual-only (deploy, commit, etc.)
 ---
@@ -69,12 +73,11 @@ user-invocable: false
 ```
 
 ```yaml
-# Skill con modelo especifico y herramientas restringidas
+# Skill con modelo especifico
 ---
 name: deep-reason
 description: Deep structured reasoning for complex problems
 model: claude-opus-4-6
-user-invocable: true
 ---
 ```
 

@@ -5,78 +5,48 @@ paths:
   - "**/commands/**/*.md"
 ---
 
-# Frontmatter Best Practices
+# Frontmatter Format - Diego's Conventions
 
-## Language: Spanish (Español)
+For the complete skill/agent creation methodology: **invoke `/skill-creator`**. This file defines Diego's formatting conventions for frontmatter descriptions.
 
-**All agent and skill frontmatter descriptions MUST be written in Spanish.** This facilitates activation since Diego interacts with Claude in Spanish.
+## Language: Spanish
+
+All agent and skill frontmatter descriptions must be written in Spanish. Diego interacts in Spanish; matching the language improves activation accuracy.
 
 ## Description Format
 
-### For Skills (Third Person)
-
-Skills must use third-person format with specific trigger phrases:
+### Skills (Third Person)
 
 ```yaml
----
-name: skill-name
-description: Esta skill debe usarse cuando el usuario pide "frase específica 1", "frase específica 2", "frase específica 3", o menciona contextos relevantes. Proporciona [breve descripción de lo que ofrece].
----
+description: Esta skill debe usarse cuando el usuario pide "frase 1", "frase 2", "frase 3", o menciona [contextos relevantes]. Proporciona [breve descripcion].
 ```
-
-**Characteristics:**
 
 - Start with "Esta skill debe usarse cuando el usuario pide..."
-- Include 5-8 specific phrases users would say (between quotes)
-- Add contextual mentions after "o menciona..."
-- End with value proposition ("Proporciona...")
-- Use concrete, action-oriented triggers
+- 5-8 trigger phrases between quotes (bilingual: Spanish + English)
+- Contextual mentions after "o menciona..."
+- Value proposition at the end ("Proporciona...")
 
-**Good example:**
-
-```yaml
-description: Esta skill debe usarse cuando el usuario pide "dominar el sistema de tipos de TypeScript", "implementar tipos genéricos", "crear tipos condicionales", "refactorizar biblioteca TypeScript", "refactorizar tipados", "migrar de JavaScript a TypeScript", o menciona tipos mapeados, tipos literales de plantilla, o tipos utilitarios. Proporciona guía completa para construir aplicaciones type-safe.
-```
-
-**Bad example:**
+**Example:**
 
 ```yaml
-description: Use when working with TypeScript types.  # Wrong language, vague, no triggers
+description: Esta skill debe usarse cuando el usuario pide "dominar el sistema de tipos de TypeScript", "implementar tipos genericos", "crear tipos condicionales", "refactorizar tipados", "migrar de JavaScript a TypeScript", o menciona tipos mapeados, tipos literales de plantilla, o tipos utilitarios. Proporciona guia completa para construir aplicaciones type-safe.
 ```
 
-### For Agents (Third Person)
-
-Agents also use third-person format with triggering conditions:
+### Agents (Third Person)
 
 ```yaml
----
-name: agent-name
-description: Este agente debe usarse cuando [condición específica 1], [condición específica 2], o cuando se necesite [capacidad específica]. [Descripción de lo que hace].
----
+description: Este agente debe usarse cuando [condicion 1], [condicion 2], o cuando se necesite [capacidad]. [Descripcion de lo que hace].
 ```
-
-**Characteristics:**
 
 - Start with "Este agente debe usarse cuando..."
-- Describe conditions, not user phrases (agents are invoked by Claude, not users)
-- Focus on scenarios and technical conditions
+- Describe conditions and scenarios (agents are invoked by Claude, not users)
 - Be specific about what the agent analyzes, generates, or validates
-
-**Good example:**
-
-```yaml
-description: Este agente debe usarse cuando se crean nuevos módulos de 3+ archivos, se modifican 4+ archivos, o tras ejecutar un plan aprobado con 5+ archivos. Asegura que el código nuevo siga los patrones y convenciones del proyecto existente.
-```
 
 ## Validation Checklist
 
 Before finalizing agent/skill:
 
-- [ ] Description in Spanish
+- [ ] Description in Spanish (this file's convention)
 - [ ] Third-person format ("Esta skill debe usarse cuando..." / "Este agente debe usarse cuando...")
-- [ ] Up to 8 specific trigger phrases (skills) or conditions (agents)
-- [ ] Contextual mentions included
-- [ ] Value proposition clear
-- [ ] Body uses imperative form
-- [ ] Progressive disclosure applied (skills)
-- [ ] Introspection performed with Diego for activation keywords
+- [ ] Body in English (see `skill-body-content.md`)
+- [ ] Full methodology followed via `/skill-creator`
