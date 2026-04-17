@@ -5,9 +5,11 @@
 - Avoid generic names without context: `data`, `info`, `handler`, `manager`, `helper`, `utils`
 - Booleans: use `is`/`has`/`should` prefix (`isActive`, `hasPermission`, `shouldRender`)
 - No abbreviations unless universally known (`url`, `id`, `http` are fine; `usr`, `mgr`, `prod` are not)
-- File names: match the primary export (`UserProfile.tsx`, `authService.ts`, `payment.go`)
-  - Use kebab-case for file names (`user-helpers.ts`, `auth-service.ts`, `payment.go`) for better readability and consistency across platforms.
-  - Avoid using camelCase for file names, as it can lead to issues on case-sensitive file systems and is less common in many programming communities.
+- File names: follow language-specific conventions if a per-language rule defines them; otherwise:
+  - JS/TS: kebab-case (`auth-service.ts`, `user-helpers.ts`, `use-auth.ts`)
+  - React components: PascalCase matching the component name (`UserProfile.tsx`, `PaymentForm.tsx`)
+  - Go: snake_case (`user_service.go`, `http_handler.go`)
+  - Never camelCase for file names — causes issues on case-sensitive file systems
 
 ## Variable and function naming
 

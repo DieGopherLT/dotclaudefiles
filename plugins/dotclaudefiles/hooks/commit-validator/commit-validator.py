@@ -15,6 +15,12 @@ EMOJI_PATTERN = re.compile(
 
 
 def extract_commit_message(command: str) -> str | None:
+    heredoc_match = re.search(
+        r'git\s+commit\b.*?-m\s+["\']?\$\(cat\s+<<[\'"]?EOF[\'"]?\n(.*?)\n\s*EOF',
+        command, re.DOTALL,
+    )
+    if heredoc_match:
+        return heredoc_match.group(1).strip()
     m = re.search(r'git\s+commit\b.*?(?:-m|--message)\s+(["\'])(.*?)\1', command, re.DOTALL)
     return m.group(2) if m else None
 
