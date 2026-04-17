@@ -81,6 +81,34 @@ type ReadWriter interface { Reader; Writer }
 - Use a single `types.go` file for all package types.
 - If `types.go` exceeds ~200 lines, convert it to a `types/` directory with focused files per domain (e.g., `types/user.go`, `types/payment.go`).
 
+### Element order within a .go file
+
+Follow this order — do NOT group by declaration kind (`var`/`type`/`func`) as is common in the community:
+
+1. `package` + `import`
+2. Constants (`const`)
+3. Types (`type`) — structs, interfaces, aliases
+4. Exported functions / methods — ordered by call hierarchy (Stepdown Rule)
+5. Unexported functions — declared just below their first caller
+
+```go
+// Good
+const maxRetries = 3
+
+type Order struct { ... }
+
+func CreateOrder(cfg OrderConfig) (*Order, error) {
+    if err := validateItems(cfg.Items); err != nil { ... }
+    return applyDiscount(cfg)
+}
+
+func validateItems(items []Item) error { ... }   // below CreateOrder, which calls it
+
+func applyDiscount(cfg OrderConfig) (*Order, error) { ... }  // below CreateOrder
+```
+
+`init()` goes immediately after imports if present. Avoid it when possible.
+
 ## Libraries
 
 Always install on personal projects (confirm with user first):

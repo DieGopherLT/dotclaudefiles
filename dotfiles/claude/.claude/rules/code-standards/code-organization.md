@@ -19,17 +19,33 @@ function createUser({ name, email, role, isActive }) { ... }
 createUser({ name: 'Diego', email: 'diego@dev.com', role: 'admin', isActive: true });
 ```
 
-## Public API first
+## File element order
+
+Within a file, declare elements in this order:
+
+1. Constants
+2. Types / interfaces
+3. Classes / structs
+4. Exported functions
+5. Private functions — ordered by call hierarchy, not alphabetically
+
+## The Stepdown Rule
+
+Private functions follow the caller, not the alphabet. A function should be declared just below the first function that calls it. The file reads top-to-bottom: abstractions first, implementation details last.
 
 ```
-// Top of file - public interface
-export function createOrder(config) { ... }
-export function cancelOrder(orderId) { ... }
+// Good - validateOrderItems is declared right after the function that calls it
+export function createOrder(config) {
+  validateOrderItems(config.items);  // calls validateOrderItems
+  applyDiscount(config);             // calls applyDiscount
+}
 
-// Bottom of file - private helpers
-function validateOrderItems(items) { ... }
-function applyDiscount(order) { ... }
+function validateOrderItems(items) { ... }   // declared below its caller
+
+function applyDiscount(order) { ... }        // declared below its caller
 ```
+
+Functions with no dependencies (pure utilities) go at the bottom of the file.
 
 ## Comments: only when non-obvious
 
