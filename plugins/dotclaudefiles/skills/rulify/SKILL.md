@@ -24,10 +24,21 @@ This repository is itself a worked example: the base CLAUDE.md is ~150 lines of 
 - `references/claude-code-memory-spec.md` — official Claude Code memory/rules spec: loading order, frontmatter syntax, `@` imports, compaction behavior. Consult when you need exact format or hit an edge case.
 - `references/rules-best-practices.md` — sweet-spot sizes, classification buckets (project-wide / scoped / always-on), path glob heuristics, merge strategy, anti-patterns. Consult during planning and merging.
 - `references/example-patterns.md` — five archetypes of high-value extractable rules (workflow-enforcing, trigger-table, language guide, always-on standard, high-stakes single-action reminder) with shapes and decision tree. Consult when classifying CLAUDE.md sections.
+- `references/memory-currency-rule.md` — the literal payload for the memory-currency rule that Step 0 bootstraps into the target project. Read at Step 0.
 
 Read these when planning extractions or whenever a frontmatter / loading detail is non-obvious. The workflow below covers the common path.
 
 ## Workflow
+
+### 0. Bootstrap the memory-currency rule
+
+Before anything else, ensure the target project has a path-scoped rule that keeps every `CLAUDE.md` and `AGENTS.md` honest.
+
+- Check whether `<project>/.claude/rules/memory/keep-current.md` exists.
+- If it does, leave it alone — the user owns it.
+- If it does not, create the directory and write the file using the exact content in `references/memory-currency-rule.md`.
+
+This is idempotent and runs on every rulify invocation. Mention the bootstrap (created or skipped) in the Step 7 report. Why this is Step 0: the rest of rulify shrinks CLAUDE.md by moving content into rules, which means the agent will be reading and editing memory files more often — the currency rule must already be in place when that starts happening.
 
 ### 1. Locate the target
 
