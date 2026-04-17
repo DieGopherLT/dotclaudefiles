@@ -50,6 +50,19 @@ Detect the rules directory: `.claude/rules/` relative to the CLAUDE.md's directo
 
 If the CLAUDE.md is a symlink (common with stow-managed dotfiles), edit the source file in the dotfiles repo, not the symlink target. Detect with `readlink`.
 
+#### AGENTS.md convention check
+
+Some repos use `AGENTS.md` as the canonical multi-agent instructions file, with `CLAUDE.md` reduced to `@AGENTS.md` (plus optional Claude-specific additions below). Claude Code reads `CLAUDE.md` and follows the import.
+
+If you find:
+
+- A sibling `AGENTS.md`, AND
+- The `CLAUDE.md` is essentially just `@AGENTS.md` (with at most a small Claude-specific tail)
+
+Then **treat `AGENTS.md` as the primary rulify target**. Splitting a 5-line CLAUDE.md that just imports does nothing; the bulk lives in AGENTS.md. The Claude-specific tail (if any) stays in CLAUDE.md untouched.
+
+The memory-currency rule from Step 0 already covers `**/AGENTS.md`, so no extra setup needed. Mention in the Step 7 report which file was treated as primary.
+
 ### 2. Inventory existing rules
 
 Read every existing file under `.claude/rules/` recursively. Capture:

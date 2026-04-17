@@ -40,12 +40,22 @@ If a section would only contain inferable or generic content, **omit it**.
 
 ## Workflow
 
-### Step 0: Check for existing documentation
+### Step 0: Detect repo convention and check existing documentation
 
-Try to read `$1/CLAUDE.md`.
+First, detect which memory-file convention the repo uses by inspecting the project root:
 
-- If it exists: keep its content as baseline for the explorer (verify, update, fill gaps — do not start from scratch).
-- If it does not exist: proceed with fresh exploration.
+- **CLAUDE.md only** (no `AGENTS.md` at root): generate `$1/CLAUDE.md`. Single file, standard path.
+- **AGENTS.md convention** (root has `AGENTS.md`, and root `CLAUDE.md` is essentially `@AGENTS.md`): generate **two** files at the module level.
+  - `$1/AGENTS.md` — the actual content, written from the template.
+  - `$1/CLAUDE.md` — a one-line file containing exactly `@AGENTS.md`.
+  - Why both: Claude Code only auto-discovers `CLAUDE.md` in subdirectories, not `AGENTS.md`. The stub `CLAUDE.md` is what makes lazy loading work; the import pulls in the AGENTS.md content. Other agents read `AGENTS.md` directly.
+
+Then check whether the target file (CLAUDE.md, or AGENTS.md under the AGENTS convention) already exists at `$1/`:
+
+- If yes: keep its content as baseline for the explorer (verify, update, fill gaps — do not start from scratch).
+- If no: proceed with fresh exploration.
+
+For the rest of the workflow, "memory file" refers to whichever target file the convention selected.
 
 ### Step 1: Explore the module
 
@@ -84,7 +94,7 @@ Depth: very thorough
 
 ### Step 2: Generate or update CLAUDE.md
 
-Read `references/template.md` for the structure and `references/style-rules.md` for formatting rules. Write the file at `$1/CLAUDE.md`.
+Read `references/template.md` for the structure and `references/style-rules.md` for formatting rules. Write the content to the target memory file determined in Step 0 (`$1/CLAUDE.md` under the CLAUDE.md convention; `$1/AGENTS.md` plus a one-line `$1/CLAUDE.md` containing `@AGENTS.md` under the AGENTS convention).
 
 Critical rules from those references:
 
