@@ -11,19 +11,24 @@
       "source": "./plugins/dotclaudefiles"
     },
     {
-      "name": "tdd",
-      "description": "Test-Driven Development plugin with strict Red-Green-Refactor enforcement, testability auditing, and multi-language test implementation.",
-      "source": "./plugins/tdd"
-    },
-    {
-      "name": "smart-plan",
-      "description": "9-phase feature development workflow with 6 specialized agents, parallelization, LSP semantic analysis, and automatic quality gates.",
-      "source": "./plugins/smart-plan"
-    },
-    {
       "name": "claude-management",
       "description": "Skills for managing Claude Code memory files: split heavy CLAUDE.md into on-demand rules (rulify) and generate token-efficient module documentation (claudify).",
       "source": "./plugins/claude-management"
+    },
+    {
+      "name": "dotclaudehooks",
+      "description": "Personal collection of hooks for daily development",
+      "source": "./plugins/dotclaudehooks"
+    },
+    {
+      "name": "document-api",
+      "description": "Set of skills to document API rest endpoints & socket events",
+      "source": "./plugins/document-api"
+    },
+    {
+      "name": "react-dev",
+      "description": "Utils for react development",
+      "source": "./plugins/react-dev"
     }
   ]
 }
