@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing four specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing five specialized plugins:
 
 1. **dotclaudefiles** - Core productivity plugin (agents, commands, skills, output-styles)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
 3. **smart-plan** - Intelligent feature planning and execution workflow (6 agents, 2 commands, 2 skills)
 4. **tdd** - Test-Driven Development automation (4 agents, 2 commands, 1 skill, language rules)
+5. **claude-management** - Claude Code memory file management (rulify, claudify)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -25,7 +26,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 4 plugins (dotclaudefiles, dotclaudehooks, smart-plan, tdd)
+- **`plugins/`**: Contains the 5 plugins (dotclaudefiles, dotclaudehooks, smart-plan, tdd, claude-management)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -37,7 +38,7 @@ Core productivity plugin with daily-use commands, quality agents, and specialize
 
 - **Agents**: `dependency-docs-collector`
 - **Commands**: `/claudify`, `/dry-run`, `/explain-like-senior`, `/git-context`, `/journal`, `/language-evaluation`, `/predict-issues`, `/refactor-conditional-jsx`, `/remove-comments`
-- **Skills**: `check-third-party-docs`, `deep-reason`, `document`, `rulify`, `team-setup`
+- **Skills**: `check-third-party-docs`, `deep-reason`, `document`, `team-setup`
 - **Output Styles**: `mentor`, `personal-preference`
 - **MCP Servers**: Sequential-thinking server for deep reasoning
 
@@ -59,6 +60,12 @@ Intelligent feature planning and execution workflow with LSP-powered semantic an
 - **Skills**: `plan-feature` (5-phase planning + auto-invokes smart-delegation after approval), `post-implementation` (quality review + refactoring + finalization)
 - **Key Features**: Parallel agent execution, LSP semantic analysis, plan template in references/, confidence-scored reviews (>=80%), automatic refactoring
 
+### claude-management
+
+Skills for managing Claude Code memory files:
+
+- **Skills**: `rulify` (split heavy CLAUDE.md into on-demand `.claude/rules/` files), `claudify` (generate token-efficient module-level CLAUDE.md documentation)
+
 ### tdd
 
 Test-Driven Development automation with strict Red-Green-Refactor enforcement:
@@ -69,6 +76,11 @@ Test-Driven Development automation with strict Red-Green-Refactor enforcement:
 - **Language Rules**: Go, TypeScript/JavaScript, C# testing patterns and conventions
 
 ## Choosing the Right Plugin
+
+**Use claude-management when:**
+
+- CLAUDE.md has grown past 200 lines and needs splitting into `.claude/rules/` files
+- Generating or updating a module-level CLAUDE.md with non-obvious documentation
 
 **Use dotclaudefiles when:**
 
@@ -113,6 +125,7 @@ Each plugin can be installed independently:
 /plugin install dotclaudehooks@diegopher
 /plugin install smart-plan@diegopher
 /plugin install tdd@diegopher
+/plugin install claude-management@diegopher
 ```
 
 ## Configuration Files

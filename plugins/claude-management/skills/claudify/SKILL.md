@@ -2,7 +2,7 @@
 name: claudify
 description: Esta skill debe usarse cuando el usuario pide "documenta el modulo", "claudify", "generate module docs", "actualiza el CLAUDE.md de este modulo", "onboarding del modulo", "necesito un CLAUDE.md para X", o quiere crear/actualizar un CLAUDE.md a nivel de modulo. Genera documentacion token-efficient con referencias LSP-optimizadas (`file::Symbol`) enfocada en informacion no-obvia que ahorra al agente tener que inferirla del codigo.
 argument-hint: <module-relative-path>
-model: sonnet
+model: claude-sonnet-4-6
 version: 1.0.0
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: rulify
 description: Esta skill debe usarse cuando el usuario pide "aligerar el CLAUDE.md", "dividir el CLAUDE.md", "extraer reglas a .claude/rules", "rulify", "claudemd splitter", "convertir secciones del CLAUDE.md en rules bajo demanda", o menciona que su CLAUDE.md crecio demasiado, supera las 200 lineas, o quiere migrar a carga contextual con globs. Divide un CLAUDE.md monolitico en archivos `.claude/rules/*.md` cargados bajo demanda via frontmatter `paths`, fusionando con reglas existentes y dejando el CLAUDE.md base con solo informacion que aplica a todo el proyecto.
+argument-hint: [path-to-CLAUDE.md]
 version: 1.0.0
 ---
 

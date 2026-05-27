@@ -19,6 +19,11 @@
       "name": "smart-plan",
       "description": "9-phase feature development workflow with 6 specialized agents, parallelization, LSP semantic analysis, and automatic quality gates.",
       "source": "./plugins/smart-plan"
+    },
+    {
+      "name": "claude-management",
+      "description": "Skills for managing Claude Code memory files: split heavy CLAUDE.md into on-demand rules (rulify) and generate token-efficient module documentation (claudify).",
+      "source": "./plugins/claude-management"
     }
   ]
 }
