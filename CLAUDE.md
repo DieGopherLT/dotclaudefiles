@@ -10,7 +10,7 @@ This is a **mono-repo for Claude Code plugins** containing five specialized plug
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
 3. **smart-plan** - Intelligent feature planning and execution workflow (6 agents, 2 commands, 2 skills)
 4. **tdd** - Test-Driven Development automation (4 agents, 2 commands, 1 skill, language rules)
-5. **claude-management** - Claude Code memory file management (rulify, claudify)
+5. **claude-management** - Claude Code memory file management (rulify, claudify, remember)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -64,7 +64,7 @@ Intelligent feature planning and execution workflow with LSP-powered semantic an
 
 Skills for managing Claude Code memory files:
 
-- **Skills**: `rulify` (split heavy CLAUDE.md into on-demand `.claude/rules/` files), `claudify` (generate token-efficient module-level CLAUDE.md documentation)
+- **Skills**: `rulify` (split heavy CLAUDE.md into on-demand `.claude/rules/` files), `claudify` (generate token-efficient module-level CLAUDE.md documentation), `remember` (classify and route a piece of information to the correct memory destination)
 
 ### tdd
 
@@ -81,6 +81,7 @@ Test-Driven Development automation with strict Red-Green-Refactor enforcement:
 
 - CLAUDE.md has grown past 200 lines and needs splitting into `.claude/rules/` files
 - Generating or updating a module-level CLAUDE.md with non-obvious documentation
+- Deciding where to persist a piece of project information (local env, project-wide context, path-scoped rule, or memory)
 
 **Use dotclaudefiles when:**
 

@@ -1,7 +1,7 @@
 {
   "name": "claude-management",
-  "version": "1.0.0",
-  "description": "Skills for managing Claude Code memory files: splitting heavy CLAUDE.md into on-demand rules (rulify) and generating token-efficient module-level documentation (claudify).",
+  "version": "1.1.0",
+  "description": "Skills for managing Claude Code memory files: splitting heavy CLAUDE.md into on-demand rules (rulify), generating token-efficient module-level documentation (claudify), and routing information to the correct storage location (remember).",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"
@@ -15,6 +15,9 @@
     "documentation",
     "rulify",
     "claudify",
-    "context-management"
+    "context-management",
+    "remember",
+    "storage-routing",
+    "where-to-save"
   ]
 }
