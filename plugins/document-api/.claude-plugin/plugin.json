@@ -1,0 +1,18 @@
+{
+  "name": "document-api",
+  "version": "1.0.0",
+  "description": "Skills for documenting HTTP endpoints and socket.io events for frontend handoff. Generates structured markdown contracts from REST routes and socket handlers.",
+  "author": {
+    "name": "Diego",
+    "url": "https://github.com/DieGopherLT"
+  },
+  "repository": "https://github.com/DieGopherLT/dotclaudefiles",
+  "license": "MIT",
+  "keywords": [
+    "documentation",
+    "api",
+    "endpoints",
+    "sockets",
+    "skills"
+  ]
+}
