@@ -1,0 +1,20 @@
+{
+  "name": "dotclaudehooks",
+  "version": "1.0.0",
+  "description": "Diego's Claude Code hooks for automatic commit validation and code formatting. Enforces conventional commits, blocks emoji/co-author attribution, and runs formatters (ESLint, Prettier, gofmt, markdownlint) after file edits.",
+  "author": {
+    "name": "Diego",
+    "url": "https://github.com/DieGopherLT"
+  },
+  "repository": "https://github.com/DieGopherLT/dotclaudefiles",
+  "license": "MIT",
+  "keywords": [
+    "hooks",
+    "commit-validation",
+    "formatting",
+    "linting",
+    "conventional-commits",
+    "pre-commit",
+    "auto-format"
+  ]
+}

@@ -79,7 +79,7 @@ format_markdown() {
   if has_config_file "$project_dir" "${mdlint_configs[@]}"; then
     npx markdownlint-cli2 --fix "$file_path" 2>/dev/null || true
   else
-    local hook_dir="${CLAUDE_PLUGIN_dotclaudefiles_ROOT:-${BASH_SOURCE[0]%/*}}"
+    local hook_dir="${CLAUDE_PLUGIN_ROOT:-${BASH_SOURCE[0]%/*}}"
     config_arg="--config $hook_dir/.markdownlint.json"
     npx markdownlint-cli2 $config_arg --fix "$file_path" 2>/dev/null || true
   fi

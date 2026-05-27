@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing three specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing four specialized plugins:
 
-1. **dotclaudefiles** - Core productivity plugin (3 agents, 9 commands, 6 skills, hooks, output-styles)
-2. **smart-plan** - Intelligent feature planning and execution workflow (6 agents, 2 commands, 2 skills)
-3. **tdd** - Test-Driven Development automation (4 agents, 2 commands, 1 skill, language rules)
+1. **dotclaudefiles** - Core productivity plugin (agents, commands, skills, output-styles)
+2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
+3. **smart-plan** - Intelligent feature planning and execution workflow (6 agents, 2 commands, 2 skills)
+4. **tdd** - Test-Driven Development automation (4 agents, 2 commands, 1 skill, language rules)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -24,7 +25,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 3 plugins (dotclaudefiles, smart-plan, tdd)
+- **`plugins/`**: Contains the 4 plugins (dotclaudefiles, dotclaudehooks, smart-plan, tdd)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -34,11 +35,19 @@ Key directories:
 
 Core productivity plugin with daily-use commands, quality agents, and specialized workflows:
 
-- **Agents**: `dependency-docs-collector`, `dockerify`
+- **Agents**: `dependency-docs-collector`
 - **Commands**: `/claudify`, `/dry-run`, `/explain-like-senior`, `/git-context`, `/journal`, `/language-evaluation`, `/predict-issues`, `/refactor-conditional-jsx`, `/remove-comments`
-- **Skills**: `check-third-party-docs`, `create-pr`, `deep-reason`, `document`, `dropletify`, `typescript-advanced-types`
-- **Hooks**: Format dispatcher for auto-linting/formatting after code changes
+- **Skills**: `check-third-party-docs`, `deep-reason`, `document`, `rulify`, `team-setup`
+- **Output Styles**: `mentor`, `personal-preference`
 - **MCP Servers**: Sequential-thinking server for deep reasoning
+
+### dotclaudehooks
+
+Standalone hooks plugin for automated quality enforcement:
+
+- **Hooks**:
+  - `commit-validator` (PreToolUse on `git commit`) — enforces conventional commits, blocks emojis and co-author attribution, integrates with commitlint if available
+  - `format-dispatcher` (PostToolUse on `Edit|Write`) — auto-runs ESLint, Prettier, gofmt, markdownlint based on project config detection
 
 ### smart-plan
 
@@ -67,8 +76,13 @@ Test-Driven Development automation with strict Red-Green-Refactor enforcement:
 - Checking third-party documentation or integrating libraries
 - Creating pull requests with structured descriptions
 - Deep reasoning on complex architectural decisions
-- Dockerizing applications for deployment
 - Documenting patterns, problems, or decisions
+
+**Use dotclaudehooks when:**
+
+- You want automatic commit message validation without the rest of dotclaudefiles
+- You want auto-formatting after file edits (ESLint, Prettier, gofmt, markdownlint)
+- Installing hooks independently on a machine or project
 
 **Use smart-plan when:**
 
@@ -96,6 +110,7 @@ Each plugin can be installed independently:
 
 # Install individual plugins
 /plugin install dotclaudefiles@diegopher
+/plugin install dotclaudehooks@diegopher
 /plugin install smart-plan@diegopher
 /plugin install tdd@diegopher
 ```
