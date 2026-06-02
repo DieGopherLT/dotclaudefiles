@@ -180,6 +180,91 @@ Check for an existing always-on rule covering the same standard. Merge into it i
 
 ---
 
+## Skill (.claude/skills/)
+
+### When to use
+
+Step-by-step procedures or workflows that Claude should be able to execute reproducibly on demand:
+
+- Deploying to a specific environment (staging, production)
+- Setting up the local dev environment from scratch
+- Running a data migration or seeding procedure
+- Executing a multi-step release checklist
+- Any repeated process where the exact sequence of steps matters
+
+The key signal: the user is describing a **how-to** — a flow with ordered steps — not a fact, a convention, or a configuration value.
+
+### When NOT to use
+
+- The information is a single-step fact or command → use `CLAUDE.md`
+- The information is a coding convention or standard → use `.claude/rules/`
+- The flow applies to all projects, not just this one → use `~/.claude/skills/` (out of scope for this skill)
+- The information describes the project state or a decision → use `Memory`
+
+### Write format
+
+Check `.claude/skills/` for an existing skill covering the same flow. If found, merge the new steps into the existing `SKILL.md`, preserving the frontmatter.
+
+If no matching skill exists, create `.claude/skills/<skill-name>/SKILL.md`. Use a kebab-case name that reflects the flow's purpose (`deploy-to-staging`, `setup-dev-environment`, `run-migration`).
+
+File structure:
+
+```markdown
+---
+name: deploy-to-staging
+description: Esta skill debe usarse cuando el usuario pide "deploy to staging", "despliega a staging", o quiere ejecutar el proceso de deploy al ambiente de staging.
+version: 1.0.0
+---
+
+# Deploy to Staging
+
+## Workflow
+
+1. Run the test suite: `go test ./...`
+2. Build the Docker image: `docker build -t myapp:staging .`
+3. Push to the registry: `docker push registry.example.com/myapp:staging`
+4. Apply migrations: `kubectl apply -f k8s/migrations.yaml`
+5. Rollout the deployment: `kubectl rollout restart deployment/myapp -n staging`
+6. Verify rollout: `kubectl rollout status deployment/myapp -n staging`
+```
+
+Write the body in imperative form — verb-first steps, no second person.
+
+### Writing the description
+
+The `description` field is how Claude decides when to auto-invoke the skill. Quality matters: a vague description means the skill never triggers automatically.
+
+Follow the official format from the Claude Code skill spec:
+
+```
+This skill should be used when the user asks to "<phrase 1>", "<phrase 2>", "<phrase 3>".
+```
+
+Rules:
+
+- **Third person** — always "This skill should be used when..." never "Use this skill when..."
+- **Specific trigger phrases** — quote the exact words a user would say; avoid generic descriptions like "deploys the app"
+- **Bilingual when relevant** — include the Spanish phrasing if the user is likely to ask in Spanish (`"deploy to staging"`, `"despliega a staging"`)
+- **Concrete over abstract** — "deploy to staging", "run the migration", "set up local dev" not "deployment", "migration tasks", "environment setup"
+
+Bad description:
+
+```yaml
+description: Deploys the application.
+```
+
+Good description:
+
+```yaml
+description: This skill should be used when the user asks to "deploy to staging", "despliega a staging", "run the staging deploy", or wants to execute the full staging release flow.
+```
+
+### Glob patterns
+
+Skills do not use `paths` frontmatter. They are invoked explicitly by the user or by Claude when the trigger matches the `description`.
+
+---
+
 ## Memory
 
 ### When to use
