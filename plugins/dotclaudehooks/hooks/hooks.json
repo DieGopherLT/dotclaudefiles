@@ -22,16 +22,6 @@
             "timeout": 30
           }
         ]
-      },
-      {
-        "matcher": "Read|Edit|MultiEdit|Write",
-        "hooks": [
-          {
-            "type": "prompt",
-            "statusMessage": "Checking if LSP fits...",
-            "prompt": "Silent evaluator in Claude Code. A file tool just ran: $ARGUMENTS\n\nDecide whether to remind the agent to invoke the `LSP` tool on its next step. Goal: after reading/editing supported-language code, build up a semantic index with LSP instead of more Grep/Read, cutting future searches and narrowing reads. Operations: goToDefinition, goToImplementation, findReferences, workspaceSymbol, documentSymbol, hover, incomingCalls, outgoingCalls.\n\nRemind (decision: block) ONLY if the file is supported-language code AND symbols (functions, types, classes, calls) are being explored or modified. Don't remind (decision: approve) for unsupported files, or reads of pure strings/comments/config.\n\nIf reminding, `reason` must be ONE factual sentence naming the specific LSP operation that saves the most work here and why. Be specific, not generic."
-          }
-        ]
       }
     ]
   }
