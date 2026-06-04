@@ -26,3 +26,6 @@ node_modules/
 
 # Cache
 .cache/
+
+# Worktrees creados por skills (p. ej. retrofit-testing)
+.claude/worktrees/

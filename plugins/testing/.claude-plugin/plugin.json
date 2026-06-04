@@ -1,0 +1,24 @@
+{
+  "name": "testing",
+  "version": "1.0.0",
+  "description": "Retrofit testing pipeline for existing code: measures testability (1-10 + confidence), introduces seams to break dependencies, writes characterization and behavior tests organized by input category, and audits test quality via mutation-thinking (not just coverage). Runs autonomously inside a dedicated worktree across Go, TypeScript, and C#.",
+  "author": {
+    "name": "Diego",
+    "url": "https://github.com/DieGopherLT"
+  },
+  "repository": "https://github.com/DieGopherLT/dotclaudefiles",
+  "license": "MIT",
+  "keywords": [
+    "testing",
+    "retrofit",
+    "characterization-tests",
+    "testability",
+    "coverage",
+    "test-quality",
+    "mutation-thinking",
+    "seams",
+    "legacy-code",
+    "add-testing",
+    "test-smells"
+  ]
+}

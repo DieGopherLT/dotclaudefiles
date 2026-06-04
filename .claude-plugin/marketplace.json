@@ -29,6 +29,11 @@
       "name": "react-dev",
       "description": "Utils for react development",
       "source": "./plugins/react-dev"
+    },
+    {
+      "name": "testing",
+      "description": "Retrofit testing pipeline for existing code: measure testability, break dependencies with seams, write characterization + behavior tests, and audit test quality via mutation-thinking. Runs autonomously inside a dedicated worktree.",
+      "source": "./plugins/testing"
     }
   ]
 }

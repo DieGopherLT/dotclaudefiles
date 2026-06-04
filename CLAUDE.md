@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing five specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing six specialized plugins:
 
 1. **dotclaudefiles** - Core productivity plugin (agents, commands, skills, output-styles)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
-3. **smart-plan** - Intelligent feature planning and execution workflow (6 agents, 2 commands, 2 skills)
-4. **tdd** - Test-Driven Development automation (4 agents, 2 commands, 1 skill, language rules)
-5. **claude-management** - Claude Code memory file management (rulify, claudify, remember)
+3. **claude-management** - Claude Code memory file management (rulify, claudify, remember)
+4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
+5. **react-dev** - React development helpers (conditional JSX refactoring, component splitting)
+6. **testing** - Retrofit testing pipeline for existing code (testability auditing, seams, characterization tests, test-quality auditing)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -26,7 +27,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 5 plugins (dotclaudefiles, dotclaudehooks, smart-plan, tdd, claude-management)
+- **`plugins/`**: Contains the 6 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -50,15 +51,18 @@ Standalone hooks plugin for automated quality enforcement:
   - `commit-validator` (PreToolUse on `git commit`) — enforces conventional commits, blocks emojis and co-author attribution, integrates with commitlint if available
   - `format-dispatcher` (PostToolUse on `Edit|Write`) — auto-runs ESLint, Prettier, gofmt, markdownlint based on project config detection
 
-### smart-plan
+### document-api
 
-Intelligent feature planning and execution workflow with LSP-powered semantic analysis:
+Skills for documenting API contracts for frontend handoff:
 
-- **Planning Phases (skill plan-feature)**: Discovery → Exploration → Clarification → Architecture → Plan Mode
-- **Agents**: `code-explorer`, `code-indexer`, `code-architect`, `code-implementer`, `code-reviewer`, `code-refactorer`
-- **Commands**: `/smart-delegation` (execute approved plan), `/smart-review` (quality review)
-- **Skills**: `plan-feature` (5-phase planning + auto-invokes smart-delegation after approval), `post-implementation` (quality review + refactoring + finalization)
-- **Key Features**: Parallel agent execution, LSP semantic analysis, plan template in references/, confidence-scored reviews (>=80%), automatic refactoring
+- **Skills**: `document-endpoints` (structured markdown contracts from REST routes), `document-sockets` (socket.io event contracts from handlers)
+
+### react-dev
+
+Helpers for React development:
+
+- **Commands**: `/refactor-conditional-jsx` (clsx + conditional rendering cleanup)
+- **Skills**: `split-component` (split large components into manageable pieces)
 
 ### claude-management
 
@@ -66,14 +70,13 @@ Skills for managing Claude Code memory files:
 
 - **Skills**: `rulify` (split heavy CLAUDE.md into on-demand `.claude/rules/` files), `claudify` (generate token-efficient module-level CLAUDE.md documentation), `remember` (classify and route a piece of information to the correct memory destination)
 
-### tdd
+### testing
 
-Test-Driven Development automation with strict Red-Green-Refactor enforcement:
+Retrofit testing pipeline that puts existing code under tests autonomously (NOT test-first TDD):
 
-- **Agents**: `testability-auditor`, `code-adapter`, `testing-deps-investigator`, `test-implementer`
-- **Commands**: `/add-testing`, `/tdd-feature`
-- **Skill**: `tdd-workflow`
-- **Language Rules**: Go, TypeScript/JavaScript, C# testing patterns and conventions
+- **Agents**: `testability-auditor` (testability 1-10 + confidence), `testing-deps-investigator`, `testing-code-adapter` (Feathers seams), `test-implementer` (characterization + behavior tests), `test-input-auditor` (test-quality via mutation-thinking)
+- **Skill**: `retrofit-testing` (thin orchestrator: enters a dedicated worktree, runs a deterministic end-to-end Workflow over the 5 agents, hands back for merge)
+- **References**: coverage strategies, test anti-patterns, project rules template (bundled inside the skill)
 
 ## Choosing the Right Plugin
 
@@ -97,21 +100,23 @@ Test-Driven Development automation with strict Red-Green-Refactor enforcement:
 - You want auto-formatting after file edits (ESLint, Prettier, gofmt, markdownlint)
 - Installing hooks independently on a machine or project
 
-**Use smart-plan when:**
+**Use document-api when:**
 
-- Planning complex features that span multiple files/modules
-- Need LSP-powered semantic analysis before implementation
-- Want a structured plan with parallelization groups and model recommendations
-- Need to execute an approved plan with parallel implementer agents
-- Require confidence-scored code reviews (>=80%) and automatic refactoring
+- Documenting REST endpoints or socket.io events as contracts for a frontend team
+- Generating structured markdown API contracts from route/handler code
 
-**Use tdd when:**
+**Use react-dev when:**
 
-- Starting a new feature with test-first approach
-- Adding test coverage to existing modules
-- Need testability audit before writing tests
-- Want automated test dependency investigation
-- Require strict Red-Green-Refactor workflow enforcement
+- Refactoring messy conditional JSX (clsx + conditional rendering)
+- Splitting an oversized React component into smaller pieces
+
+**Use testing when:**
+
+- Adding tests to existing, untested (or under-tested) production code
+- You need a testability audit before writing tests
+- Code must be made testable (seams, dependency breaking) without changing behavior
+- You want characterization + behavior tests with a real test-quality gate, not just coverage
+- The whole flow should run autonomously inside an isolated worktree
 
 ## Installing Plugins
 
@@ -124,9 +129,10 @@ Each plugin can be installed independently:
 # Install individual plugins
 /plugin install dotclaudefiles@diegopher
 /plugin install dotclaudehooks@diegopher
-/plugin install smart-plan@diegopher
-/plugin install tdd@diegopher
 /plugin install claude-management@diegopher
+/plugin install document-api@diegopher
+/plugin install react-dev@diegopher
+/plugin install testing@diegopher
 ```
 
 ## Configuration Files
@@ -135,7 +141,7 @@ Each plugin has its own configuration:
 
 - **`plugins/<plugin-name>/.claude-plugin/plugin.json`**: Plugin metadata (name, version, description, keywords)
 - **`plugins/dotclaudefiles/.mcp.json`**: MCP server configurations (sequential-thinking server)
-- **`plugins/tdd/rules/*.md`**: Language-specific testing conventions (Go, TypeScript, C#)
+- **`plugins/testing/skills/retrofit-testing/references/*.md`**: Coverage strategies, test anti-patterns, and project rules template
 - **`.claude/settings.local.json`**: Plugin-specific settings (in repo root for local development)
 - **`.gitignore`**: Excludes `.claude/` directory (local development sandbox)
 
