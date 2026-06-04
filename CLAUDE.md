@@ -74,8 +74,8 @@ Skills for managing Claude Code memory files:
 
 Retrofit testing pipeline that puts existing code under tests autonomously (NOT test-first TDD):
 
-- **Agents**: `testability-auditor` (testability 1-10 + confidence), `testing-deps-investigator`, `testing-code-adapter` (Feathers seams), `test-implementer` (characterization + behavior tests), `test-input-auditor` (test-quality via mutation-thinking)
-- **Skill**: `retrofit-testing` (thin orchestrator: enters a dedicated worktree, runs a deterministic end-to-end Workflow over the 5 agents, hands back for merge)
+- **Agents**: `testability-auditor` (testability 1-10 + confidence), `testing-deps-investigator`, `testing-code-adapter` (Feathers seams), `testing-scaffolder` (shared test utilities, DRY cross-file), `test-implementer` (characterization + behavior tests + build gate), `test-input-auditor` (test-quality via mutation-thinking + type-validity)
+- **Skill**: `retrofit-testing` (thin orchestrator: enters a dedicated worktree, runs a deterministic end-to-end Workflow over the 6 agents, hands back for merge)
 - **References**: coverage strategies, test anti-patterns, project rules template (bundled inside the skill)
 
 ## Choosing the Right Plugin

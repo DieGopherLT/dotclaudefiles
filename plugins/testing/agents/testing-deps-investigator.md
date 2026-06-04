@@ -56,9 +56,15 @@ Use Context7 as the primary documentation source via the `ctx7` CLI (it is insta
 
 Read the official framework docs with WebFetch when a relevant URL surfaces.
 
-## Step 4: Verify compatibility
+## Step 4: Verify compatibility and pin honest versions
 
 Confirm recommended versions are compatible with the detected runtime (Go 1.21+, Node 18+, .NET 6+) and do not conflict with existing dependencies. Be conservative: do not recommend experimental libraries or anything with very low adoption.
+
+Report versions that will ACTUALLY resolve, not aspirational ones. A `^4.1.8` range can install a different major than you assumed, and recommending a version the registry will not pick erodes trust in the whole report. So:
+
+- Query the registry for the latest version that satisfies the runtime constraint (`npm view <pkg> version` / `go list -m -versions <mod>` / `dotnet package search`), and pin the recommendation to a concrete, currently-available version.
+- State the exact version string you expect to be installed, and note that after install the orchestrator/user must verify the lockfile (`package-lock.json` / `pnpm-lock.yaml` / `go.sum` / `*.csproj`) reflects it — a recommended version that does not match the resolved one is a reporting bug to flag, not ignore.
+- Respect the project's package manager (npm/yarn/pnpm) when writing install commands; do not mix them.
 
 ## Output format
 

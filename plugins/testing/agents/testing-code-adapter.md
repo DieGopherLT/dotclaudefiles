@@ -50,10 +50,18 @@ Turn package-level mutable `var`/static fields into injected instances. Replace 
 ### 6. Reduce oversized functions
 Only when it serves testability: split >30-line multi-responsibility functions into smaller intention-named functions that can be exercised independently.
 
+## Make every seam actually consumable by a test
+
+A seam that a test cannot substitute is not a seam. The most common failure is exposing a dependency as a read-only export (e.g. a `const getIO = ...` export, a readonly field) and assuming the test will "just swap it" — it cannot, and the implementer ends up with a compile error (TS2540: cannot assign to a read-only property) fighting your design. Design the substitution point so a test can use it WITHOUT reassigning anything read-only:
+
+- **Prefer injection over swapping**: pass the dependency in (constructor, parameter, default-argument function). The test supplies its own — nothing is reassigned.
+- **If you must keep a module-level dependency, expose a setter/override**, not a bare const: a `setIO(impl)` / `__setClockForTest(fn)` hook, an overridable method, or a writable field — never a read-only export the test would have to mutate.
+- **The double must match the contract exactly**: the type/interface the test substitutes against is the contract `testing-scaffolder` and `test-implementer` build their fakes against. State it precisely (the interface name, the function signature, the injection point) so the shared mock matches and compiles.
+
 ## Working process
 
 For each change:
-1. Apply the minimal edit that introduces the seam.
+1. Apply the minimal edit that introduces the seam — and make sure it is consumable per the rule above.
 2. Verify the build: `go build ./...` / `tsc --noEmit` / `dotnet build`.
 3. Run existing tests if present.
 4. Confirm no new warnings, unused imports, or unused variables.
@@ -70,7 +78,9 @@ If a change cannot be made without altering observable behavior, STOP and report
 - Build/tests before: [green/red]
 
 ### Seams introduced
-1. [file:line] <technique> — <what dependency is now substitutable> (verified: build + tests green)
+1. [file:line] <technique> — <what dependency is now substitutable>
+   - Contract: <interface/signature the test substitutes against>
+   - How a test substitutes it: <injection point / setter / override — NOT "reassign the export"> (verified: build + tests green)
 2. ...
 
 ### Behavior parity

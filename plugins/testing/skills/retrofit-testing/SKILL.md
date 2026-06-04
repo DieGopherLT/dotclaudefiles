@@ -1,6 +1,6 @@
 ---
 name: retrofit-testing
-description: Esta skill debe usarse cuando el usuario pide "agrega tests a esto", "retrofit tests", "cubre este modulo con tests", "configura testing para X", "este codigo no tiene tests", "escribe tests para el paquete de pagos", "sube la cobertura aqui", "add tests to this", "cover this code with tests", o menciona poner codigo existente y no testeado bajo pruebas. Usala incluso si nunca dice la palabra "retrofit": cualquier peticion de poner codigo de produccion existente bajo tests debe activarla. Corre un pipeline autonomo de 4 fases (medir testabilidad, romper dependencias con seams, escribir characterization + behavior tests, auditar calidad) aislado en un worktree dedicado, y devuelve el worktree para revisar y mergear. No la uses para TDD test-first de codigo nuevo, ni para depurar un solo test que falla.
+description: Esta skill debe usarse cuando el usuario pide "agrega tests a esto", "retrofit tests", "cubre este modulo con tests", "configura testing para X", "este codigo no tiene tests", "escribe tests para el paquete de pagos", "sube la cobertura aqui", "add tests to this", "cover this code with tests", o menciona poner codigo existente y no testeado bajo pruebas. Usala incluso si nunca dice la palabra "retrofit": cualquier peticion de poner codigo de produccion existente bajo tests debe activarla. Corre un pipeline autonomo de 6 fases (medir testabilidad, romper dependencias con seams, scaffolding de utilidades de test compartidas, escribir characterization + behavior tests, auditar calidad, y reconciliar el build completo como gate de mergeabilidad) aislado en un worktree dedicado, y devuelve el worktree para revisar y mergear solo si es realmente mergeable. No la uses para TDD test-first de codigo nuevo, ni para depurar un solo test que falla.
 ---
 
 # Retrofit Testing Pipeline
@@ -15,7 +15,7 @@ Phases 2 and 3 mutate production code (introducing seams) and add test files. Do
 
 ## The pipeline
 
-Run these steps in order. Steps 1-4 are yours (the orchestrator); step 5 hands off to the Workflow that drives the five specialized sub-agents.
+Run these steps in order. Steps 1-4 are yours (the orchestrator); step 5 hands off to the Workflow that drives the six specialized sub-agents.
 
 ### Step 1 — Detect and scope
 
@@ -60,24 +60,33 @@ Workflow({
 
 Do NOT set `isolation: 'worktree'` on anything — you are already inside the dedicated worktree and want every sub-agent to operate in it, not spawn its own. The Workflow's agents inherit this worktree as their working directory.
 
-The Workflow returns a structured summary: per-module coverage, test-quality score, rounds taken, any latent bugs the `test-implementer` surfaced, and the path of the project testing rules it wrote.
+The Workflow returns a structured summary whose FIRST fields are the merge verdict: `mergeable` (boolean), `buildPasses` and `suitePasses` (from the Build phase), `passedAll`, `modulesShort` (the modules that fell short on coverage/quality in their scoped run), and `residualErrors` (compile errors the Build phase could not fix without changing behavior). Then per-module coverage, test-quality score, rounds taken, any latent bugs the `test-implementer` surfaced, the shared test utilities scaffolded, and the path of the project testing rules it wrote.
 
 ### Step 6 — Hand off for merge
 
-Report the summary to the user: what was covered, the final coverage and quality per module, any bugs found (with the expected-failure tests that document them), and the new testing rule the pipeline wrote. That rule lives at `.claude/rules/testing.md` and is a **path-scoped** Claude Code rule — its frontmatter `paths` are scoped to this language's test files, so it loads on-demand whenever someone works on tests later (the convention this repo uses for `.claude/rules/`). Then present the worktree for review and merge. The merge is the user's sign-off — do not merge automatically.
+**Lead with the merge verdict, not the coverage number.** A green coverage figure is not the same as mergeable work: the result is only mergeable when every module met coverage AND test-quality in its scoped run, AND the whole-project build and full suite are green at the Build barrier. Read `mergeable` from the Workflow result and report it first:
+
+- If `mergeable` is false, say so up front. List the `modulesShort` modules with what fell short (coverage below target, quality below 80), and — if `buildPasses`/`suitePasses` is false — the `residualErrors` from the Build phase. Do NOT present the worktree as "ready to merge"; present it as needing the listed fixes. Never let a buried `passedAll: false` or a broken build read as success.
+- If `mergeable` is true, then report what was covered: final coverage and quality per module, the shared utilities created, any bugs found (with the expected-failure tests that document them), and the new testing rule.
+
+The rule lives at `.claude/rules/testing.md` and is a **path-scoped** Claude Code rule — its frontmatter `paths` are scoped to this language's test files, so it loads on-demand whenever someone works on tests later (the convention this repo uses for `.claude/rules/`). Then present the worktree for review and merge. The merge is the user's sign-off — do not merge automatically.
 
 ## What the Workflow orchestrates
 
-For reference, the five sub-agents and their phases (full logic in `workflow.js`):
+For reference, the six sub-agents and their phases (full logic in `workflow.js`):
 
 | Phase | Agent | Role |
 |-------|-------|------|
 | Measure | `testability-auditor` | Score each module 1-10; flag those needing seams (< 7) |
 | Prepare | `testing-deps-investigator` | Recommend/set up testing deps (once, if needed) |
 | Prepare | `testing-code-adapter` | Introduce seams / break dependencies for flagged modules |
-| Test | `test-implementer` | Write characterization + behavior tests, run coverage |
-| Test | `test-input-auditor` | Score test quality (mutation-thinking + smells); request re-gen below threshold |
+| Scaffold | `testing-scaffolder` | Build shared test utilities once across all modules (DRY cross-file) |
+| Test | `test-implementer` | Write characterization + behavior tests per module, validate with a scoped run, report coverage |
+| Test | `test-input-auditor` | Score test quality (mutation-thinking + smells + type-validity); request re-gen below threshold |
+| Build | `test-implementer` (reconcile) | One pass at the quiescent barrier: whole-project build + full suite, fix cross-module compile errors — authoritative `buildPasses`/`suitePasses` |
 | Document | (writer) | Write project testing rules from `references/project-rules-template.md` |
+
+Why the phases are barriered: Measure and Prepare complete fully (all modules measured, then all seams introduced) so Scaffold can build shared utilities against the complete set of seam contracts. The Test phase runs implementers **concurrently**, each mutating only its own module — so a whole-project build there would fail on siblings' half-written files. The build gate therefore lives in a single **Build** pass after the Test barrier, the one quiescent point where compiling the whole project is meaningful; that pass also reconciles cross-module type errors and dedupes any stubs that slipped past Scaffold.
 
 ## References
 

@@ -19,7 +19,17 @@ Coverage percentage is NOT a quality signal: a suite can hit 90% line coverage w
    - TypeScript/JavaScript: `**/*.test.ts`, `**/*.spec.ts`, `**/*.test.js`, `**/*.spec.js`
    - C#: `**/*Tests.cs`, `**/*Test.cs`, `**/*Spec.cs`
 2. For each test, locate the production code it exercises (LSP `goToDefinition` or Grep on the function name). This is required for the mutation-thinking axis.
-3. Score each file. Emit the report and the machine-readable re-generation list.
+3. Run the type-validity pass (below) with LSP before scoring — an assertion that does not even typecheck cannot be validating real behavior.
+4. Score each file. Emit the report and the machine-readable re-generation list.
+
+## Type-validity pass (compile-honest, via LSP)
+
+A test that passes at runtime can still be a Liar at the type level — and runners like Vitest transpile per file without typechecking, so these slip through green. Before judging assertions, use LSP (`hover`, `goToDefinition`, and editor diagnostics) on each test file to confirm the assertions reference things that actually exist:
+
+- An assertion on a property the asserted type does NOT have (e.g. `expect(quote.name)` where `TierQuote` has no `name` field — it is `undefined`, so `toBe(undefined)`-style checks pass vacuously) is **THE_LIAR**: it validates nothing real. Flag it with high confidence.
+- A test that references a symbol, overload, or signature that does not typecheck is a critical defect even if the runner is green — the suite does not actually compile under the project build.
+
+This pass is the auditor's half of the mergeability gate; the `test-implementer` enforces the other half by reporting `buildPasses` from the real project build. If LSP surfaces type errors in the tests, treat the file as FAIL regardless of runtime result.
 
 ## Primary axis: mutation-thinking
 
@@ -35,6 +45,7 @@ Apply the canonical test smells (tsDetect / testsmells.org). Empirical research 
 
 **Critical (kill confidence in the test):**
 - `THE_LIAR` — passes even if the production body is deleted; no behavioral assertion, or asserts only the zero-value the empty function would return.
+- `TYPE_INVALID_ASSERTION` — asserts on a property/symbol the type does not have (LSP-confirmed), so it checks `undefined` against `undefined` or only compiles by luck; validates nothing real.
 - `TAUTOLOGICAL_ASSERTION` — `assert(true)`, `1 == 1`, or `assertNotNull` as the SOLE assertion when non-null is trivially guaranteed.
 - `HARDCODED_MIRRORING` — expected value computed by reproducing the production logic inside the test (e.g. testing `Add(a,b)` with `expected = a + b`).
 - `EMPTY_TEST` — no executable assertion at all.
@@ -63,6 +74,7 @@ Start at 100, apply weighted deductions, floor at 0:
 | Issue | Deduction |
 |-------|-----------|
 | THE_LIAR / weak mutation resistance | -25 per test |
+| TYPE_INVALID_ASSERTION (LSP-confirmed) | -25 per test |
 | TAUTOLOGICAL_ASSERTION (sole) | -18 per test |
 | HARDCODED_MIRRORING | -15 per test |
 | EMPTY_TEST | -25 per test |
