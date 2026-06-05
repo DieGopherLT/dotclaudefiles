@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing six specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing seven specialized plugins:
 
 1. **dotclaudefiles** - Core productivity plugin (agents, commands, skills, output-styles)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
@@ -12,6 +12,7 @@ This is a **mono-repo for Claude Code plugins** containing six specialized plugi
 4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
 5. **react-dev** - React development helpers (conditional JSX refactoring, component splitting)
 6. **testing** - Retrofit testing pipeline for existing code (testability auditing, seams, characterization tests, test-quality auditing)
+7. **typescript-migration** - Autonomous JS-to-TS migration pipeline (audit, tooling setup, shared types extraction, parallel per-chunk typing, progressive strict-mode consolidation)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -27,7 +28,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 6 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing)
+- **`plugins/`**: Contains the 7 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -79,6 +80,14 @@ Retrofit testing pipeline that puts existing code under tests autonomously (NOT 
 - **References**: coverage strategies, test anti-patterns, frontend component-testing patterns (React seam model + RTL), project rules template (bundled inside the skill)
 - **Frontend mode**: when targets are React components/hooks (`.tsx`/`.jsx`), the agents switch to a frontend seam model (vi.mock/props/providers/MSW) and React Testing Library assertions instead of backend constructor DI
 
+### typescript-migration
+
+Autonomous pipeline that migrates an existing JavaScript project to TypeScript. Runs inside a dedicated worktree:
+
+- **Agents**: `migration-auditor` (detects project type, maps dep graph leaf-first, plans chunks, selects fixture), `migration-setup` (installs tooling, applies tsconfig fixture, git mv all JS files, base compile gate), `shared-types-extractor` (extracts cross-chunk interfaces to `src/types/` before parallel typing), `typer` (types a single chunk in isolation, scoped compile gate), `migration-consolidator` (fixes cross-chunk errors, enables strict progressively, final build gate)
+- **Skill**: `typescript-migration` (orchestrator: enters a dedicated worktree, runs the 5-phase Workflow, hands back for merge)
+- **Fixtures**: tsconfig templates for `react-vite`, `nextjs`, `node`, and `generic` projects — auditor selects the right one automatically
+
 ## Choosing the Right Plugin
 
 **Use claude-management when:**
@@ -119,6 +128,14 @@ Retrofit testing pipeline that puts existing code under tests autonomously (NOT 
 - You want characterization + behavior tests with a real test-quality gate, not just coverage
 - The whole flow should run autonomously inside an isolated worktree
 
+**Use typescript-migration when:**
+
+- Migrating an existing JavaScript project (or a directory within one) to TypeScript
+- The codebase has no `tsconfig.json` yet and needs initial TypeScript setup
+- You want an incremental, leaf-first migration that stays compilable at every step
+- You want shared types extracted before parallel typing agents run, avoiding duplicated interfaces
+- You want progressive strict mode (`strictNullChecks` → `noImplicitAny` → `strict`) applied automatically after typing
+
 ## Installing Plugins
 
 Each plugin can be installed independently:
@@ -134,6 +151,7 @@ Each plugin can be installed independently:
 /plugin install document-api@diegopher
 /plugin install react-dev@diegopher
 /plugin install testing@diegopher
+/plugin install typescript-migration@diegopher
 ```
 
 ## Configuration Files
@@ -143,6 +161,7 @@ Each plugin has its own configuration:
 - **`plugins/<plugin-name>/.claude-plugin/plugin.json`**: Plugin metadata (name, version, description, keywords)
 - **`plugins/dotclaudefiles/.mcp.json`**: MCP server configurations (sequential-thinking server)
 - **`plugins/testing/skills/retrofit-testing/references/*.md`**: Coverage strategies, test anti-patterns, and project rules template
+- **`plugins/typescript-migration/skills/typescript-migration/fixtures/*.json`**: tsconfig templates per project type (react-vite, nextjs, node, generic)
 - **`.claude/settings.local.json`**: Plugin-specific settings (in repo root for local development)
 - **`.gitignore`**: Excludes `.claude/` directory (local development sandbox)
 
