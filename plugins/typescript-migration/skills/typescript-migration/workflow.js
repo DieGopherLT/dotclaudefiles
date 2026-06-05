@@ -80,7 +80,7 @@ const SETUP_SCHEMA = {
 
 const EXTRACT_SCHEMA = {
   type: 'object',
-  required: ['typesFile', 'interfaceCount', 'typeAliasCount', 'importsUpdated'],
+  required: ['typesFile', 'interfaceCount', 'typeAliasCount'],
   properties: {
     typesFile: { type: 'string', description: 'path to the created/updated types file' },
     interfaceCount: { type: 'number' },
@@ -128,7 +128,7 @@ function setupPrompt(audit, allFilesOrdered) {
 }
 
 function extractPrompt(audit) {
-  return `Extract shared TypeScript types for the project at "${projectRoot}". The migration-auditor identified these entities as shared across multiple migration chunks: ${JSON.stringify(audit.sharedEntities)}. The chunks are: ${JSON.stringify(audit.chunks.map((c) => ({ name: c.name, files: c.files })))}. Create or update src/types/index.ts with interfaces and type aliases for every shared entity. Add import statements to the files that reference them. Verify the types file compiles cleanly. Return the path, counts, entities defined, and number of files updated.`
+  return `Extract shared TypeScript types for the project at "${projectRoot}". The migration-auditor identified these entities as shared across multiple migration chunks: ${JSON.stringify(audit.sharedEntities)}. The chunks are: ${JSON.stringify(audit.chunks.map((c) => ({ name: c.name, files: c.files })))}. Create or update src/types/index.ts with interfaces and type aliases for every shared entity. Do NOT add import statements to source files — the Typer agents handle imports for their own chunks. Verify the types file compiles cleanly. Return the path and counts of interfaces and type aliases defined.`
 }
 
 function typeChunkPrompt(chunk, sharedTypesPath) {
@@ -169,12 +169,18 @@ log(`Audit complete: ${audit.projectType} project, ${audit.jsFileCount} JS files
 // ---------------------------------------------------------------------------
 
 phase('Setup')
-const setup = await agent(setupPrompt(audit, allFilesOrdered), {
-  agentType: 'typescript-migration:migration-setup',
-  schema: SETUP_SCHEMA,
-  label: 'setup:tooling-and-rename',
-  phase: 'Setup',
-})
+let setup = null
+try {
+  setup = await agent(setupPrompt(audit, allFilesOrdered), {
+    agentType: 'typescript-migration:migration-setup',
+    schema: SETUP_SCHEMA,
+    label: 'setup:tooling-and-rename',
+    phase: 'Setup',
+  })
+} catch (setupError) {
+  log(`Setup agent error: ${setupError.message}. Continuing — files renamed before the crash are still on disk.`)
+  setup = { depsInstalled: [], configFiles: [], renamedCount: 0, compilesClean: false, residualErrors: [setupError.message] }
+}
 
 log(`Setup complete: ${setup?.renamedCount ?? 0} files renamed, base compile: ${setup?.compilesClean ? 'clean' : 'errors'}`)
 
@@ -186,14 +192,20 @@ phase('Extract')
 
 const sharedTypesPath = `${projectRoot}/src/types/index.ts`
 
-const extract = await agent(extractPrompt(audit), {
-  agentType: 'typescript-migration:shared-types-extractor',
-  schema: EXTRACT_SCHEMA,
-  label: 'extract:shared-types',
-  phase: 'Extract',
-})
+let extract = null
+try {
+  extract = await agent(extractPrompt(audit), {
+    agentType: 'typescript-migration:shared-types-extractor',
+    schema: EXTRACT_SCHEMA,
+    label: 'extract:shared-types',
+    phase: 'Extract',
+  })
+} catch (extractError) {
+  log(`Extract agent error: ${extractError.message}. Continuing — src/types/index.ts may have been created before the crash.`)
+  extract = { typesFile: sharedTypesPath, interfaceCount: 0, typeAliasCount: 0, importsUpdated: 0, compileClean: false }
+}
 
-log(`Extraction complete: ${extract?.interfaceCount ?? 0} interfaces, ${extract?.typeAliasCount ?? 0} type aliases, ${extract?.importsUpdated ?? 0} files updated`)
+log(`Extraction complete: ${extract?.interfaceCount ?? 0} interfaces, ${extract?.typeAliasCount ?? 0} type aliases`)
 
 // ---------------------------------------------------------------------------
 // Phase: Type (parallel per chunk — scoped compile gate per chunk)
@@ -222,12 +234,18 @@ log(`Type phase complete: ${chunksClean}/${audit.chunks.length} chunks compile c
 
 phase('Consolidate')
 
-const consolidation = await agent(consolidatePrompt(audit, typedChunks), {
-  agentType: 'typescript-migration:migration-consolidator',
-  schema: CONSOLIDATE_SCHEMA,
-  label: 'consolidate:strict-and-build',
-  phase: 'Consolidate',
-})
+let consolidation = null
+try {
+  consolidation = await agent(consolidatePrompt(audit, typedChunks), {
+    agentType: 'typescript-migration:migration-consolidator',
+    schema: CONSOLIDATE_SCHEMA,
+    label: 'consolidate:strict-and-build',
+    phase: 'Consolidate',
+  })
+} catch (consolidateError) {
+  log(`Consolidate agent error: ${consolidateError.message}. Returning partial result.`)
+  consolidation = { buildPasses: false, strictLevelReached: 'permissive', crossChunkErrorsFixed: 0, atTypesInstalled: [], residualErrors: [consolidateError.message] }
+}
 
 const buildPasses = Boolean(consolidation?.buildPasses)
 const strictLevelReached = consolidation?.strictLevelReached ?? 'permissive'
