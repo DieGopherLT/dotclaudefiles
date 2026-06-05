@@ -3,7 +3,7 @@ name: shared-types-extractor
 description: Este agente debe usarse como fase 2a del pipeline de migracion TypeScript, despues de que migration-setup ha renombrado todos los archivos. Identifica entidades que cruzan los boundaries de los chunks (interfaces, tipos de respuesta, enums compartidos), crea src/types/index.ts con esas definiciones, y actualiza los imports en los archivos afectados. Actua como barrera antes de que los agentes typer arranquen en paralelo para evitar definiciones duplicadas o conflictivas de las mismas entidades. Se activa unicamente desde el workflow.
 tools: Bash, Read, Write, Edit, Grep, LSP
 model: sonnet
-color: purple
+color: magenta
 ---
 
 # Shared Types Extractor
@@ -74,12 +74,18 @@ Adjust the relative path based on each file's location relative to `src/types/`.
 
 ## Step 4 — Verify the types file compiles
 
-Run a scoped typecheck on the types file only:
+Run a scoped typecheck on the types file only. Write a temporary tsconfig that extends the
+project's base config and scopes `include` to the types file:
 
 ```bash
-npx tsc --noEmit --allowJs false src/types/index.ts
+cat > tsconfig.types-temp.json << 'EOF'
+{"extends": "./tsconfig.json", "include": ["src/types/**/*"]}
+EOF
+npx tsc --noEmit -p tsconfig.types-temp.json
+rm tsconfig.types-temp.json
 ```
 
+Extending `./tsconfig.json` preserves the project's compiler settings (jsx, lib, paths).
 If there are errors in the types file itself, fix them before returning. Cross-file errors from
 files that have not been typed yet are expected and can be ignored at this stage.
 

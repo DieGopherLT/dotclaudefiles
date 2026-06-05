@@ -123,8 +123,8 @@ function auditPrompt() {
   return `Audit the JavaScript project at "${projectRoot}". Detect the project type (nextjs, react-vite, node, or generic), map the full dependency graph for all .js/.jsx files under src/ (or project root), compute topological depth for each file, group files into cohesive migration chunks of 3-10 files ordered leaf-first, select the correct tsconfig fixture, identify shared entities that cross chunk boundaries, and report what TypeScript tooling must be installed. Return the full migration plan in structured output.`
 }
 
-function setupPrompt(audit) {
-  return `Set up the TypeScript migration for the project at "${projectRoot}". Project type: ${audit.projectType}. Fixture to apply: ${audit.fixture}. Package manager: ${audit.packageManager}. Install these devDependencies: ${JSON.stringify(audit.toolingToInstall)}. Then rename every file in this list from .js/.jsx to .ts/.tsx using git mv, in this exact leaf-first order: ${JSON.stringify(audit.allFilesOrdered ?? [])}. Finally verify the project compiles with allowJs=true and strict=false (permissive mode). Report renamed count, compile result, and any residual errors.`
+function setupPrompt(audit, allFilesOrdered) {
+  return `Set up the TypeScript migration for the project at "${projectRoot}". Project type: ${audit.projectType}. Fixture to apply: ${audit.fixture}. Package manager: ${audit.packageManager}. Install these devDependencies: ${JSON.stringify(audit.toolingToInstall)}. Then rename every file in this list from .js/.jsx to .ts/.tsx using git mv, in this exact leaf-first order: ${JSON.stringify(allFilesOrdered)}. Finally verify the project compiles with allowJs=true and strict=false (permissive mode). Report renamed count, compile result, and any residual errors.`
 }
 
 function extractPrompt(audit) {
@@ -158,6 +158,10 @@ if (!audit || !audit.chunks || audit.chunks.length === 0) {
   return { ok: false, reason: 'no JS files found or auditor failed', audit }
 }
 
+// Derive the flat ordered file list from chunks so Setup gets the correct rename
+// order even if the auditor did not emit the optional allFilesOrdered field.
+const allFilesOrdered = audit.allFilesOrdered ?? audit.chunks.flatMap((c) => c.files)
+
 log(`Audit complete: ${audit.projectType} project, ${audit.jsFileCount} JS files, ${audit.chunks.length} chunks, fixture: ${audit.fixture}`)
 
 // ---------------------------------------------------------------------------
@@ -165,7 +169,7 @@ log(`Audit complete: ${audit.projectType} project, ${audit.jsFileCount} JS files
 // ---------------------------------------------------------------------------
 
 phase('Setup')
-const setup = await agent(setupPrompt(audit), {
+const setup = await agent(setupPrompt(audit, allFilesOrdered), {
   agentType: 'typescript-migration:migration-setup',
   schema: SETUP_SCHEMA,
   label: 'setup:tooling-and-rename',

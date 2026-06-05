@@ -90,15 +90,23 @@ internals if inference covers them.
 
 ## Step 3 — Scoped compile check
 
-After typing all files in the chunk, verify they compile in isolation:
+After typing all files in the chunk, verify they compile in isolation. Write a temporary tsconfig
+that extends the project's base config and scopes `include` to only your chunk's files:
 
 ```bash
-npx tsc --noEmit --allowJs false <file1> <file2> ...
+cat > tsconfig.chunk-temp.json << 'EOF'
+{"extends": "./tsconfig.json", "include": ["<file1>", "<file2>", "src/types/**/*"]}
+EOF
+npx tsc --noEmit -p tsconfig.chunk-temp.json
+rm tsconfig.chunk-temp.json
 ```
 
-If the project uses a bundler (Vite, Next), a plain `tsc` scoped check is still valid for
-detecting type errors. Ignore errors about missing modules from sibling chunks — those files are
-being typed concurrently and will be resolved at the consolidation gate.
+Always include `"src/types/**/*"` in the `include` array so shared types are visible.
+Extending `./tsconfig.json` ensures the project's `jsx`, `paths`, `lib`, and other settings
+are respected — critical for React and Next.js chunks.
+
+Ignore errors about missing modules from sibling chunks — those files are being typed concurrently
+and will be resolved at the consolidation gate.
 
 Fix any errors that originate from within your chunk's own files. Do not edit files outside
 your chunk to fix a compile error.

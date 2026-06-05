@@ -34,6 +34,11 @@
       "name": "testing",
       "description": "Retrofit testing pipeline for existing code: measure testability, break dependencies with seams, write characterization + behavior tests, and audit test quality via mutation-thinking. Runs autonomously inside a dedicated worktree.",
       "source": "./plugins/testing"
+    },
+    {
+      "name": "typescript-migration",
+      "description": "Autonomous TypeScript migration pipeline for JavaScript codebases: audits the project, installs tooling, renames files leaf-first with git mv, extracts shared types, runs parallel per-chunk typers with ctx7 and LSP support, then consolidates with progressive strict-mode checks and a final build gate. Runs autonomously inside a dedicated worktree.",
+      "source": "./plugins/typescript-migration"
     }
   ]
 }
