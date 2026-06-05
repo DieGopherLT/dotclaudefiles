@@ -44,6 +44,14 @@ Example: "this module scores 4/10 on testability" (measurement) and "I am 92 con
 - Closures capturing mutable outer-scope state
 - Business logic interleaved with DOM manipulation
 
+#### React components and hooks (`.tsx`/`.jsx`, `useX`)
+
+A React component is NOT a backend class — do not score it as untestable just because it lacks constructor DI. Props, context, hooks, and the network ARE its seams, and they are testable without changing production code. Calibrate accordingly:
+
+- Props and `useContext` of an app-wide provider are NOT hidden dependencies — they are injectable through props and a provider wrapper (`renderWithProviders`). Do not flag them as CRITICAL or set `needsAdaptation` for them.
+- Genuine frontend testability obstacles: network/`fetch` calls with no boundary a test can intercept (still usually mockable with MSW — low severity), a mutable module-level singleton the component reads (real seam to break), business logic so entangled with JSX it cannot be exercised without rendering the whole tree, or non-deterministic calls (`Date.now()`, `Math.random()`) used inline.
+- A typical well-structured component/hook should score 7+ and proceed straight to `test-implementer`; reserve `needsAdaptation` for the real obstacles above, not for the framework's normal shape.
+
 ### C#
 - Sealed classes without interfaces (cannot be substituted)
 - Static methods/properties holding state or doing I/O

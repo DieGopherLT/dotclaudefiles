@@ -116,6 +116,37 @@ public class PriceCalculatorTests
 ```
 Method naming `Method_Scenario_ExpectedResult`, FluentAssertions. Run: `dotnet test --collect:"XPlat Code Coverage"`
 
+## When the target is a React component or hook (frontend mode)
+
+If the prompt flags frontend targets, or the file is `.tsx`/`.jsx` or a `useX` custom hook, the seam and assertion model changes — the backend OOP example above does NOT apply. Components receive collaborators through props, context, hooks, and the network, not a constructor, so substitute dependencies accordingly:
+
+- **Network**: prefer MSW (`setupServer` + handlers) over `vi.mock(fetch)`/`vi.mock(axios)` — intercept the response, let the component run its real fetch code.
+- **Child components / sibling modules / custom hooks**: `vi.mock('./Module', ...)` returning a controlled value.
+- **Context (store, theme, router, auth)**: wrap in real providers via the scaffolded `renderWithProviders`, do not mock the dependency.
+- **Props**: the most honest seam — just pass them. **Time**: `vi.useFakeTimers()`.
+
+Write the test through what the user observes, with React Testing Library + `@testing-library/user-event`:
+
+```tsx
+test('submits the entered email', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(<SignupForm onSubmit={onSubmit} />);
+
+    await user.type(screen.getByLabelText(/email/i), 'a@b.com');
+    await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith({ email: 'a@b.com' });
+});
+```
+
+- Query by accessibility in priority order: `getByRole` (with `name`) > `getByLabelText` > `getByText` > `getByTestId` (last resort). Use `queryBy*` ONLY to assert non-existence and `findBy*` for content that appears after an await.
+- Use `userEvent` over `fireEvent` (it fires the full real event sequence). Assert observable results (visible text/role, callback called with args) via `@testing-library/jest-dom` matchers — never CSS classes, internal state, or DOM structure.
+- **Custom hooks**: test in isolation with `renderHook`; read `result.current`, drive updates inside `act`, re-run with `rerender`. Do not build a throwaway harness component.
+- **Characterization without the snapshot trap**: do NOT pin a component with a full-DOM `toMatchSnapshot()` — it breaks on any markup change and is a Liar developers regenerate without reading. Pin the observable behavior (specific text/roles for given props, which callbacks fire) instead. Small serializable snapshots of pure derived data (a formatted string, a selector's output) verified once are fine.
+
+The bundled reference `references/frontend-component-testing.md` documents the full seam map, MSW/hook patterns, and the out-of-scope list (E2E, visual regression, deep a11y) if you need it.
+
 ## Reusable test utilities
 
 Shared utilities are scaffolded ONCE by `testing-scaffolder` before you run, and their location and inventory are passed to you. Import and reuse those first — never re-create your own variant of a mock/builder that already has a canonical version there; divergent per-file stubs are exactly the failure mode the scaffolding phase exists to prevent.

@@ -58,6 +58,17 @@ A seam that a test cannot substitute is not a seam. The most common failure is e
 - **If you must keep a module-level dependency, expose a setter/override**, not a bare const: a `setIO(impl)` / `__setClockForTest(fn)` hook, an overridable method, or a writable field — never a read-only export the test would have to mutate.
 - **The double must match the contract exactly**: the type/interface the test substitutes against is the contract `testing-scaffolder` and `test-implementer` build their fakes against. State it precisely (the interface name, the function signature, the injection point) so the shared mock matches and compiles.
 
+## Frontend: the seam model for React components and hooks
+
+If the target is a React component (`.tsx`/`.jsx`) or a custom hook (`useX`), the backend techniques above (constructor/interface injection) usually do NOT apply — and forcing them changes the component's API. A component takes its collaborators through props, context, hooks, and the network. The good news: frontend code is often already testable through these seams WITHOUT editing production code, so prefer reporting the existing substitution point over introducing a new one. Map the obstacle to its frontend seam:
+
+- **Network / HTTP call** → no code change needed; the test mocks it at the boundary with MSW. Only adapt if the call is buried somewhere unreachable from a test.
+- **Hard-coded child component or imported module** → already mockable with `vi.mock`; report it. Adapt only if the import shape blocks mocking.
+- **Direct context/singleton access (a store imported at module top, `useContext` of an app-wide provider)** → ensure it is reachable through a provider the test can wrap (the component reads from context, not a module-level mutable singleton). If it reads a mutable module global, that IS a seam to break — expose it through props or context.
+- **A value the component computes inline that should be testable** → lift it into a prop with a default (`prop = computeDefault()`), so a test can pass its own while production keeps the default. This is the frontend equivalent of default-parameter injection and preserves behavior.
+
+The rule from the previous section still holds: every seam must be consumable without reassigning a read-only binding. On the frontend that means prefer props/context over reassigning a module export. See `references/frontend-component-testing.md` for the full seam map.
+
 ## Working process
 
 For each change:

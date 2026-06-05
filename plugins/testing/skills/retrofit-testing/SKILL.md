@@ -92,4 +92,5 @@ Why the phases are barriered: Measure and Prepare complete fully (all modules me
 
 - `references/coverage.md` — coverage tooling per language, what to measure/exclude, threshold guidance
 - `references/anti-patterns.md` — the test anti-patterns the quality audit enforces
+- `references/frontend-component-testing.md` — React component/hook seam model (vi.mock/props/providers/MSW), RTL patterns, and the snapshot trap; the agents switch to this mode automatically when a target is `.tsx`/`.jsx`
 - `references/project-rules-template.md` — template for the testing rules written in the Document phase

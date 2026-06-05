@@ -28,6 +28,12 @@ const language = input.language ?? 'unknown'
 const threshold = typeof input.threshold === 'number' ? input.threshold : 0.8
 const existingPattern = input.existingPattern ?? null
 
+// React component/hook targets need a different seam model (vi.mock/props/providers/MSW,
+// not constructor DI) and RTL assertions. Detect them so the agents switch to frontend
+// mode; a directory target that hides .tsx files is still caught by each agent inspecting
+// its own module, this flag just makes the common case explicit in the prompt.
+const isFrontend = modules.some((m) => /\.(tsx|jsx)$/.test(m))
+
 function normalizeArgs(raw) {
   if (typeof raw === 'string') {
     try {
@@ -168,16 +174,22 @@ const patternLine = existingPattern
   ? `Match the established test pattern in this project: ${existingPattern}.`
   : 'No tests exist yet; follow idiomatic conventions for the language.'
 
+// Activates the agents' frontend mode (knowledge lives in their bodies); kept short here
+// so the prompt only flips the switch, not re-teaches the patterns.
+const frontendLine = isFrontend
+  ? ' Some targets are React components or custom hooks (.tsx/.jsx): apply your frontend testing mode — substitute dependencies with vi.mock / props / provider wrapping / MSW (NOT backend constructor DI) and assert through React Testing Library + user-event, as described in your instructions.'
+  : ''
+
 function measurePrompt(m) {
-  return `Audit the testability of the ${language} code at "${m}". Score it 1-10, list the concrete obstacles that would force infrastructure or global state into a unit test, and set needsAdaptation=true if the score is below ${ADAPT_BELOW}.`
+  return `Audit the testability of the ${language} code at "${m}". Score it 1-10, list the concrete obstacles that would force infrastructure or global state into a unit test, and set needsAdaptation=true if the score is below ${ADAPT_BELOW}.${frontendLine}`
 }
 
 function depsPrompt() {
-  return `This ${language} project has no testing infrastructure. Detect the stack and recommend the testing dependencies to install (framework, assertions, mocking, coverage). Return the exact run command and coverage command. Do not install anything.`
+  return `This ${language} project has no testing infrastructure. Detect the stack and recommend the testing dependencies to install (framework, assertions, mocking, coverage). Return the exact run command and coverage command. Do not install anything.${frontendLine}`
 }
 
 function adaptPrompt(m, measure) {
-  return `Make the ${language} code at "${m}" testable WITHOUT changing observable behavior, using seams and dependency-breaking (Feathers). Obstacles found by the auditor: ${JSON.stringify(measure.obstacles ?? [])}. Verify the build/tests stay green after each change. Report the seams you introduced and whether behavior was preserved.`
+  return `Make the ${language} code at "${m}" testable WITHOUT changing observable behavior, using seams and dependency-breaking (Feathers). Obstacles found by the auditor: ${JSON.stringify(measure.obstacles ?? [])}. Verify the build/tests stay green after each change. Report the seams you introduced and whether behavior was preserved.${frontendLine}`
 }
 
 function scaffoldPrompt(prepared) {
@@ -192,7 +204,7 @@ function scaffoldPrompt(prepared) {
     `Survey of modules, their testability obstacles, and the seams already introduced by the adapter: ${JSON.stringify(survey)}.`,
     'Identify the infrastructure dependencies that recur across modules (DB clients, transaction wrappers, HTTP clients, clock, filesystem) and build ONE reusable utility for each: test data builders, mocks/fakes that match the seam contracts exactly, helpers, and custom assertions.',
     'Reuse before you create: if the project already has test utilities, extend them rather than duplicating.',
-    'Place everything in a single conventional location for the language. The utilities MUST compile under the project typecheck/build. Do not write any tests here — only the shared utilities. Return each utility with its path, kind, and usage.',
+    `Place everything in a single conventional location for the language. The utilities MUST compile under the project typecheck/build. Do not write any tests here — only the shared utilities. Return each utility with its path, kind, and usage.${frontendLine}`,
   ].join(' ')
 }
 
@@ -206,7 +218,7 @@ function implementPrompt(m, round, adapt, scaffold) {
   const utilsLine = scaffold?.utilities?.length
     ? ` Shared test utilities already exist at "${scaffold.location}" — import and reuse them, do NOT re-create your own variants of mocks/builders that already exist there: ${JSON.stringify(scaffold.utilities.map((u) => ({ name: u.name, path: u.path, usage: u.usage })))}.`
     : ''
-  return `Write characterization + behavior tests for the ${language} code at "${m}". ${patternLine}${seamLine}${utilsLine} Cover degenerate/simple/general/edge/error input categories. IMPORTANT — you run concurrently with other implementers mutating sibling modules in this same worktree, so do NOT run the whole-project build (it would see their half-finished files): touch ONLY your module's own files, do NOT edit the shared utilities directory (if you find a genuinely missing shared helper, create it local to your module and note it for the Build phase to hoist), and validate by running ONLY your own test files in a scoped run (e.g. vitest run <your files> / go test ./<pkg>/... / dotnet test --filter). Set scopedTestsPass=true only if your files compile and pass in that scoped run. Report line coverage as a fraction measured from the final state of your module. Target coverage >= ${threshold}. If current behavior contradicts the documented contract, pin current behavior and add a labeled expected-failure test for the intended behavior, and report it in bugsFound.${retry}`
+  return `Write characterization + behavior tests for the ${language} code at "${m}". ${patternLine}${seamLine}${utilsLine}${frontendLine} Cover degenerate/simple/general/edge/error input categories. IMPORTANT — you run concurrently with other implementers mutating sibling modules in this same worktree, so do NOT run the whole-project build (it would see their half-finished files): touch ONLY your module's own files, do NOT edit the shared utilities directory (if you find a genuinely missing shared helper, create it local to your module and note it for the Build phase to hoist), and validate by running ONLY your own test files in a scoped run (e.g. vitest run <your files> / go test ./<pkg>/... / dotnet test --filter). Set scopedTestsPass=true only if your files compile and pass in that scoped run. Report line coverage as a fraction measured from the final state of your module. Target coverage >= ${threshold}. If current behavior contradicts the documented contract, pin current behavior and add a labeled expected-failure test for the intended behavior, and report it in bugsFound.${retry}`
 }
 
 function buildReconcilePrompt(summary) {

@@ -37,6 +37,16 @@ Look across ALL modules for dependencies and arrangements that recur, then build
 
 Do NOT build one God fixture every test shares whether it needs it or not (the General Fixture smell), and do NOT hide a test's inputs in external resources it silently depends on (Mystery Guest). A good utility makes intent clearer: the data that matters for each test must stay visible at the call site via overrides and explicit arguments, with only irrelevant defaults hidden inside the builder.
 
+## Frontend: utilities for React components and hooks
+
+If the scope includes React components (`.tsx`/`.jsx`) or custom hooks, the recurring needs are different from backend mocks. Build these shared utilities instead of (or alongside) plain fakes:
+
+- **`renderWithProviders`** — a custom render that wraps the UI in the app's real providers (store, query client, theme, router, i18n) with test defaults plus per-test overrides. Every component test that needs context imports this ONE helper instead of re-assembling the provider tree. This is the single highest-value frontend utility.
+- **Prop / object builders** — `buildUser()`, `buildProps({ ... })`: Test Data Builders for the props and domain objects components consume, defaults plus overrides.
+- **MSW server + handlers** — one `setupServer(...handlers)` with the default happy-path responses and shared `beforeAll`/`afterEach`/`afterAll` lifecycle; tests override a single handler with `server.use(...)` for error/edge cases. Build the handlers against the seam contracts the same way you build mocks for backend seams.
+
+Place them in `test/support/` (e.g. `render.tsx`, `builders.ts`, `msw/server.ts`) matching the project's existing convention. They MUST typecheck under the project build like any other shared utility. See `references/frontend-component-testing.md`.
+
 ## Placement by language
 
 - **Go**: a `testutil` package or `*_test.go` helpers in the package under test; `testdata/` for fixture files.

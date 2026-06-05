@@ -60,6 +60,15 @@ Apply the canonical test smells (tsDetect / testsmells.org). Empirical research 
 **Minor (style):**
 - `MAGIC_NUMBER_TEST`, `SENSITIVE_EQUALITY`, `REDUNDANT_ASSERTION`, `DUPLICATE_ASSERT`.
 
+### Frontend (React component/hook tests)
+
+When auditing `.tsx`/`.jsx` or custom-hook tests, two component-specific defects are easy to miss and weigh heavily:
+
+- `FULL_DOM_SNAPSHOT` (critical) — a `toMatchSnapshot()`/`toMatchInlineSnapshot()` over a rendered component tree used as the test's only assertion. It is a Liar: it breaks on unrelated markup changes and developers regenerate it without reading, so it asserts nothing about behavior. Treat it like THE_LIAR. (Small serializable snapshots of pure derived data verified once are NOT this smell.)
+- `IMPLEMENTATION_DETAIL_ASSERTION` (critical) — asserting on CSS classes (`toHaveClass`), inline styles, internal component state, or exact DOM structure instead of what the user observes (role/text/value, callbacks fired). These pass or fail on refactors that do not change behavior, so they neither catch regressions nor survive refactors — weak mutation resistance by construction.
+
+Also expect, on the positive side: queries by accessibility (`getByRole`/`getByLabelText`) over `getByTestId`, and `userEvent` over `fireEvent`. Their absence is not a smell to deduct for on its own, but it often co-occurs with the two above.
+
 ## Input category coverage
 
 For each production function under test, verify a case exists per category. Missing categories lower the score:
@@ -75,6 +84,8 @@ Start at 100, apply weighted deductions, floor at 0:
 |-------|-----------|
 | THE_LIAR / weak mutation resistance | -25 per test |
 | TYPE_INVALID_ASSERTION (LSP-confirmed) | -25 per test |
+| FULL_DOM_SNAPSHOT (sole assertion) | -25 per test |
+| IMPLEMENTATION_DETAIL_ASSERTION | -20 per test |
 | TAUTOLOGICAL_ASSERTION (sole) | -18 per test |
 | HARDCODED_MIRRORING | -15 per test |
 | EMPTY_TEST | -25 per test |

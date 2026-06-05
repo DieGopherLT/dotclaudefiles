@@ -40,6 +40,18 @@ Before recommending anything, inventory what is already installed: test framewor
 | HTTP mocking | `msw` |
 | Coverage | v8 via Vitest |
 
+When the project is a React app (detect `react`/`react-dom` in `package.json` or `.tsx`/`.jsx` files), the component-testing set is not optional — recommend it as a group, because a component suite missing any one of these does not run:
+
+| Category | Recommendation |
+|----------|----------------|
+| Render / queries | `@testing-library/react` (includes `renderHook`) |
+| User interaction | `@testing-library/user-event` (preferred over `fireEvent`) |
+| DOM matchers | `@testing-library/jest-dom` |
+| DOM environment | `jsdom` or `happy-dom` (set Vitest `environment: 'jsdom'`) |
+| Network mocking | `msw` (intercepts at the network boundary, survives client refactors) |
+
+Note the Vitest config requirement in the report: a React suite needs `environment: 'jsdom'` (or `happy-dom`) and a setup file importing `@testing-library/jest-dom` — flag both, since their absence is a silent failure, not a missing dependency.
+
 ### C#
 | Category | Recommendation |
 |----------|----------------|
