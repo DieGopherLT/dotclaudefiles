@@ -86,8 +86,7 @@ const EXTRACT_SCHEMA = {
     interfaceCount: { type: 'number' },
     typeAliasCount: { type: 'number' },
     entities: { type: 'array', items: { type: 'string' } },
-    importsUpdated: { type: 'number', description: 'number of files that received a new import from the types file' },
-    compileClean: { type: 'boolean', description: 'the types file itself compiles without errors' },
+    compilesClean: { type: 'boolean', description: 'the types file itself compiles without errors' },
   },
 }
 
@@ -202,7 +201,7 @@ try {
   })
 } catch (extractError) {
   log(`Extract agent error: ${extractError.message}. Continuing — src/types/index.ts may have been created before the crash.`)
-  extract = { typesFile: sharedTypesPath, interfaceCount: 0, typeAliasCount: 0, importsUpdated: 0, compileClean: false }
+  extract = { typesFile: sharedTypesPath, interfaceCount: 0, typeAliasCount: 0, compilesClean: false }
 }
 
 log(`Extraction complete: ${extract?.interfaceCount ?? 0} interfaces, ${extract?.typeAliasCount ?? 0} type aliases`)
