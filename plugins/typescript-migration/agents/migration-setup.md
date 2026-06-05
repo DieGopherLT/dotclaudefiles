@@ -3,6 +3,7 @@ name: migration-setup
 description: Este agente debe usarse como fase 1 del pipeline de migracion TypeScript, despues de que migration-auditor ha producido el plan. Instala el tooling de TypeScript segun el tipo de proyecto detectado, aplica el fixture de tsconfig correcto, renombra todos los archivos .js/.jsx a .ts/.tsx con git mv en orden hoja-primero, y verifica que el proyecto compila en modo permisivo (allowJs, strict:false) sin errores de configuracion. Se activa unicamente desde el workflow, nunca directamente por el usuario.
 tools: Bash, Read, Write, Edit, LSP
 model: sonnet
+effort: low
 color: blue
 ---
 

@@ -3,6 +3,7 @@ name: migration-auditor
 description: Este agente debe usarse como fase 0 del pipeline de migracion TypeScript, cuando se necesita analizar un proyecto JavaScript antes de migrar a TypeScript, detectar el tipo de proyecto y sus dependencias, mapear el grafo de dependencias entre archivos, proponer chunks de migracion por cohesion, y seleccionar el fixture de tsconfig correcto. Read-only: nunca modifica archivos. Produce un plan estructurado que alimenta todas las fases siguientes del pipeline.
 tools: Read, Grep, Glob, Bash, LSP
 model: sonnet
+effort: high
 color: yellow
 ---
 

@@ -3,6 +3,7 @@ name: shared-types-extractor
 description: Este agente debe usarse como fase 2a del pipeline de migracion TypeScript, despues de que migration-setup ha renombrado todos los archivos. Identifica entidades que cruzan los boundaries de los chunks (interfaces, tipos de respuesta, enums compartidos) y crea src/types/index.ts con esas definiciones. Actua como barrera antes de que los agentes typer arranquen en paralelo para evitar definiciones duplicadas o conflictivas de las mismas entidades. Se activa unicamente desde el workflow.
 tools: Bash, Read, Write, Edit, Grep, LSP
 model: sonnet
+effort: medium
 color: magenta
 ---
 

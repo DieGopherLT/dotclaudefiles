@@ -3,6 +3,7 @@ name: typer
 description: Este agente debe usarse como fase 2b del pipeline de migracion TypeScript, corriendo en N instancias paralelas donde cada una recibe un chunk de archivos asignados. Tipa los archivos del chunk usando LSP para entender referencias y firmas actuales, consulta ctx7 para patrones de tipado de dependencias externas, importa tipos compartidos desde src/types/, y verifica que los archivos del chunk compilan correctamente de forma aislada (scoped, no whole-project). Se activa unicamente desde el workflow, nunca directamente por el usuario.
 tools: Bash, Read, Edit, LSP
 model: sonnet
+effort: medium
 color: green
 ---
 

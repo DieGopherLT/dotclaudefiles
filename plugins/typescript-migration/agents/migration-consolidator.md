@@ -2,7 +2,8 @@
 name: migration-consolidator
 description: Este agente debe usarse como fase 3 del pipeline de migracion TypeScript, despues de que todos los agentes typer han completado su trabajo. Ejecuta el build completo del proyecto para detectar errores cross-chunk, los resuelve usando LSP y ctx7, y luego habilita strict checks de TypeScript de forma progresiva (strictNullChecks -> noImplicitAny -> strict) reparando los errores de cada nivel antes de avanzar al siguiente. Produce el veredicto final de mergeabilidad. Se activa unicamente desde el workflow.
 tools: Bash, Read, Edit, LSP
-model: sonnet
+model: opus
+effort: xhigh
 color: red
 ---
 
