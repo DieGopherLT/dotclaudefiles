@@ -3,7 +3,9 @@ paths:
   - "plugins/**"
 ---
 
-# ⚠️ CRITICAL: Version Bump Rule (Ragnarök Prevention)
+# CRITICAL: Plugin Lifecycle Rules
+
+## Updating an existing plugin
 
 **ALWAYS bump the version in the affected plugin's `plugin.json` BEFORE committing changes.**
 
@@ -17,7 +19,7 @@ git add plugins/<plugin-name>/.claude-plugin/plugin.json <other-files>
 git commit -m "chore(<plugin-name>): bump version to X.Y.Z - <description>"
 ```
 
-## Version Bumping Guidelines
+### Version Bumping Guidelines
 
 - **Patch (1.3.0 → 1.3.1)**: Bug fixes, small tweaks, documentation updates
 - **Minor (1.3.0 → 1.4.0)**: New commands, agents, or skills
@@ -25,17 +27,39 @@ git commit -m "chore(<plugin-name>): bump version to X.Y.Z - <description>"
 
 When changes affect multiple plugins, bump all affected plugin versions.
 
-## Updating Plugins
-
-After making changes to any plugin in this repository:
+### After committing
 
 ```bash
-cd /home/diego/config/claude
-git add <modified-files>
-git commit -m "Description of changes"
 git push
 
 # Update marketplace and reinstall affected plugin(s)
 /plugin marketplace update diegopher
 /plugin install <plugin-name>@diegopher
 ```
+
+## Creating a new plugin
+
+When adding a brand new plugin to the repository, the version bump is not enough. Complete this
+checklist before committing:
+
+1. **Register in the marketplace** — add an entry to `.claude-plugin/marketplace.json`:
+
+```json
+{
+  "name": "<plugin-name>",
+  "description": "<one or two sentences describing what the plugin does>",
+  "source": "./plugins/<plugin-name>"
+}
+```
+
+2. **Document in CLAUDE.md** — update the project root `CLAUDE.md`:
+   - Increment the plugin count in the Repository Overview paragraph
+   - Add a `### <plugin-name>` section under Plugin Descriptions
+   - Add a `**Use <plugin-name> when:**` block under Choosing the Right Plugin
+   - Add `/plugin install <plugin-name>@diegopher` to the Installing Plugins code block
+   - Update the key directories line that lists plugin names
+
+3. **Bump the version** — same rule as above; start at `1.0.0` for new plugins.
+
+Missing any of these steps means the plugin exists on disk but is invisible to the marketplace and
+to future sessions reading the project context.

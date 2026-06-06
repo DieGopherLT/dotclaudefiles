@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing seven specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing eight specialized plugins:
 
 1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
@@ -13,6 +13,7 @@ This is a **mono-repo for Claude Code plugins** containing seven specialized plu
 5. **react-dev** - React development helpers (conditional JSX refactoring, component splitting)
 6. **testing** - Retrofit testing pipeline for existing code (testability auditing, seams, characterization tests, test-quality auditing)
 7. **typescript-migration** - Autonomous JS-to-TS migration pipeline (audit, tooling setup, shared types extraction, parallel per-chunk typing, progressive strict-mode consolidation)
+8. **git-toolkit** - Git workflow enforcement (commit standards, branch naming, rebase conflict resolution)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -28,7 +29,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 7 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration)
+- **`plugins/`**: Contains the 8 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -76,6 +77,13 @@ Retrofit testing pipeline that puts existing code under tests autonomously (NOT 
 - **References**: coverage strategies, test anti-patterns, frontend component-testing patterns (React seam model + RTL), project rules template (bundled inside the skill)
 - **Frontend mode**: when targets are React components/hooks (`.tsx`/`.jsx`), the agents switch to a frontend seam model (vi.mock/props/providers/MSW) and React Testing Library assertions instead of backend constructor DI
 
+### git-toolkit
+
+Git workflow enforcement for commit standards, branch naming, and rebase conflict resolution:
+
+- **Skills**: `commit` (staged deliberately, formatted, message crafted with explicit approval before execution), `branching` (naming convention enforcement before any `git checkout -b`), `rebase` (conflict resolution guided by history analysis from both branches)
+- **Agent**: `git-history-retriever` (read-only historian: analyzes commits on both sides of a rebase conflict, infers intent per file, feeds the rebase skill before any conflict marker is touched)
+
 ### typescript-migration
 
 Autonomous pipeline that migrates an existing JavaScript project to TypeScript. Runs inside a dedicated worktree:
@@ -121,6 +129,12 @@ Autonomous pipeline that migrates an existing JavaScript project to TypeScript. 
 - You want characterization + behavior tests with a real test-quality gate, not just coverage
 - The whole flow should run autonomously inside an isolated worktree
 
+**Use git-toolkit when:**
+
+- Committing changes — the `commit` skill owns staging, linting, message format, and requires explicit approval
+- Creating a new branch — the `branching` skill applies naming conventions before `git checkout -b`
+- Mid-rebase with conflicts — the `rebase` skill analyzes both branches' history via `git-history-retriever` before touching any conflict marker
+
 **Use typescript-migration when:**
 
 - Migrating an existing JavaScript project (or a directory within one) to TypeScript
@@ -145,6 +159,7 @@ Each plugin can be installed independently:
 /plugin install react-dev@diegopher
 /plugin install testing@diegopher
 /plugin install typescript-migration@diegopher
+/plugin install git-toolkit@diegopher
 ```
 
 ## Configuration Files

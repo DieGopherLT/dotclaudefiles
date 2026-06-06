@@ -32,6 +32,17 @@
 
 When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan, or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code. It carries the full workflow Diego expects: a design lens up front, letter-group task breakdown registered with TaskCreate, bisectable commits at group boundaries, LSP-first navigation, and a closing `simplify` + `clean-code` quality pass. Do not improvise this structure from memory — the skill is the source of truth, and consulting it keeps execution consistent across sessions. Skip it only for single-file, single-step changes.
 
+## Git Behavior
+
+When asked to commit changes — "commit", "make a commit", "commit this", "ship this", or any equivalent
+phrasing — invoke the `commit` skill. It owns the full workflow: staging, linting, message format,
+explicit approval, and verification. Do not improvise commit message format from memory.
+
+When creating a new branch — "create a branch", "new branch", "branch off", "checkout -b" — invoke the
+`branching` skill to apply the correct naming convention before executing any git command.
+
+When moving or deleting tracked files, use `git mv` and `git rm` respectively to preserve history. Do not delete and re-create files.
+
 ## Database Behavior
 
 All local databases run in containers. Use `docker exec` with the container name to run any database shell command.
