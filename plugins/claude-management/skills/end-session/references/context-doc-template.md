@@ -92,6 +92,32 @@ For obvious files (e.g., `plugins/foo/SKILL.md` when the session was about the f
 List in priority order. Distinguish between:
 - **Blocked**: needs X before it can start
 - **Ready**: can start immediately on resume
+
+## Open Questions
+
+[Include only if there are unresolved questions with no answer yet]
+
+Different from Pending Work: these are not tasks — they are things the session couldn't resolve. Each entry should state:
+- The question itself
+- Why it couldn't be resolved during the session (missing info, requires external input, etc.)
+
+## Patterns Discovered
+
+[Include only if the session produced a reusable pattern — omit if nothing clearly generalizes]
+
+For each pattern:
+- **Name**: short descriptive name
+- **Problem it solves**: one sentence
+- **When to use**: specific conditions
+- **Core idea / snippet**: minimal code example or pseudocode if applicable
+
+## References
+
+[Include only if the session used external resources worth preserving]
+
+- Links to docs, articles, or PRs consulted
+- People or channels that provided key information
+- Error messages or stack traces that were diagnostic
 ```
 
 ---
@@ -103,6 +129,9 @@ List in priority order. Distinguish between:
 - Keep the document under 150 lines. Past that, it stops being read carefully.
 - No generic advice ("write tests", "handle errors") — only session-specific facts
 - No boilerplate sections: omit any section that has nothing to say
+- `Open Questions` vs `Pending Work`: pending work is a task; an open question has no answer yet
+- `Patterns Discovered` is only warranted when something clearly generalizes beyond this session — don't force it
+- `References` should only include sources that were materially useful, not everything visited
 
 ---
 
