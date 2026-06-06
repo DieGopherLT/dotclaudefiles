@@ -1,0 +1,73 @@
+{
+  "skill_name": "task-planning",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Hay que migrar el módulo de auth de JWT a session tokens. Toca el middleware, los handlers de login/logout, los tests de integración y el CLAUDE.md.",
+      "expected_output": "The agent divides work into lettered groups with numbered subtasks, picks a design lens, checks git status or mentions branching, uses TaskCreate, mentions committing per group, and closes with a Phase 3 quality review.",
+      "files": [],
+      "expectations": [
+        "The agent divides work into lettered groups (A, B, C...) with numbered subtasks (A1, A2...)",
+        "The agent picks a design lens before dividing the work",
+        "The agent checks git status or mentions creating a branch or worktree",
+        "The agent uses or mentions TaskCreate to register the subtasks",
+        "The agent mentions committing at group boundaries",
+        "The agent mentions Phase 3 quality review with simplify and clean-code"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Refactoriza el servicio de pagos para separar la validación del procesamiento. Toca payment-service.ts, validators.ts, payment-handler.ts, types.ts y los tests.",
+      "expected_output": "The agent identifies this as a pure refactor, picks refactoring-patterns as the design lens, divides into lettered groups, uses TaskCreate, warns about not mixing refactor commits with feature commits, and mentions Phase 3.",
+      "files": [],
+      "expectations": [
+        "The agent identifies this as a pure refactor and picks refactoring-patterns as the design lens",
+        "The agent divides work into lettered groups with numbered subtasks",
+        "The agent uses or mentions TaskCreate",
+        "The agent mentions that refactoring commits must not be mixed with feature commits",
+        "The agent mentions Phase 3 quality review"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Implementa paginación cursor-based en los endpoints GET /users y GET /orders. Necesita los handlers, los DTOs de respuesta paginada, las queries en el repositorio, actualizar los tests y documentar los contratos en el CLAUDE.md.",
+      "expected_output": "The agent picks a design lens, checks git status, divides into lettered groups with subtasks, uses TaskCreate, commits per group, and closes with Phase 3.",
+      "files": [],
+      "expectations": [
+        "The agent picks a design lens before dividing the work",
+        "The agent checks git status or mentions creating a branch or worktree",
+        "The agent divides work into lettered groups with numbered subtasks",
+        "The agent uses or mentions TaskCreate",
+        "The agent mentions Phase 3 quality review with simplify and clean-code"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Hay que manejar los webhooks de Stripe: payment_intent.succeeded, payment_intent.payment_failed y customer.subscription.deleted. Cada uno actualiza estado en la BD y dispara notificaciones.",
+      "expected_output": "The agent picks a design lens, divides the 3 webhook handlers plus persistence and notification into lettered groups, uses TaskCreate, mentions branching, commits per group, and evaluates whether Phase 3 applies.",
+      "files": [],
+      "expectations": [
+        "The agent picks a design lens before dividing the work",
+        "The agent divides work into lettered groups with numbered subtasks",
+        "The agent checks git status or mentions creating a branch or worktree",
+        "The agent uses or mentions TaskCreate",
+        "The agent mentions committing at group boundaries",
+        "The agent evaluates and mentions the Phase 3 quality review"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Agrega soporte multi-tenancy al módulo de usuarios. Cada query tiene que filtrar por tenant_id, los tests deben cubrir el aislamiento entre tenants y el CLAUDE.md necesita documentar el pattern.",
+      "expected_output": "The agent picks a design lens (likely domain-driven-design or software-design-philosophy), divides into lettered groups covering queries, tests and docs, uses TaskCreate, mentions branching, commits per group, and closes with Phase 3.",
+      "files": [],
+      "expectations": [
+        "The agent picks a design lens before dividing the work",
+        "The agent divides work into lettered groups with numbered subtasks",
+        "The agent checks git status or mentions creating a branch or worktree",
+        "The agent uses or mentions TaskCreate",
+        "The agent mentions committing at group boundaries",
+        "The agent mentions Phase 3 quality review"
+      ]
+    }
+  ]
+}

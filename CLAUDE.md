@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **mono-repo for Claude Code plugins** containing seven specialized plugins:
 
-1. **dotclaudefiles** - Core productivity plugin (agents, commands, skills, output-styles)
+1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
 3. **claude-management** - Claude Code memory file management (rulify, claudify, remember)
 4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
@@ -36,13 +36,9 @@ Key directories:
 
 ### dotclaudefiles
 
-Core productivity plugin with daily-use commands, quality agents, and specialized workflows:
+Skills plugin for structured task execution and team setup:
 
-- **Agents**: `dependency-docs-collector`
-- **Commands**: `/claudify`, `/dry-run`, `/explain-like-senior`, `/git-context`, `/journal`, `/language-evaluation`, `/predict-issues`, `/refactor-conditional-jsx`, `/remove-comments`
-- **Skills**: `check-third-party-docs`, `deep-reason`, `document`, `team-setup`
-- **Output Styles**: `mentor`, `personal-preference`
-- **MCP Servers**: Sequential-thinking server for deep reasoning
+- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review), `team-setup`
 
 ### dotclaudehooks
 
@@ -98,11 +94,8 @@ Autonomous pipeline that migrates an existing JavaScript project to TypeScript. 
 
 **Use dotclaudefiles when:**
 
-- Doing code reviews, refactoring, or daily development tasks
-- Checking third-party documentation or integrating libraries
-- Creating pull requests with structured descriptions
-- Deep reasoning on complex architectural decisions
-- Documenting patterns, problems, or decisions
+- Starting a substantial request that touches 2+ files or involves 3+ sequential steps
+- Setting up a team or project structure with shared conventions
 
 **Use dotclaudehooks when:**
 
@@ -159,12 +152,8 @@ Each plugin can be installed independently:
 Each plugin has its own configuration:
 
 - **`plugins/<plugin-name>/.claude-plugin/plugin.json`**: Plugin metadata (name, version, description, keywords)
-- **`plugins/dotclaudefiles/.mcp.json`**: MCP server configurations (sequential-thinking server)
 - **`plugins/testing/skills/retrofit-testing/references/*.md`**: Coverage strategies, test anti-patterns, and project rules template
 - **`plugins/typescript-migration/skills/typescript-migration/fixtures/*.json`**: tsconfig templates per project type (react-vite, nextjs, node, generic)
 - **`.claude/settings.local.json`**: Plugin-specific settings (in repo root for local development)
 - **`.gitignore`**: Excludes `.claude/` directory (local development sandbox)
 
-## MCP Servers
-
-The `dotclaudefiles` plugin includes the `sequential-thinking` MCP server configured in `plugins/dotclaudefiles/.mcp.json`. This enables deep reasoning for complex problems through dynamic thought processes. Use the `/deep-reason` skill to leverage this capability with structured analysis and documentation generation.
