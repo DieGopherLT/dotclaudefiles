@@ -10,6 +10,11 @@ paths:
 
 When about to install, update or delete dependencies, check which package manager is being used in the project (npm, yarn or pnpm) and use it consistently.
 
+## File naming
+
+- kebab-case for all files: `auth-service.ts`, `user-helpers.ts`, `use-auth.ts`
+- Never camelCase — it causes issues on case-sensitive file systems.
+
 ## Types
 
 - Prefer `interface` for object shapes that may be extended; use `type` for unions, intersections, and aliases.

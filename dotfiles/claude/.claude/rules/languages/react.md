@@ -6,6 +6,11 @@ paths:
 
 # React Standards
 
+## File naming
+
+- Component files: PascalCase matching the component name (`UserProfile.tsx`, `PaymentForm.tsx`).
+- Non-component files (hooks, utils, services): kebab-case, following the TS/JS convention.
+
 ## State management
 
 - On simple components, prefer `useState` per piece of state — no objects as state unless necessary.

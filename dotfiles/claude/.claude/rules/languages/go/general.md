@@ -78,6 +78,7 @@ type ReadWriter interface { Reader; Writer }
 
 ## File organization
 
+- File names: snake_case (`user_service.go`, `http_handler.go`).
 - Use a single `types.go` file for all package types.
 - If `types.go` exceeds ~200 lines, convert it to a `types/` directory with focused files per domain (e.g., `types/user.go`, `types/payment.go`).
 
