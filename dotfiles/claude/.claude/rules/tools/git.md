@@ -1,23 +1,21 @@
 # Git Workflow
 
+## Ignoring files
+
+Local resources too coupled to the user's environment should not be committed: use `.gitignore` for regenerable artifacts, `.git/info/exclude` for user-specific ones 
+(e.g. environment-specific `.claude/agents/` or `.claude/skills/`).
+
 ## File Operations
 
 - ALWAYS use `git mv` for moving files (NEVER manual move + git add)
 - ALWAYS use `git rm` for deleting tracked files (NEVER rm + git add)
+- When `EnterWorktree` is unavailable, create worktrees via git under `.claude/worktrees/` — keep that path in `.gitignore` to avoid committing worktree metadata.
 
 ## Branch Strategy
 
 Branch naming: `<type>/<description-in-kebab-case>`
-
 Types: `feature/`, `fix/`, `docs/`, `style/`, `refactor/`, `test/`, `chore/`
-
 Examples: `feature/add-login`, `fix/payment-bug`, `refactor/simplify-auth`
-
-Repository type detection:
-
-- Personal repos: commit to main by default; use `AskUserQuestion` to confirm if user wants a branch for larger changes
-- Collaborative repos: ALWAYS create a branch for features/fixes
-- When unsure: use `AskUserQuestion` to ask if repo is personal or collaborative
 
 ## Commit Messages
 
@@ -43,10 +41,14 @@ When staging: prefer specific files by name over `git add .`; avoid .env, creden
 
 After committing: run `git status` to verify success.
 
+### Atomocity level
+
+A commit's ideal atomicity is whatever makes it auditable by `git bisect`: one logical change per commit, semantically related changes grouped together, unrelated changes separated. Mixing unrelated changes makes it harder to isolate what introduced a bug.
+
 ## Pull Requests
 
-- ALWAYS use `/dotclaudefiles:create-pr` skill unless user explicitly says otherwise
-- NEVER create PRs manually with `gh pr create` unless specifically requested
+- Always search for an exsisting PR templaet on the project and use it if available.
+- User expects you to create a file on the project root with the PR & not to commit it, it's a temporary file.
 
 ## Project-Specific Overrides
 
