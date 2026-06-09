@@ -1,10 +1,12 @@
 ---
 name: branching
 description: >
-  Apply the correct branch naming convention before creating a new git branch. Invoke whenever the user
-  says "create a branch", "new branch", "branch off", "checkout -b", "switch to a new branch", or any
-  phrase where a new branch is about to be created. Also invoke when the user wants to rename or review
-  an existing branch whose name does not follow the convention. Propose the name before executing.
+  Apply the correct branch naming convention before creating a new git branch or worktree. Invoke
+  whenever the user says "create a branch", "new branch", "branch off", "checkout -b",
+  "switch to a new branch", "create a worktree", "new worktree", "worktree for X", or any phrase
+  where a new branch or worktree is about to be created. Also invoke when the user wants to rename
+  or review an existing branch whose name does not follow the convention. Propose the name before
+  executing.
 ---
 
 # Branching
@@ -55,4 +57,22 @@ Propose the branch name to the user before executing. Once approved:
 git checkout -b <type>/<description>
 # or
 git switch -c <type>/<description>
+```
+
+## Worktrees
+
+The same naming convention applies to the branch created alongside the worktree. Worktrees are
+placed under `.claude/worktrees/` inside the project root so they stay out of the working tree
+but remain easy to locate.
+
+Propose the branch name first. Once approved:
+
+```bash
+git worktree add .claude/worktrees/<type>/<description> -b <type>/<description>
+```
+
+After creating the worktree, enter it with the `EnterWorktree` tool — never with `cd`:
+
+```
+EnterWorktree({ path: ".claude/worktrees/<type>/<description>" })
 ```

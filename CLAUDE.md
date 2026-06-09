@@ -13,7 +13,7 @@ This is a **mono-repo for Claude Code plugins** containing eight specialized plu
 5. **react-dev** - React development helpers (conditional JSX refactoring, component splitting)
 6. **testing** - Retrofit testing pipeline for existing code (testability auditing, seams, characterization tests, test-quality auditing)
 7. **typescript-migration** - Autonomous JS-to-TS migration pipeline (audit, tooling setup, shared types extraction, parallel per-chunk typing, progressive strict-mode consolidation)
-8. **git-toolkit** - Git workflow enforcement (commit standards, branch naming, rebase conflict resolution)
+8. **git-toolkit** - Git workflow enforcement (commit standards, branch naming, conflict resolution for rebases and merges)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -79,10 +79,10 @@ Retrofit testing pipeline that puts existing code under tests autonomously (NOT 
 
 ### git-toolkit
 
-Git workflow enforcement for commit standards, branch naming, and rebase conflict resolution:
+Git workflow enforcement for commit standards, branch naming, and conflict resolution:
 
-- **Skills**: `commit` (staged deliberately, formatted, message crafted with explicit approval before execution), `branching` (naming convention enforcement before any `git checkout -b`), `rebase` (conflict resolution guided by history analysis from both branches)
-- **Agent**: `git-history-retriever` (read-only historian: analyzes commits on both sides of a rebase conflict, infers intent per file, feeds the rebase skill before any conflict marker is touched)
+- **Skills**: `commit` (staged deliberately, formatted, message crafted with explicit approval before execution), `branching` (naming convention enforcement before any `git checkout -b`), `conflict-resolver` (resolves rebase and merge conflicts via parallel branch history analysis — agnostic to operation type)
+- **Agent**: `git-history-retriever` (read-only historian: analyzes commits for a single branch within a bounded range `merge-base..branch-tip`, infers intent per conflicting file; one instance per branch, all launched in parallel by conflict-resolver)
 
 ### typescript-migration
 
@@ -133,7 +133,7 @@ Autonomous pipeline that migrates an existing JavaScript project to TypeScript. 
 
 - Committing changes — the `commit` skill owns staging, linting, message format, and requires explicit approval
 - Creating a new branch — the `branching` skill applies naming conventions before `git checkout -b`
-- Mid-rebase with conflicts — the `rebase` skill analyzes both branches' history via `git-history-retriever` before touching any conflict marker
+- Mid-rebase or mid-merge with conflicts — the `conflict-resolver` skill analyzes every branch's history in parallel via `git-history-retriever` before touching any conflict marker
 
 **Use typescript-migration when:**
 
