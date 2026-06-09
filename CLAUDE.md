@@ -13,7 +13,7 @@ This is a **mono-repo for Claude Code plugins** containing eight specialized plu
 5. **react-dev** - React development helpers (conditional JSX refactoring, component splitting)
 6. **testing** - Retrofit testing pipeline for existing code (testability auditing, seams, characterization tests, test-quality auditing)
 7. **typescript-migration** - Autonomous JS-to-TS migration pipeline (audit, tooling setup, shared types extraction, parallel per-chunk typing, progressive strict-mode consolidation)
-8. **git-toolkit** - Git workflow enforcement (commit standards, branch naming, conflict resolution for rebases and merges)
+8. **git-toolkit** - Git workflow enforcement (commit standards, branch naming, conflict resolution for rebases and merges, squash planning for interactive rebases)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -79,10 +79,10 @@ Retrofit testing pipeline that puts existing code under tests autonomously (NOT 
 
 ### git-toolkit
 
-Git workflow enforcement for commit standards, branch naming, and conflict resolution:
+Git workflow enforcement for commit standards, branch naming, conflict resolution, and squash planning:
 
-- **Skills**: `commit` (staged deliberately, formatted, message crafted with explicit approval before execution), `branching` (naming convention enforcement before any `git checkout -b`), `conflict-resolver` (resolves rebase and merge conflicts via parallel branch history analysis — agnostic to operation type)
-- **Agent**: `git-history-retriever` (read-only historian: analyzes commits for a single branch within a bounded range `merge-base..branch-tip`, infers intent per conflicting file; one instance per branch, all launched in parallel by conflict-resolver)
+- **Skills**: `commit` (staged deliberately, formatted, message crafted with explicit approval before execution), `branching` (naming convention enforcement before any `git checkout -b`), `conflict-resolver` (resolves rebase and merge conflicts via parallel branch history analysis — agnostic to operation type), `squash-suggester` (analyzes branch commit history and produces a squash plan markdown file — pick/squash/fixup per commit — preserving atomicity and bisectability)
+- **Agents**: `git-history-retriever` (read-only historian: analyzes commits for a single branch within a bounded range `merge-base..branch-tip`, infers intent per conflicting file; one instance per branch, all launched in parallel by conflict-resolver), `squash-planner` (read-only analyst: groups commits by semantic intent and assigns squash actions maintaining git bisect safety; invoked by squash-suggester)
 
 ### typescript-migration
 
@@ -134,6 +134,7 @@ Autonomous pipeline that migrates an existing JavaScript project to TypeScript. 
 - Committing changes — the `commit` skill owns staging, linting, message format, and requires explicit approval
 - Creating a new branch — the `branching` skill applies naming conventions before `git checkout -b`
 - Mid-rebase or mid-merge with conflicts — the `conflict-resolver` skill analyzes every branch's history in parallel via `git-history-retriever` before touching any conflict marker
+- Wanting to compact a branch's commit history before merging or opening a PR — the `squash-suggester` skill invokes `squash-planner` and produces a `squash-plan-<branch>.md` file with the rebase -i action table
 
 **Use typescript-migration when:**
 
