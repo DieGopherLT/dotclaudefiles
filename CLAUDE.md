@@ -173,3 +173,7 @@ Each plugin has its own configuration:
 - **`.claude/settings.local.json`**: Plugin-specific settings (in repo root for local development)
 - **`.gitignore`**: Excludes `.claude/` directory (local development sandbox)
 
+## Skill Authoring
+
+For skill creation, modification, structure, frontmatter fields, and writing conventions, invoke `/skill-creator` — it is the single source of truth.
+
