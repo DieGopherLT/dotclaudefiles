@@ -28,9 +28,23 @@
 - Whenever the user indicates to enter a worktree, do not use `cd` to enter it, instead use the `EntreWorktree` tool.
 - All code and comments generated must be in English, all the conversation output must be in Spanish.
 
+## Planning Behavior
+
+Given a task that requires careful planning, instead of entering plan mode, use the `create-specification` skill to produce a detailed spec file. The spec must be fully self-contained: it must embed all relevant context from the current conversation so that an agent with zero knowledge of this conversation can execute it cold via a `/goal` command without any additional context.
+
+Self-contained means two things:
+
+- **The whats**: requirements, acceptance criteria (Given-When-Then), and data contracts — field by field, measurable and testable.
+- **The integration hows**: every decision that was implicit in the conversation or relies on repo conventions must be made explicit. If a cold agent would have to guess how to wire a component, where to place a file, how concurrency is handled, or which existing code to extend — that belongs in the spec. A spec that only covers the whats will cause a cold agent to make at least one wrong integration decision. Integration hows must include:
+  - Concrete `file:line` anchors for every integration point (injection sites, choke points, existing types to extend, route registration locations). A cold agent must be able to navigate directly without exploring.
+  - Non-obvious constraints of the domain made explicit: ordering invariants, lifecycle (create / use / release), state-machine rules, or concurrency constraints if applicable — whatever a cold agent could not infer from the code alone.
+  - The exact wiring shape: which constructor receives which dependency, where the new component is instantiated, and which existing call sites change.
+
+When the implementation diverges from the original spec — new requirements emerge, constraints change, or the code evolves — use the `update-specification` skill to keep the spec in sync. The spec is a living document: it should always reflect the current state of the work, not just the initial plan.
+
 ## Task Execution Behavior
 
-When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan, or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code. It carries the full workflow Diego expects: a design lens up front, letter-group task breakdown registered with TaskCreate, bisectable commits at group boundaries, LSP-first navigation, and a closing `simplify` + `clean-code` quality pass. Do not improvise this structure from memory — the skill is the source of truth, and consulting it keeps execution consistent across sessions. Skip it only for single-file, single-step changes.
+When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan (or spec), or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code. It carries the full workflow Diego expects: a design lens up front, letter-group task breakdown registered with TaskCreate, bisectable commits at group boundaries, LSP-first navigation, and a closing `simplify` + `clean-code` quality pass. Do not improvise this structure from memory — the skill is the source of truth, and consulting it keeps execution consistent across sessions. Skip it only for single-file, single-step changes.
 
 ## Git Behavior
 
