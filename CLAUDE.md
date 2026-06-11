@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **mono-repo for Claude Code plugins** containing eight specialized plugins:
 
-1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup)
+1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
 3. **claude-management** - Claude Code memory file management (rulify, claudify, remember)
 4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
@@ -39,7 +39,7 @@ Key directories:
 
 Skills plugin for structured task execution and team setup:
 
-- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review), `team-setup`
+- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review), `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric)
 
 ### dotclaudehooks
 
@@ -104,6 +104,8 @@ Autonomous pipeline that migrates an existing JavaScript project to TypeScript. 
 
 - Starting a substantial request that touches 2+ files or involves 3+ sequential steps
 - Setting up a team or project structure with shared conventions
+- Scaffolding a Claude Code sub-agent (`claude-code-agent-creator`)
+- Authoring a dynamic workflow / orchestrating subagents at scale with `ultracode` (`workflow-creator`)
 
 **Use dotclaudehooks when:**
 

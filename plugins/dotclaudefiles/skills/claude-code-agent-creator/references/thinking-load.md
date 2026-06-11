@@ -15,13 +15,27 @@ A formatter that applies fixed rules needs none of the reasoning a security audi
 
 Prefer the bare alias — `haiku`, `sonnet`, or `opus` — over a pinned model ID. The alias always resolves to the latest model in that tier, so the agent gets capability and price improvements with zero maintenance. Pin a full ID (`claude-opus-4-8`) only when you need reproducibility against a specific version.
 
-| Tier     | Alias    | Profile                                                                                      | Reach for it when                                                                                 |
-| -------- | -------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Light    | `haiku`  | Fastest, cheapest, smaller context. No effort control.                                       | Read-only search, classification, extraction, high-volume mechanical work where quality margins are thin. |
-| Balanced | `sonnet` | Strong speed/intelligence balance, large context, adaptive thinking. The sensible default.   | Most coding and agentic work: review, testing, debugging, bounded-complexity refactors.           |
-| Heavy    | `opus`   | Highest capability, long-horizon coherence, full effort ladder. Slowest and most expensive. | Architecture, cross-codebase migrations, novel problem-solving, audits where a miss is unacceptable. |
+| Tier     | Alias    | Context | Effort support              |
+| -------- | -------- | :-----: | --------------------------- |
+| Light    | `haiku`  | 200k    | none                        |
+| Balanced | `sonnet` | 200k    | low / medium / high / max   |
+| Heavy    | `opus`   | 1M      | full ladder (incl. xhigh)   |
+
+- **`haiku`** — Fastest and cheapest, no effort dial. Best for read-only search, classification, extraction, and high-volume mechanical work where reasoning adds no value.
+- **`sonnet`** — Strong speed/intelligence balance, adaptive thinking. The sensible default for most coding and agentic work: review, testing, debugging, bounded-complexity refactors.
+- **`opus`** — Highest capability and the only tier with a 1M context window. Reach for it when tasks are open-ended, long-horizon, or must hold large file sets and sub-agent outputs simultaneously — architecture, cross-codebase migrations, orchestrators in ultracode workflows, and audits where a miss is unacceptable.
 
 `model: inherit` (the default) adopts the parent session's model — use it for agents that should track whatever the caller is running rather than fixing a tier.
+
+### Context window as a dial
+
+Context window is a third property alongside capability and price. Haiku and Sonnet share a 200k window; Opus has 1M — a 5× advantage that matters in specific scenarios:
+
+- **Orchestrators in ultracode workflows** — an orchestrator that fans out to dozens of sub-agents must fit all their outputs in its own context before synthesizing. At 200k this becomes a hard ceiling; at 1M it is rarely a constraint.
+- **Cross-codebase migrations and audits** — agents that must hold large file sets, diff output, and reasoning chains simultaneously will thrash at 200k.
+- **Long-horizon agentic loops** — each tool call round-trips adds to the accumulated context. Agents expected to run 50+ tool calls before concluding need the larger window to avoid truncation mid-task.
+
+When scope alone would force Opus on a task that fits Sonnet's capability, the context window is usually the deciding factor. Conversely, if the agent's task is bounded (a single file, a fixed set of results), the 200k window is rarely the bottleneck — do not reach for Opus on that basis alone.
 
 ## The `effort` dial
 
@@ -99,3 +113,5 @@ effort: high       # honored by sonnet; overrides session effort
 - **Setting `xhigh` on Sonnet.** Silently ignored. Use `high`, or move to `opus` if you truly need `xhigh`.
 - **Under-powering an orchestrator or architect with `haiku`.** The capability ceiling is too low for planning and long-horizon coordination, no matter the effort — and Haiku has no effort to raise anyway.
 - **Pinning a full model ID without a reason.** It freezes the agent on one version and adds maintenance. Use the bare alias unless reproducibility demands a pin.
+- **Assigning an orchestrator or long-horizon agent to Haiku or Sonnet when it must aggregate large sub-agent outputs.** The 200k window becomes a hard ceiling before synthesis is possible. If the agent coordinates many sub-agents or holds large file sets simultaneously, the context window — not just capability — justifies Opus.
+- **Reaching for Opus solely because "the task is complex".** Complexity is about reasoning, not always about context volume. If the task fits within 200k and Sonnet's capability ceiling, choosing Opus for the context window is pure waste. Verify scope before escalating.
