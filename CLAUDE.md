@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing eight specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing nine specialized plugins:
 
 1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
@@ -14,6 +14,7 @@ This is a **mono-repo for Claude Code plugins** containing eight specialized plu
 6. **testing** - Retrofit testing pipeline for existing code (testability auditing, seams, characterization tests, test-quality auditing)
 7. **typescript-migration** - Autonomous JS-to-TS migration pipeline (audit, tooling setup, shared types extraction, parallel per-chunk typing, progressive strict-mode consolidation)
 8. **git-toolkit** - Git workflow enforcement (commit standards, branch naming, conflict resolution for rebases and merges, squash planning for interactive rebases)
+9. **domain-restructure** - Autonomous layer-first to feature-first restructurer (strategic-DDD domain discovery, subdomain classification, parallel per-domain moves, import consolidation with build gate)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -29,7 +30,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 8 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit)
+- **`plugins/`**: Contains the 9 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -92,6 +93,14 @@ Autonomous pipeline that migrates an existing JavaScript project to TypeScript. 
 - **Skill**: `typescript-migration` (orchestrator: enters a dedicated worktree, runs the 5-phase Workflow, hands back for merge)
 - **Fixtures**: tsconfig templates for `react-vite`, `nextjs`, `node`, and `generic` projects — auditor selects the right one automatically
 
+### domain-restructure
+
+Autonomous structural refactor that reshapes a codebase from layer-first (top-level `controllers/`, `services/`, `models/`) into feature-first screaming architecture (`modules/<domain>/<layer>`). Pure relocation — zero functional change. Runs inside a dedicated worktree:
+
+- **Agents**: `contract-auditor` (detects stack, layer taxonomy, current axis, target convention, import strategy, build gate), `domain-scanner` (identifies bounded contexts via ubiquitous language, flags low-confidence names), `domain-grouper` (buckets a domain's files by layer, one per domain), `reconciler` (classifies core/supporting/generic subdomains, resolves shared/orphan/collision, emits the path map + membership map), `domain-mover` (plain `mv` + intra-domain import fixes, one per domain, enforcing the single-owner invariant), `consolidator` (`git add -A` rename detection, fixes cross-cutting imports + barrels + config, build gate loop, asserts a pure-refactor diff)
+- **Skill**: `domain-restructure` (orchestrator: enters a dedicated worktree, runs the 6-phase Workflow, hands back for merge in a single green commit)
+- **Strategic DDD only**: discovers bounded contexts and classifies subdomains to decide where files belong; never touches tactical constructs (entities, aggregates, events) inside file contents
+
 ## Choosing the Right Plugin
 
 **Use claude-management when:**
@@ -146,6 +155,14 @@ Autonomous pipeline that migrates an existing JavaScript project to TypeScript. 
 - You want shared types extracted before parallel typing agents run, avoiding duplicated interfaces
 - You want progressive strict mode (`strictNullChecks` → `noImplicitAny` → `strict`) applied automatically after typing
 
+**Use domain-restructure when:**
+
+- A project is organized layer-first (top-level `controllers/`, `services/`, `models/`) and you want it feature-first so the structure screams the business
+- You want files regrouped into `modules/<domain>/<layer>` by bounded context, with shared/generic concerns distilled into a `core` module
+- You need the move done as a pure structural refactor — relocations and import rewrites only, with a build gate proving zero functional change
+- You want it run autonomously inside an isolated worktree, ending in a single green commit ready to review
+- Note: this is strategic-DDD placement only; it never rewrites tactical constructs (entities, aggregates, events) inside files
+
 ## Installing Plugins
 
 Each plugin can be installed independently:
@@ -163,6 +180,7 @@ Each plugin can be installed independently:
 /plugin install testing@diegopher
 /plugin install typescript-migration@diegopher
 /plugin install git-toolkit@diegopher
+/plugin install domain-restructure@diegopher
 ```
 
 ## Configuration Files

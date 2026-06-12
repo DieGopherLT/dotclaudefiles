@@ -1,0 +1,22 @@
+{
+  "name": "domain-restructure",
+  "version": "1.0.0",
+  "description": "Autonomous structural refactor that reshapes a codebase from layer-first (top-level controllers/services/models) into feature-first screaming architecture (modules/<domain>/<layer>). Applies strategic DDD only: discovers bounded contexts, names them with the ubiquitous language, classifies core/supporting/generic subdomains, then relocates files and rewrites imports with zero functional change. Runs a 6-phase Workflow inside a dedicated worktree, ending in a single green commit.",
+  "author": {
+    "name": "Diego",
+    "url": "https://github.com/DieGopherLT"
+  },
+  "repository": "https://github.com/DieGopherLT/dotclaudefiles",
+  "license": "MIT",
+  "keywords": [
+    "architecture",
+    "ddd",
+    "screaming-architecture",
+    "domain",
+    "bounded-context",
+    "refactor",
+    "restructure",
+    "monolith",
+    "worktree"
+  ]
+}

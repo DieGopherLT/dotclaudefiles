@@ -44,6 +44,11 @@
       "name": "git-toolkit",
       "description": "Git workflow toolkit: commit standards enforcement (staged deliberately, linted, message format with explicit approval), branch naming conventions, and rebase conflict resolution guided by intent analysis from both branches' history.",
       "source": "./plugins/git-toolkit"
+    },
+    {
+      "name": "domain-restructure",
+      "description": "Autonomous structural refactor that reshapes a codebase from layer-first into feature-first screaming architecture (modules/<domain>/<layer>). Applies strategic DDD to discover bounded contexts, classify subdomains, then relocate files and rewrite imports with zero functional change inside a dedicated worktree.",
+      "source": "./plugins/domain-restructure"
     }
   ]
 }
