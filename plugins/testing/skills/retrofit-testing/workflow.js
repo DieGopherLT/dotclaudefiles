@@ -125,11 +125,10 @@ const COVERAGE_SCHEMA = {
 
 const QUALITY_SCHEMA = {
   type: 'object',
-  required: ['module', 'quality', 'needsRegeneration'],
+  required: ['module', 'quality'],
   properties: {
     module: { type: 'string' },
     quality: { type: 'number', description: 'test-quality 0-100' },
-    needsRegeneration: { type: 'boolean' },
     weakTests: { type: 'array', items: { type: 'string' } },
   },
 }
@@ -163,6 +162,14 @@ const BUILD_SCHEMA = {
     suitePasses: { type: 'boolean', description: 'the full test suite passes when run together' },
     fixes: { type: 'array', items: { type: 'string' }, description: 'compile/type errors reconciled across modules' },
     residualErrors: { type: 'array', items: { type: 'string' }, description: 'errors that could not be fixed without changing behavior' },
+  },
+}
+
+const RULES_SCHEMA = {
+  type: 'object',
+  required: ['path'],
+  properties: {
+    path: { type: 'string', description: 'absolute path to the written .claude/rules/testing.md file' },
   },
 }
 
@@ -279,28 +286,24 @@ if (input.needsDeps) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase: Measure (all modules) — barrier, so the scaffolder sees the full survey
-// before deciding which shared utilities to build.
+// Phase: Measure → Prepare (pipeline per module)
+// Each module is measured and — if flagged — adapted before the next module
+// starts measuring. The scaffolder gets the full, quiescent survey because it
+// awaits the pipeline result, but adapts can begin as soon as a module's own
+// measure completes rather than waiting for the whole fleet.
 // ---------------------------------------------------------------------------
 
-const measures = await parallel(
-  modules.map((m) => () =>
+const prepared = await pipeline(
+  modules,
+  (m) =>
     agent(measurePrompt(m), {
       agentType: 'testing:testability-auditor',
       schema: TESTABILITY_SCHEMA,
       label: `measure:${m}`,
       phase: 'Measure',
     }).then((measure) => ({ module: m, measure })),
-  ),
-)
-
-// ---------------------------------------------------------------------------
-// Phase: Prepare (adapt flagged modules) — barrier, so every seam contract
-// exists before shared utilities (mocks) are scaffolded against them.
-// ---------------------------------------------------------------------------
-
-const prepared = await parallel(
-  measures.filter(Boolean).map((entry) => () => {
+  (entry) => {
+    if (!entry) return null
     const { module: m, measure } = entry
     if (!measure || (measure.score >= ADAPT_BELOW && !measure.needsAdaptation)) {
       return Promise.resolve({ module: m, measure, adapt: null })
@@ -311,7 +314,7 @@ const prepared = await parallel(
       label: `adapt:${m}`,
       phase: 'Prepare',
     }).then((adapt) => ({ module: m, measure, adapt }))
-  }),
+  },
 )
 
 const preparedModules = prepared.filter(Boolean)
@@ -422,10 +425,13 @@ if (!buildPasses || !suitePasses) {
 // ---------------------------------------------------------------------------
 
 phase('Document')
-const rulesPath = await agent(documentPrompt(summary, deps, scaffold), {
+const rulesResult = await agent(documentPrompt(summary, deps, scaffold), {
+  agentType: 'testing:testing-rules-writer',
+  schema: RULES_SCHEMA,
   label: 'document:rules',
   phase: 'Document',
 })
+const rulesPath = rulesResult?.path ?? null
 
 const bugs = summary.flatMap((r) => (r.bugsFound ?? []).map((b) => ({ module: r.module, ...b })))
 const modulesShort = summary.filter((r) => !r.passed).map((r) => ({

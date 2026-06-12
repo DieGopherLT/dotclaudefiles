@@ -84,7 +84,7 @@ For reference, the six sub-agents and their phases (full logic in `workflow.js`)
 | Test | `test-implementer` | Write characterization + behavior tests per module, validate with a scoped run, report coverage |
 | Test | `test-input-auditor` | Score test quality (mutation-thinking + smells + type-validity); request re-gen below threshold |
 | Build | `test-implementer` (reconcile) | One pass at the quiescent barrier: whole-project build + full suite, fix cross-module compile errors — authoritative `buildPasses`/`suitePasses` |
-| Document | (writer) | Write project testing rules from `references/project-rules-template.md` |
+| Document | `testing-rules-writer` | Write path-scoped `.claude/rules/testing.md` from the pipeline summary |
 
 Why the phases are barriered: Measure and Prepare complete fully (all modules measured, then all seams introduced) so Scaffold can build shared utilities against the complete set of seam contracts. The Test phase runs implementers **concurrently**, each mutating only its own module — so a whole-project build there would fail on siblings' half-written files. The build gate therefore lives in a single **Build** pass after the Test barrier, the one quiescent point where compiling the whole project is meaningful; that pass also reconciles cross-module type errors and dedupes any stubs that slipped past Scaffold.
 

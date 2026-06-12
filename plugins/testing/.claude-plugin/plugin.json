@@ -1,6 +1,6 @@
 {
   "name": "testing",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Retrofit testing pipeline for existing code: measures testability (1-10 + confidence), introduces seams to break dependencies, scaffolds shared test utilities, writes characterization and behavior tests organized by input category, and audits test quality via mutation-thinking plus a hard build/typecheck gate (not just coverage). Switches to a frontend seam model (vi.mock/props/providers/MSW + React Testing Library) when targets are React components or hooks. Runs autonomously inside a dedicated worktree across Go, TypeScript, and C#.",
   "author": {
     "name": "Diego",
