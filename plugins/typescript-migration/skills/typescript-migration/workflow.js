@@ -42,7 +42,7 @@ if (!projectRoot) {
 
 const AUDIT_SCHEMA = {
   type: 'object',
-  required: ['projectType', 'fixture', 'packageManager', 'toolingToInstall', 'chunks', 'sharedEntities', 'jsFileCount', 'tsFileCount'],
+  required: ['projectType', 'fixture', 'packageManager', 'toolingToInstall', 'chunks', 'sharedEntities', 'jsFileCount', 'tsFileCount', 'typesDir'],
   properties: {
     projectType: { type: 'string', description: 'nextjs | react-vite | node | generic' },
     fixture: { type: 'string', description: 'tsconfig fixture filename to use' },
@@ -63,6 +63,7 @@ const AUDIT_SCHEMA = {
     jsFileCount: { type: 'number' },
     tsFileCount: { type: 'number' },
     allFilesOrdered: { type: 'array', items: { type: 'string' }, description: 'all JS files ordered leaf-first across all chunks, for git mv in Setup' },
+    typesDir: { type: 'string', description: 'Relative path from projectRoot where shared types should live: "src/types" if the project has a src/ directory, "types" otherwise' },
   },
 }
 
@@ -126,18 +127,19 @@ function setupPrompt(audit, allFilesOrdered) {
   return `Set up the TypeScript migration for the project at "${projectRoot}". Project type: ${audit.projectType}. Fixture to apply: ${audit.fixture}. Package manager: ${audit.packageManager}. Install these devDependencies: ${JSON.stringify(audit.toolingToInstall)}. Then rename every file in this list from .js/.jsx to .ts/.tsx using git mv, in this exact leaf-first order: ${JSON.stringify(allFilesOrdered)}. Finally verify the project compiles with allowJs=true and strict=false (permissive mode). Report renamed count, compile result, and any residual errors.`
 }
 
-function extractPrompt(audit) {
-  return `Extract shared TypeScript types for the project at "${projectRoot}". The migration-auditor identified these entities as shared across multiple migration chunks: ${JSON.stringify(audit.sharedEntities)}. The chunks are: ${JSON.stringify(audit.chunks.map((c) => ({ name: c.name, files: c.files })))}. Create or update src/types/index.ts with interfaces and type aliases for every shared entity. Do NOT add import statements to source files — the Typer agents handle imports for their own chunks. Verify the types file compiles cleanly. Return the path and counts of interfaces and type aliases defined.`
+function extractPrompt(audit, typesDir) {
+  return `Extract shared TypeScript types for the project at "${projectRoot}". The migration-auditor identified these entities as shared across multiple migration chunks: ${JSON.stringify(audit.sharedEntities)}. The chunks are: ${JSON.stringify(audit.chunks.map((c) => ({ name: c.name, files: c.files })))}. Create or update ${typesDir}/index.ts with interfaces and type aliases for every shared entity. Do NOT add import statements to source files — the Typer agents handle imports for their own chunks. Verify the types file compiles cleanly. Return the path and counts of interfaces and type aliases defined.`
 }
 
 function typeChunkPrompt(chunk, sharedTypesPath) {
   return `Type the TypeScript migration chunk "${chunk.name}" in the project at "${projectRoot}". Add explicit parameter and return types to all exported functions in these files (process in order, leaf-first): ${JSON.stringify(chunk.files)}. Import shared types from "${sharedTypesPath}" — never redefine cross-chunk interfaces. Use ctx7 to look up types for any third-party library you encounter. After typing all files, run a scoped typecheck on your chunk's files only (not the whole project — other chunks are being typed concurrently). Report whether the chunk compiles cleanly, any unknown usages needing narrowing, and any missing @types packages.`
 }
 
-function consolidatePrompt(audit, chunkResults) {
+function consolidatePrompt(audit, chunkResults, entryPoint) {
   const unknownUsages = chunkResults.flatMap((r) => r?.unknownUsages ?? [])
   const missingAtTypes = chunkResults.flatMap((r) => r?.missingAtTypes ?? [])
-  return `Consolidate the TypeScript migration for the project at "${projectRoot}". Project type: ${audit.projectType}. Package manager: ${audit.packageManager}. All per-chunk typers have finished — run the full whole-project build to find and fix cross-chunk type errors. Then enable strict TypeScript checks progressively: first strictNullChecks, then noImplicitAny, then strict — fixing errors at each level before advancing. Stop if an error cannot be fixed without changing production behavior. These unknown usages were flagged by typers as needing narrowing: ${JSON.stringify(unknownUsages)}. These @types packages were reported missing: ${JSON.stringify(missingAtTypes)} — install them now if needed. Return the build result, strict level reached, cross-chunk errors fixed, and any residual errors.`
+  const entryPointNote = entryPoint ? ` Entry point to confirm in the final build check: "${entryPoint}".` : ''
+  return `Consolidate the TypeScript migration for the project at "${projectRoot}". Project type: ${audit.projectType}. Package manager: ${audit.packageManager}. All per-chunk typers have finished — run the full whole-project build to find and fix cross-chunk type errors. Then enable strict TypeScript checks progressively: first strictNullChecks, then noImplicitAny, then strict — fixing errors at each level before advancing. Stop if an error cannot be fixed without changing production behavior. These unknown usages were flagged by typers as needing narrowing: ${JSON.stringify(unknownUsages)}. These @types packages were reported missing: ${JSON.stringify(missingAtTypes)} — install them now if needed.${entryPointNote} Return the build result, strict level reached, cross-chunk errors fixed, and any residual errors.`
 }
 
 // ---------------------------------------------------------------------------
@@ -162,6 +164,9 @@ if (!audit || !audit.chunks || audit.chunks.length === 0) {
 const allFilesOrdered = audit.allFilesOrdered ?? audit.chunks.flatMap((c) => c.files)
 
 log(`Audit complete: ${audit.projectType} project, ${audit.jsFileCount} JS files, ${audit.chunks.length} chunks, fixture: ${audit.fixture}`)
+
+const typesDir = audit.typesDir ?? 'src/types'
+const sharedTypesPath = `${projectRoot}/${typesDir}/index.ts`
 
 // ---------------------------------------------------------------------------
 // Phase: Setup (sequential — must complete before Extract and Type)
@@ -189,11 +194,9 @@ log(`Setup complete: ${setup?.renamedCount ?? 0} files renamed, base compile: ${
 
 phase('Extract')
 
-const sharedTypesPath = `${projectRoot}/src/types/index.ts`
-
 let extract = null
 try {
-  extract = await agent(extractPrompt(audit), {
+  extract = await agent(extractPrompt(audit, typesDir), {
     agentType: 'typescript-migration:shared-types-extractor',
     schema: EXTRACT_SCHEMA,
     label: 'extract:shared-types',
@@ -212,15 +215,15 @@ log(`Extraction complete: ${extract?.interfaceCount ?? 0} interfaces, ${extract?
 
 phase('Type')
 
-const chunkResults = await parallel(
-  audit.chunks.map((chunk) => () =>
+const chunkResults = await pipeline(
+  audit.chunks,
+  (chunk) =>
     agent(typeChunkPrompt(chunk, extract?.typesFile ?? sharedTypesPath), {
       agentType: 'typescript-migration:typer',
       schema: CHUNK_SCHEMA,
       label: `type:${chunk.name}`,
       phase: 'Type',
     }),
-  ),
 )
 
 const typedChunks = chunkResults.filter(Boolean)
@@ -235,7 +238,7 @@ phase('Consolidate')
 
 let consolidation = null
 try {
-  consolidation = await agent(consolidatePrompt(audit, typedChunks), {
+  consolidation = await agent(consolidatePrompt(audit, typedChunks, entryPoint), {
     agentType: 'typescript-migration:migration-consolidator',
     schema: CONSOLIDATE_SCHEMA,
     label: 'consolidate:strict-and-build',

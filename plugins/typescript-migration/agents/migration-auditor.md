@@ -51,6 +51,10 @@ depends on. Build a directed dependency graph and compute a topological depth fo
 - Depth 0: files with no imports from other project files (leaves — migrate first).
 - Depth N: files that import from depth N-1 files.
 
+Also record whether the project uses a `src/` directory — report this as `typesDir`:
+- If `src/` exists at the project root: `typesDir = "src/types"`
+- If the project is flat-root (no `src/`): `typesDir = "types"`
+
 Use LSP `findReferences` and `goToDefinition` to confirm cross-file imports where import path
 resolution is ambiguous (index files, barrel exports, path aliases). Use Grep as a fallback for
 plain `require()` calls LSP cannot resolve.
@@ -124,4 +128,5 @@ JS files found: N  |  Already TS: M
 Chunks: K (N1 files, N2 files, ...)
 Shared entities: <list>
 Tooling to install: <packages>
+Types dir: <src/types|types>
 ```
