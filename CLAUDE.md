@@ -40,7 +40,7 @@ Key directories:
 
 Skills plugin for structured task execution and team setup:
 
-- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review), `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric)
+- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review: simplify + clean-code + parallel domain auditors discovered from available agents), `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric)
 
 ### dotclaudehooks
 

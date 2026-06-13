@@ -23,9 +23,6 @@
 
 - No emojis in responses, nor code, nor commit messages.
   - If you encounter an emoji in any file, delete it ASAP.
-- When launching sub-agents, always call them on foreground; it has less issues with permissions. Unless you want to perform something while the agent works, then you can call it on background.
-  - The golden rule is: if you'll just wait for the agent to finish, then call it on foreground. If you'll do something else while waiting, then call it on background.
-- Whenever the user indicates to enter a worktree, do not use `cd` to enter it, instead use the `EntreWorktree` tool.
 - All code and comments generated must be in English, all the conversation output must be in Spanish.
 
 ## Planning Behavior
@@ -45,6 +42,14 @@ When the implementation diverges from the original spec — new requirements eme
 ## Task Execution Behavior
 
 When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan (or spec), or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code. It carries the full workflow Diego expects: a design lens up front, letter-group task breakdown registered with TaskCreate, bisectable commits at group boundaries, LSP-first navigation, and a closing `simplify` + `clean-code` quality pass. Do not improvise this structure from memory — the skill is the source of truth, and consulting it keeps execution consistent across sessions. Skip it only for single-file, single-step changes.
+
+## Sub-agent behavior
+
+- The golden rule for foreground vs background: if you'll just wait for the agent to finish, call it on foreground. If you'll do something else while waiting, call it on background.
+- Before launching a sub-agent, decide whether to split into multiple focused agents. Apply the same rules as real concurrent systems:
+  - **Read-only agents**: launch as many as needed in parallel — no coordination required. This includes multi-perspective investigation: if a problem benefits from distinct angles (e.g. security vs. performance vs. correctness), split one agent per angle.
+  - **Write agents**: ensure no two agents modify the same files. If overlap is unavoidable, isolate each agent in its own worktree (`isolation: "worktree"`) and combine the changes afterwards.
+  - **Sequential dependency**: if agent B needs the output of agent A, do not split — run them sequentially or keep them as one agent.
 
 ## Git Behavior
 
@@ -98,7 +103,7 @@ The report must be self-contained: a reader with no session context should be ab
 
 **Comprehension/sharing** — Interactive HTML document:
 
-- Render directly as output; do not save to a file.
+- Save as file, never output raw HTML in the conversation.
 - Use interactive elements (tabs, collapsible sections, navigation anchors) to maximize information density.
 - Include visual structure (tables, timelines, diagrams) where appropriate — HTML affords far more than Markdown.
 - The output must be openable directly in a browser and shareable as-is.

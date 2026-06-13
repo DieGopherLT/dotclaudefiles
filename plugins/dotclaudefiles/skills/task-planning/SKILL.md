@@ -93,14 +93,19 @@ This is a judgment call, not a checkbox:
   where readability or duplication concerns are plausible
 - Does not warrant a pass: single-file edit, documentation-only change, config tweak, trivial rename
 
-**If the changeset warrants a pass, run both quality skills:**
-1. Generate `git diff main..HEAD` as a patch file — this gives both quality skills a concrete scope
-2. Invoke `simplify` with effort `xhigh` for reuse, deduplication, and efficiency
-3. Invoke `clean-code` for naming, function length, and error handling
+**If the changeset warrants a pass, run the full quality suite in parallel:**
+1. Generate `git diff main..HEAD` as a patch file — this is the shared scope for every review in
+   this phase
+2. Scan the available agents list for any with an auditing or review role — look for names or
+   descriptions containing terms like `audit`, `review`, `check`, `inspector`, `validator`. Examples:
+   `testability-auditor`, `security-review`, `concurrency-checker`, `test-input-auditor`. Identify
+   every one that applies to the changeset's domain.
+3. Invoke `simplify` (effort `xhigh`), `clean-code`, and every domain-specific auditor identified
+   in step 2 **all in parallel** — each receives the same patch as context.
 
-These are two co-equal reviews, not one with an afterthought. Name both explicitly in your plan and
-run both — `simplify` catches structural duplication, `clean-code` catches readability and error
-handling. Skipping either leaves half the review undone.
+`simplify` and `clean-code` are always present; domain auditors are additive. Skipping either of the
+two core passes leaves half the review undone. Domain auditors that do not apply to the changeset
+(e.g. a concurrency auditor on a purely UI change) should be skipped — use judgment, not a checklist.
 
 **If trivial, skip Phase 3 entirely.**
 The multi-agent overhead exceeds the benefit for small changes. The point of this phase is catching
