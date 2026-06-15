@@ -11,6 +11,7 @@ paths:
 - Write styles for mobile devices first, then use media queries for larger screens.
 - Use relative units (em, rem, %) for sizing to ensure responsiveness and consistency.
 - Keep classes and their respective media queries together instead of separating them by screen size.
+- Look for skills for responsive design patterns.
 
 ```css
 /* Mobile base */

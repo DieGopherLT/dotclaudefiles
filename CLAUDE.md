@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **mono-repo for Claude Code plugins** containing ten specialized plugins:
 
-1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator)
+1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator, create-report)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
 3. **claude-management** - Claude Code memory file management (rulify, claudify, remember)
 4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
@@ -41,7 +41,7 @@ Key directories:
 
 Skills plugin for structured task execution and team setup:
 
-- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review: simplify + clean-code + parallel domain auditors discovered from available agents), `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric)
+- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review: simplify + clean-code + parallel domain auditors discovered from available agents), `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric), `create-report` (produces Markdown for context preservation or interactive HTML for comprehension/sharing; self-contained, navigable, zero external deps)
 
 ### dotclaudehooks
 
@@ -124,6 +124,7 @@ Spec-driven workflow toolkit that carries a feature from raw idea to verified im
 - Setting up a team or project structure with shared conventions
 - Scaffolding a Claude Code sub-agent (`claude-code-agent-creator`)
 - Authoring a dynamic workflow / orchestrating subagents at scale with `ultracode` (`workflow-creator`)
+- Creating an on-demand report or shareable artifact mid-session — without git workflow involvement (`create-report`)
 
 **Use dotclaudehooks when:**
 

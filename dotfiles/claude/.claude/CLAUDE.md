@@ -24,6 +24,9 @@
 - No emojis in responses, nor code, nor commit messages.
   - If you encounter an emoji in any file, delete it ASAP.
 - All code and comments generated must be in English, all the conversation output must be in Spanish.
+- When asked to create a report or produce a shareable artifact mid-session ("crea un reporte", "documenta esto", "crea un artefacto interactivo"), invoke the `create-report` skill.
+- Parse JSON via `jq`, never Python-based approaches.
+- Before installing a dependency, implementing a feature, or troubleshooting, query docs via the `context7-cli` skill. `ctx7` is installed; do not use `npx`.
 
 ## Planning Behavior
 
@@ -46,7 +49,7 @@ When the implementation diverges from the spec — new requirements emerge, cons
 
 ## Task Execution Behavior
 
-When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan (or spec), or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code. It carries the full workflow Diego expects: a design lens up front, letter-group task breakdown registered with TaskCreate, bisectable commits at group boundaries, LSP-first navigation, and a closing `simplify` + `clean-code` quality pass. Do not improvise this structure from memory — the skill is the source of truth, and consulting it keeps execution consistent across sessions. Skip it only for single-file, single-step changes.
+When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan (or spec), or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code. It carries the full workflow Diego expects: a design lens up front, letter-group task breakdown registered with TaskCreate, bisectable commits at group boundaries, LSP-first navigation, and a closing `code-review` + `clean-code` + `security-review` quality pass. Do not improvise this structure from memory — the skill is the source of truth, and consulting it keeps execution consistent across sessions. Skip it only for single-file, single-step changes.
 
 ## Sub-agent behavior
 
@@ -77,43 +80,4 @@ Check SSH aliases before connecting to any server. Batch SSH commands to avoid r
 
 ## Report Behavior
 
-Diego will occasionally request a report during a session. There are two distinct types:
-
-- **Context preservation**: Captures session knowledge so a future conversation can resume without loss of context.
-- **Comprehension/sharing**: Explains the work to Diego or a team member who was not part of the session.
-
-### Detecting intent
-
-If the request is ambiguous, use `AskUserQuestion` to clarify which type before writing.
-
-Signals that suggest **context preservation**: phrases like "save context", "preserve this session", "I'll continue later", or "checkpoint".
-
-Signals that suggest **comprehension/sharing**: phrases like "explain this", "share with the team", "make a report for X", or naming a specific audience.
-
-### What both types must include
-
-Document everything not directly inferable from the code or git history:
-
-- Decisions made and the reasoning behind them.
-- Assumptions that shaped the implementation.
-- Trade-offs considered and rejected alternatives.
-- Non-obvious constraints or external context that influenced the work.
-- References to relevant files, functions, and symbols so the reader can navigate the codebase.
-
-The report must be self-contained: a reader with no session context should be able to reconstruct the full picture from it alone.
-
-### Format by type
-
-**Context preservation** — Markdown. Place all file and symbol references in a dedicated section at the bottom of the document.
-
-**Comprehension/sharing** — Interactive HTML document:
-
-- Save as file, never output raw HTML in the conversation.
-- Use interactive elements (tabs, collapsible sections, navigation anchors) to maximize information density.
-- Include visual structure (tables, timelines, diagrams) where appropriate — HTML affords far more than Markdown.
-- The output must be openable directly in a browser and shareable as-is.
-
-### Bash tool usage
-
-- Instead of using python based approaches to parse JSON files, use `jq` instead.
-- Whenever you require to query docs of any dependency before installing it, implement a feature or troubleshoot, use the `context7-cli` skill. Remember that I have ctx7 installed, do not use npx.
+When asked to create a report, preserve session context, or produce a shareable artifact, invoke the `create-report` skill from dotclaudefiles.
