@@ -47,6 +47,7 @@ Include steps that are easy to skip:
 - Updating CLAUDE.md or documentation that reflects the change
 - Version bumps (package.json, plugin.json, etc.) when applicable
 - Invoking skills the user requested explicitly
+- Quality-review skill invocations (`/code-review xhigh --fix`, `clean-code`, `/security-review`, domain auditors) — register each as its own subtask so Phase 3 is visible in the task list
 
 **Register the breakdown with TaskCreate.**
 This is not optional for work at this scale — call `TaskCreate` with every step from the letter-group
@@ -98,14 +99,16 @@ This is a judgment call, not a checkbox:
    this phase
 2. Scan the available agents list for any with an auditing or review role — look for names or
    descriptions containing terms like `audit`, `review`, `check`, `inspector`, `validator`. Examples:
-   `testability-auditor`, `security-review`, `concurrency-checker`, `test-input-auditor`. Identify
-   every one that applies to the changeset's domain.
-3. Invoke `simplify` (effort `xhigh`), `clean-code`, and every domain-specific auditor identified
-   in step 2 **all in parallel** — each receives the same patch as context.
+   `testability-auditor`, `concurrency-checker`, `test-input-auditor`. Identify every one that
+   applies to the changeset's domain.
+3. Invoke `/code-review xhigh --fix`, `clean-code`, `/security-review` (focused on entry and exit
+   points of every flow touched by the changeset), and every domain-specific auditor identified in
+   step 2 **all in parallel** — each receives the same patch as context.
 
-`simplify` and `clean-code` are always present; domain auditors are additive. Skipping either of the
-two core passes leaves half the review undone. Domain auditors that do not apply to the changeset
-(e.g. a concurrency auditor on a purely UI change) should be skipped — use judgment, not a checklist.
+`/code-review xhigh --fix`, `clean-code`, and `/security-review` are always present; domain auditors
+are additive. Skipping any of the three core passes leaves part of the review undone. Domain auditors
+that do not apply to the changeset (e.g. a concurrency auditor on a purely UI change) should be
+skipped — use judgment, not a checklist.
 
 **If trivial, skip Phase 3 entirely.**
 The multi-agent overhead exceeds the benefit for small changes. The point of this phase is catching
