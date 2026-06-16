@@ -1,6 +1,6 @@
 ---
 title: spec-kit Plugin — Spec-Driven Workflow Orchestration
-version: 1.1
+version: 1.2
 date_created: 2026-06-15
 last_updated: 2026-06-15
 owner: Diego (DieGopherLT)
@@ -169,6 +169,7 @@ Lives at the end of the spec body. Append-only entries; status mutated in place.
 <!-- managed by spec-kit:close-design — do not edit by hand -->
 
 ### DG-003 · open · src/payments/checkout.ts:88
+**Severity:** major · **Category:** integration
 **Gap:** The spec does not define what happens if the webhook arrives before invoice confirmation.
 **Closes when:** A policy exists defining ordering between webhook and confirmation — the decision, not the mechanism.
 ```
@@ -179,7 +180,7 @@ Format rules:
   - `<id>`: `DG-NNN`, zero-padded to 3 digits, monotonically increasing within a spec, assigned by `close-design`.
   - `<status>`: `open` during the loop. (Arbitration transitions are terminal removals, not persisted statuses — see CON-005/REQ-017.)
   - `<anchor>`: mirrors contract A's `anchor`.
-- **Body**: `**Gap:**` and `**Closes when:**` lines, mapped 1:1 from contract A's `gap` and `closes_when`. `category` and `severity` MAY be appended to the header as `· <severity>/<category>` if Diego wants them visible; default omits them to keep the line short.
+- **Body**: a `**Severity:** <severity> · **Category:** <category>` line carrying those two contract-A fields verbatim, then `**Gap:**` and `**Closes when:**` lines mapped 1:1 from contract A's `gap` and `closes_when`. Every contract-A field is persisted — none is computed by the enforcer and then discarded. Severity and category exist for Phase-2 human triage, not for dedup.
 - **Seen-set derivation**: the set of all header lines (id + anchor) plus their `Gap` bodies. `close-design` builds the fresh enforcer's "out of scope" list from these.
 - **Managed marker**: the HTML comment immediately under the heading is REQUIRED (CON-004).
 - **Empty state**: a freshly created spec has the heading + comment and no entries (REQ-023).
