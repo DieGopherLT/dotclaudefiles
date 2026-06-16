@@ -109,12 +109,14 @@ The Phase 3 quality suite from `task-planning` runs in every strategy; only its 
 
 ## Step 5 — Verify the change actually works
 
-Do not rely on tests alone — they can be incomplete, wrong, or absent. Manually check the behavior the changeset affects, in a way that fits the project:
+Do not rely on tests alone — they can be incomplete, wrong, or absent. When the project gives you a way to exercise the behavior, manually check what the changeset affects, in a way that fits the project:
 
 - REST API: send requests to the affected endpoints with `curl` and check the responses. Inspect local databases directly if you need to confirm the data-layer effect (local environments only; check credentials if needed).
 - Browser/client-side change: try the `chrome-devtools` MCP. If blocked by an authentication wall, you may stop, as long as the prior steps succeeded.
 
-This step is always yours, regardless of strategy — including after a workflow returns.
+**Verification is not always possible.** Some projects offer no runnable entry point, no local environment, or simply no mechanism to exercise the change. Attempt verification whenever the project facilitates it — that is always preferable. But when it genuinely does not, do not force it or block on it: a complete, closed spec plus a passing quality gate is a sufficient bar to consider the work done. Prefer real verification when available; accept its absence when the project makes it infeasible, and say so plainly rather than claiming a check you could not run.
+
+This step is yours whenever it is feasible, regardless of strategy — including after a workflow returns.
 
 ## Step 6 — Cleanup
 
