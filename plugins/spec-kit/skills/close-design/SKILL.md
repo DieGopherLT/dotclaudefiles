@@ -76,16 +76,18 @@ The enforcer's `closes_when` MUST describe the *type* of decision needed, never 
 
 ## Contract B — Design Gaps entry format
 
-Append-only entries; the header line carries everything the seen-set and the human scan need.
+Append-only entries. The header carries the id, status, and anchor for fast scanning and dedup; the body preserves the rest of the finding so the Phase 2 arbiter can triage by severity and category. Every Contract A field is persisted — none is computed by the enforcer and then discarded.
 
 ```markdown
 ### DG-003 · open · src/payments/checkout.ts:88
+**Severity:** major · **Category:** integration
 **Gap:** The spec does not define what happens if the webhook arrives before invoice confirmation.
 **Closes when:** A policy exists defining ordering between webhook and confirmation — the decision, not the mechanism.
 ```
 
-- **Header**: `### <id> · <status> · <anchor>`. `<id>` is `DG-NNN`. `<status>` is `open` throughout Phase 1. `<anchor>` mirrors the finding's `anchor`.
-- **Body**: `**Gap:**` and `**Closes when:**` lines, mapped 1:1 from the finding's `gap` and `closes_when`.
+- **Header**: `### <id> · <status> · <anchor>`. `<id>` is `DG-NNN`. `<status>` is `open` throughout Phase 1. `<anchor>` mirrors the finding's `anchor`. The header stays compact so a section with many entries remains scannable.
+- **Body**: a `**Severity:** <severity> · **Category:** <category>` line carrying those two Contract A fields verbatim, then `**Gap:**` and `**Closes when:**` lines mapped 1:1 from the finding's `gap` and `closes_when`.
+- **Seen-set** derives from the header (id + anchor) plus the `Gap` body — severity and category are for human triage, not for dedup.
 - Keep the managed comment directly under the `## Design Gaps` heading. Never reorder or hand-edit existing entries.
 
 ## Phase 2 — The arbitration gate (interactive, runs once)

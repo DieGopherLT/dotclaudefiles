@@ -1,6 +1,6 @@
 ---
 name: create-specification
-description: 'Create a new, closed and self-contained specification file optimized for Generative AI consumption and cold execution via the /goal command. Scaffolds the managed Design Gaps section that the close-design loop consumes.'
+description: 'Create a new, closed and self-contained specification file optimized for Generative AI consumption and cold execution via the /goal command. Scaffolds the managed Design Gaps section that the close-design loop consumes. Use when the user wants to write a new spec, draft a specification, capture requirements, or plan a substantial change as a cold-executable spec.'
 ---
 
 # Create Specification
@@ -31,7 +31,7 @@ This spec will be executed cold by a zero-context agent via the `/goal` command.
 
 A spec that covers only the whats is NOT closed. Do not stop until every implicit integration decision is written down.
 
-The specification should be saved in the [/spec/](/spec/) directory and named according to the following convention: `spec-[a-z0-9-]+.md`, where the name should be descriptive of the specification's content and starting with the highlevel purpose, which is one of [schema, tool, data, infrastructure, process, architecture, or design].
+The specification should be saved in the [/spec/](/spec/) directory and named according to the following convention: `spec-[a-z0-9-]+\.md`, where the name should be descriptive of the specification's content and starting with the highlevel purpose, which is one of [schema, tool, data, infrastructure, process, architecture, or design].
 
 The specification file must be formatted in well formed Markdown.
 

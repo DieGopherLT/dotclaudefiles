@@ -1,6 +1,6 @@
 ---
 name: update-specification
-description: 'Update an existing specification file optimized for Generative AI consumption, based on new requirements or code changes. Also the living-document maintainer for the spec-kit closure loop: folds accepted Design Gaps into the spec body and removes resolved entries from the managed section.'
+description: 'Update an existing specification file optimized for Generative AI consumption, based on new requirements or code changes. Also the living-document maintainer for the spec-kit closure loop: folds accepted Design Gaps into the spec body and removes resolved entries from the managed section. Use when the spec drifted from the code, requirements changed, the implementation diverged, or the user says to sync, revise, or update the spec.'
 ---
 
 # Update Specification
@@ -36,7 +36,7 @@ This skill is the maintainer of the managed `## Design Gaps` section during arbi
 
 Only `close-design` appends to the Design Gaps section; only this skill removes from it on resolution. Never reorder or rewrite entries by hand.
 
-The specification should be saved in the [/spec/](/spec/) directory and named according to the following convention: `[a-z0-9-]+.md`, where the name should be descriptive of the specification's content and starting with the highlevel purpose, which is one of [schema, tool, data, infrastructure, process, architecture, or design].
+The specification should be saved in the [/spec/](/spec/) directory and named according to the following convention: `spec-[a-z0-9-]+\.md`, where the name should be descriptive of the specification's content and starting with the highlevel purpose, which is one of [schema, tool, data, infrastructure, process, architecture, or design].
 
 The specification file must be formatted in well formed Markdown.
 

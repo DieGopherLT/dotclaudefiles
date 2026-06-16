@@ -35,9 +35,10 @@ This skill is a **Template Method**: a fixed algorithm skeleton where only one s
 ## Step 1 — Preconditions
 
 1. If `-w` was passed, create the worktree via `branching` and enter it before anything else. Otherwise ensure you are on a dedicated branch (never `main`/trunk); create one via `branching` if needed.
-2. Read the full spec. Treat it as the single source of truth — it is closed and self-contained by construction.
-3. Load `LSP` if available; it makes navigating an existing codebase faster and more accurate than text search for code symbols.
-4. Use the `task-planning` skill to decompose the spec into letter-group task blocks and register them with TaskCreate. Then derive the **dependency graph** between blocks — do not trust the letter ordering, which groups by topic, not execution order.
+2. Read the full spec. Treat it as the single source of truth — it should be closed and self-contained by construction.
+3. **Verify closure.** Check the spec's `## Design Gaps` section. If it still contains entries (any `DG-NNN`), the design is NOT closed — implementing now risks exactly the wrong-guess failure this plugin exists to prevent. Stop and tell the user to run `spec-kit:close-design` first, rather than proceeding on an open spec.
+4. Load `LSP` if available; it makes navigating an existing codebase faster and more accurate than text search for code symbols.
+5. Use the `task-planning` skill to decompose the spec into letter-group task blocks and register them with TaskCreate. Then derive the **dependency graph** between blocks — do not trust the letter ordering, which groups by topic, not execution order.
 
 ## Step 2 — Select the strategy (the dispatch)
 
