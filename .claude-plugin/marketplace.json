@@ -49,6 +49,11 @@
       "name": "domain-restructure",
       "description": "Autonomous structural refactor that reshapes a codebase from layer-first into feature-first screaming architecture (modules/<domain>/<layer>). Applies strategic DDD to discover bounded contexts, classify subdomains, then relocate files and rewrite imports with zero functional change inside a dedicated worktree.",
       "source": "./plugins/domain-restructure"
+    },
+    {
+      "name": "spec-kit",
+      "description": "Spec-driven workflow toolkit: author closed, self-contained specs, harden their design through a fresh-auditor closure loop (closed-design-enforcer), then dispatch implementation across write-directly, agent-waves, and workflow strategies. Pairs with the /goal command.",
+      "source": "./plugins/spec-kit"
     }
   ]
 }

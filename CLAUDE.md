@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing nine specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing ten specialized plugins:
 
 1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
@@ -15,6 +15,7 @@ This is a **mono-repo for Claude Code plugins** containing nine specialized plug
 7. **typescript-migration** - Autonomous JS-to-TS migration pipeline (audit, tooling setup, shared types extraction, parallel per-chunk typing, progressive strict-mode consolidation)
 8. **git-toolkit** - Git workflow enforcement (commit standards, branch naming, conflict resolution for rebases and merges, squash planning for interactive rebases)
 9. **domain-restructure** - Autonomous layer-first to feature-first restructurer (strategic-DDD domain discovery, subdomain classification, parallel per-domain moves, import consolidation with build gate)
+10. **spec-kit** - Spec-driven workflow toolkit (closed self-contained specs, design-closure loop via closed-design-enforcer, implement-spec dispatcher across direct/agent-waves/workflow strategies)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -30,7 +31,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 9 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure)
+- **`plugins/`**: Contains the 10 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure, spec-kit)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -101,6 +102,14 @@ Autonomous structural refactor that reshapes a codebase from layer-first (top-le
 - **Skill**: `domain-restructure` (orchestrator: enters a dedicated worktree, runs the 6-phase Workflow, hands back for merge in a single green commit)
 - **Strategic DDD only**: discovers bounded contexts and classifies subdomains to decide where files belong; never touches tactical constructs (entities, aggregates, events) inside file contents
 
+### spec-kit
+
+Spec-driven workflow toolkit that carries a feature from raw idea to verified implementation over a single source of truth (the spec). Pairs with the `/goal` command:
+
+- **Agent**: `closed-design-enforcer` (read-only design-gap auditor: detects missing/ambiguous/unverifiable design decisions, returns structured findings with a conceptual `closes_when`, never a concrete solution; spawned fresh each round, no closure authority)
+- **Skills**: `create-specification` / `update-specification` (augmented copies: closed, self-contained specs ready for cold `/goal` execution, with a managed Design Gaps section), `close-design` (loop-until-dry orchestrator: sole writer of the Design Gaps section and stateful seen-set holder; spawns a fresh enforcer per round until zero net-new gaps, then runs a single human arbitration gate), `implement-spec` (Template Method + Strategy dispatcher: selects write-directly / agent-waves / workflow by two axes — context-budget scale and orchestration closure — then executes, quality-gates, and verifies)
+- **Closure philosophy**: the design is closed (no unresolved gaps) before implementation; the dispatcher picks workflow only when coordination is decision-closed, baking the quality gate into the script
+
 ## Choosing the Right Plugin
 
 **Use claude-management when:**
@@ -163,6 +172,14 @@ Autonomous structural refactor that reshapes a codebase from layer-first (top-le
 - You want it run autonomously inside an isolated worktree, ending in a single green commit ready to review
 - Note: this is strategic-DDD placement only; it never rewrites tactical constructs (entities, aggregates, events) inside files
 
+**Use spec-kit when:**
+
+- Authoring a closed, self-contained spec meant to be executed cold via `/goal` (`create-specification`)
+- Hardening a spec's design before implementation — finding and resolving design gaps until none remain (`close-design` + `closed-design-enforcer`)
+- Keeping a spec in sync as work evolves, folding accepted gaps into the body (`update-specification`)
+- Implementing a closed spec and wanting the execution strategy chosen automatically by scale and orchestration closure (`implement-spec`)
+- Running the whole create → close-design → implement cycle over one source of truth alongside the `/goal` command
+
 ## Installing Plugins
 
 Each plugin can be installed independently:
@@ -181,6 +198,7 @@ Each plugin can be installed independently:
 /plugin install typescript-migration@diegopher
 /plugin install git-toolkit@diegopher
 /plugin install domain-restructure@diegopher
+/plugin install spec-kit@diegopher
 ```
 
 ## Configuration Files
