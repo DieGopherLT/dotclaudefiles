@@ -23,6 +23,17 @@ Two ways to reference another skill are allowed:
    Instead, advocate invoking the other skill for a practical use case, so the reader acquires that
    skill's full context by running it — never by reading one extracted detail out of context.
 
+## Exception: the `dotclaudefiles` core
+
+`dotclaudefiles` is the core plugin — the equivalent of the Claude dotfiles, always installed. It is the
+single dependency any other plugin or skill may assume is present. Because of that guarantee, referencing
+a specific resource of a `dotclaudefiles` skill or agent **from another plugin** is allowed: the coupling
+is stable, not fragile, since the target always travels with the environment.
+
+This exception is one-directional and does not generalize. It licenses pointing **at** `dotclaudefiles`
+internals from elsewhere — never any other plugin-to-plugin pair. For every pair that does not involve
+`dotclaudefiles`, the rule above holds unchanged.
+
 ## Why
 
 A cross-plugin pointer to a specific field breaks in two ways: the target plugin may not be installed,
