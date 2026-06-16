@@ -6,35 +6,60 @@ This reference catalogs every field the runtime understands, valid values, defau
 
 ## Required fields
 
-| Field         | Type   | Notes                                                                                                  |
-| ------------- | ------ | ------------------------------------------------------------------------------------------------------ |
-| `name`        | string | Lowercase kebab-case identifier, unique within scope (e.g., `code-reviewer`, `security-auditor`).      |
-| `description` | string | Tells Claude WHEN to invoke the agent. This is the primary auto-invocation signal. Combined with `when_to_use`, the cap is 1,536 characters. |
+**`name`** — type: string  
+Lowercase kebab-case identifier, unique within scope (e.g., `code-reviewer`, `security-auditor`).
+
+**`description`** — type: string  
+Tells Claude WHEN to invoke the agent. This is the primary auto-invocation signal. Combined with `when_to_use`, the cap is 1,536 characters.
 
 ## Common configuration fields
 
-| Field             | Valid values                                                                  | Default     | Behavior                                                                                                                                          |
-| ----------------- | ----------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tools`           | Comma-separated tool names (e.g., `Read, Grep, Glob, Bash`)                   | inherit all | **Allowlist**: only the listed tools are exposed. If omitted, the agent inherits every tool of its parent. Use `Agent(subtype-1, subtype-2)` to allowlist specific delegation targets. |
-| `disallowedTools` | Comma-separated tool names                                                    | empty       | **Denylist**: removes those tools from the inherited set. Applied BEFORE `tools` is resolved. Useful when you mostly want defaults but need to subtract a few risky tools. |
-| `model`           | `sonnet`, `opus`, `haiku`, full model ID (`claude-opus-4-7`), `inherit`       | `inherit`   | Resolution order: env var `CLAUDE_CODE_SUBAGENT_MODEL` → per-invocation parameter → frontmatter `model` → main session model.                     |
-| `color`           | `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`          | none        | Visual indicator in the task list and transcript. Pure cosmetic; pick something that helps you tell concurrent agents apart at a glance.          |
-| `when_to_use`     | string                                                                        | none        | Extra triggering context appended to `description` in the agent listing. Counts against the 1,536-char cap.                                       |
+**`tools`** — default: inherit all  
+Allowlist: only the listed tools are exposed. Comma-separated (e.g., `Read, Grep, Glob, Bash`). If omitted, the agent inherits every tool of its parent. Use `Agent(subtype-1, subtype-2)` to allowlist specific delegation targets.
+
+**`disallowedTools`** — default: empty  
+Denylist: removes those tools from the inherited set. Applied BEFORE `tools` is resolved. Useful when you mostly want defaults but need to subtract a few risky tools.
+
+**`model`** — default: `inherit`  
+Valid: `sonnet`, `opus`, `haiku`, full model ID (e.g., `claude-opus-4-7`), or `inherit`. Resolution order: env var `CLAUDE_CODE_SUBAGENT_MODEL` → per-invocation parameter → frontmatter `model` → main session model.
+
+**`color`** — default: none  
+Valid: `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`. Visual indicator in the task list and transcript. Pure cosmetic; pick something that helps you tell concurrent agents apart at a glance.
+
+**`when_to_use`** — default: none  
+Extra triggering context appended to `description` in the agent listing. Counts against the 1,536-char cap.
 
 ## Advanced fields
 
-| Field            | Valid values                                                                | Notes                                                                                                                                                                |
-| ---------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `permissionMode` | `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`    | Inherited from parent unless parent uses `bypassPermissions` or `acceptEdits`. **Danger**: `bypassPermissions` skips all prompts, including writes inside `.git`/`.claude`. |
-| `maxTurns`       | integer                                                                     | Hard cap on agentic turns before the agent halts. Use to prevent runaway loops in autonomous workers.                                                                |
-| `skills`         | List of skill names (e.g., `[api-conventions, error-handling-patterns]`)    | Preloads the FULL content of those skills into the agent's context at startup. Skills marked `disable-model-invocation: true` cannot be preloaded.                   |
-| `mcpServers`     | List of server names or inline definitions                                  | Connects MCP servers to the agent. Inline definitions disconnect when the agent finishes. **Not supported in plugin sub-agents.**                                    |
-| `hooks`          | Hook configuration object                                                   | Defines `PreToolUse` / `PostToolUse` / `Stop` hooks scoped to this agent only. Same shape as `settings.json` hooks. **Not supported in plugin sub-agents.**          |
-| `memory`         | `user`, `project`, `local`                                                  | Enables persistent cross-session memory under `agent-memory/<name>/`. The first ~200 lines or 25KB of `MEMORY.md` get auto-injected.                                 |
-| `background`     | `true` / `false`                                                            | When `true`, the agent runs as a background task: permissions pre-approved at launch, new permission requests are auto-denied. `AskUserQuestion` fails silently.     |
-| `isolation`      | `worktree`                                                                  | Spawns a temporary git worktree. The agent's edits go there, not into the current checkout. Auto-cleanup if the agent makes no changes. Useful for parallel testing. |
-| `effort`         | `low`, `medium`, `high`, `xhigh`, `max`                                     | Effort level while the agent is active. Overrides session-level effort. Honored only by models that support it.                                                       |
-| `initialPrompt`  | string                                                                      | Auto-submitted as the first user turn when the agent runs as the main session agent (via `--agent` flag or `agent` setting). Slash commands and skills are processed. |
+**`permissionMode`**  
+Valid: `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`. Inherited from parent unless parent uses `bypassPermissions` or `acceptEdits`. **Danger**: `bypassPermissions` skips all prompts, including writes inside `.git`/`.claude`.
+
+**`maxTurns`** — type: integer  
+Hard cap on agentic turns before the agent halts. Use to prevent runaway loops in autonomous workers.
+
+**`skills`**  
+List of skill names (e.g., `[api-conventions, error-handling-patterns]`). Preloads the FULL content of those skills into the agent's context at startup. Skills marked `disable-model-invocation: true` cannot be preloaded.
+
+**`mcpServers`**  
+List of server names or inline definitions. Connects MCP servers to the agent. Inline definitions disconnect when the agent finishes. **Not supported in plugin sub-agents.**
+
+**`hooks`**  
+Hook configuration object. Defines `PreToolUse` / `PostToolUse` / `Stop` hooks scoped to this agent only. Same shape as `settings.json` hooks. **Not supported in plugin sub-agents.**
+
+**`memory`**  
+Valid: `user`, `project`, `local`. Enables persistent cross-session memory under `agent-memory/<name>/`. The first ~200 lines or 25KB of `MEMORY.md` get auto-injected.
+
+**`background`**  
+Valid: `true` / `false`. When `true`, the agent runs as a background task: permissions pre-approved at launch, new permission requests are auto-denied. `AskUserQuestion` fails silently.
+
+**`isolation`**  
+Valid: `worktree`. Spawns a temporary git worktree. The agent's edits go there, not into the current checkout. Auto-cleanup if the agent makes no changes. Useful for parallel testing.
+
+**`effort`**  
+Valid: `low`, `medium`, `high`, `xhigh`, `max`. Effort level while the agent is active. Overrides session-level effort. Honored only by models that support it.
+
+**`initialPrompt`** — type: string  
+Auto-submitted as the first user turn when the agent runs as the main session agent (via `--agent` flag or `agent` setting). Slash commands and skills are processed.
 
 ## Plugin restrictions
 
