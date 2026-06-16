@@ -27,17 +27,22 @@
 
 ## Planning Behavior
 
-Given a task that requires careful planning, instead of entering plan mode, use the `create-specification` skill to produce a detailed spec file. The spec must be fully self-contained: it must embed all relevant context from the current conversation so that an agent with zero knowledge of this conversation can execute it cold via a `/goal` command without any additional context.
+Given a task that requires careful planning, instead of entering plan mode, drive the spec-driven cycle from the `spec-kit` plugin. The single source of truth is one spec file, and the cycle is **create → close-design → implement**:
 
-Self-contained means two things:
+1. **Author the spec** with `spec-kit:create-specification`. The spec must be fully self-contained: it must embed all relevant context from the current conversation so that an agent with zero knowledge of it can execute it cold via a `/goal` command without any additional context.
 
-- **The whats**: requirements, acceptance criteria (Given-When-Then), and data contracts — field by field, measurable and testable.
-- **The integration hows**: every decision that was implicit in the conversation or relies on repo conventions must be made explicit. If a cold agent would have to guess how to wire a component, where to place a file, how concurrency is handled, or which existing code to extend — that belongs in the spec. A spec that only covers the whats will cause a cold agent to make at least one wrong integration decision. Integration hows must include:
-  - Concrete `file:line` anchors for every integration point (injection sites, choke points, existing types to extend, route registration locations). A cold agent must be able to navigate directly without exploring.
-  - Non-obvious constraints of the domain made explicit: ordering invariants, lifecycle (create / use / release), state-machine rules, or concurrency constraints if applicable — whatever a cold agent could not infer from the code alone.
-  - The exact wiring shape: which constructor receives which dependency, where the new component is instantiated, and which existing call sites change.
+   Self-contained means two things:
+   - **The whats**: requirements, acceptance criteria (Given-When-Then), and data contracts — field by field, measurable and testable.
+   - **The integration hows**: every decision that was implicit in the conversation or relies on repo conventions must be made explicit. If a cold agent would have to guess how to wire a component, where to place a file, how concurrency is handled, or which existing code to extend — that belongs in the spec. A spec that only covers the whats will cause a cold agent to make at least one wrong integration decision. Integration hows must include:
+     - Concrete `file:line` anchors for every integration point (injection sites, choke points, existing types to extend, route registration locations). A cold agent must be able to navigate directly without exploring.
+     - Non-obvious constraints of the domain made explicit: ordering invariants, lifecycle (create / use / release), state-machine rules, or concurrency constraints if applicable — whatever a cold agent could not infer from the code alone.
+     - The exact wiring shape: which constructor receives which dependency, where the new component is instantiated, and which existing call sites change.
 
-When the implementation diverges from the original spec — new requirements emerge, constraints change, or the code evolves — use the `update-specification` skill to keep the spec in sync. The spec is a living document: it should always reflect the current state of the work, not just the initial plan.
+2. **Close the design** with `spec-kit:close-design`. It runs a fresh-auditor loop that surfaces design gaps until none remain, then a single arbitration gate, leaving the spec closed before any code is written.
+
+3. **Implement** with `spec-kit:implement-spec` (typically under `/goal`). It dispatches to the right execution strategy and runs it to a verified result.
+
+When the implementation diverges from the spec — new requirements emerge, constraints change, or the code evolves — use `spec-kit:update-specification` to keep the spec in sync. The spec is a living document: it should always reflect the current state of the work, not just the initial plan.
 
 ## Task Execution Behavior
 
