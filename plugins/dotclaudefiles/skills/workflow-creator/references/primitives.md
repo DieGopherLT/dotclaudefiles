@@ -55,6 +55,7 @@ agent(prompt: string, opts?: {
 - There is **no `effort` field** — see `thinking-load.md`. Effort comes from the session or a pinned `agentType`.
 - `opts.model` default is to **omit** it: the agent inherits the main-loop model, which is usually correct. Set it to downshift cheap roles.
 - `opts.isolation: 'worktree'` costs ~200-500ms + disk per agent; the worktree auto-removes if unchanged. Use ONLY when agents mutate files in parallel and would conflict.
+- **Worktree convergence invariant.** Every `isolation: 'worktree'` agent must have its worktree **consolidated back into the working directory where the workflow was orchestrated** (main or another worktree — the flow lands where it started). Consolidation is a sequential barrier run by a git-capable `agent()` — the script has no filesystem, so it cannot merge anything itself — that folds the merges and resolves conflicts in **one transaction**; verification is a **separate** agent; the artifact is the **return value**, written by the orchestrator. Run it while the worktrees still exist. Full shape: Recipe 5 in `recipes.md`.
 - `opts.agentType` composes with `schema` (the StructuredOutput instruction is appended to the custom agent's system prompt).
 
 ## `pipeline()`

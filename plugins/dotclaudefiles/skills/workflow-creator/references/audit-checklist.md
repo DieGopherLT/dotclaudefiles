@@ -67,13 +67,14 @@ The source of truth for **audit mode**. Walk an existing workflow script against
 - **An `agent()` doing plain-code work.** A subagent spawned to dedup, filter, sort, or route by a known rule. Why it matters: it spends model tokens on what JavaScript does for free. Fix: replace with plain code. **Major** (cost) or **Minor** (if tiny).
 - **Global `phase()` inside concurrent stages.** `phase()` called from within `pipeline()`/`parallel()` stages instead of passing `phase` as an `agent()` opt. Why it matters: concurrent stages race on the global phase state, scrambling the progress display. Fix: pass `{ phase: '...' }` per `agent()` call. **Minor.**
 - **Weak or missing labels on a large fan-out.** Why it matters: an unlabeled 100-agent run is unreadable in `/workflows`. Fix: set a descriptive `label`. **Minor.**
+- **Worktree fan-out with no consolidation.** A fan-out of `isolation: 'worktree'` agents that mutate files but is never folded back into the orchestrating working tree. Why it matters: the mutations stay in detached worktrees and never reach the working directory where the flow was orchestrated — the work is stranded and the run yields no usable result. Fix: end the fan-out with a consolidation barrier — one git-capable `agent()` that merges every worktree and resolves conflicts in a single transaction (the script can't touch git itself), a separate verification agent, and the artifact written by the orchestrator from the return. See Recipe 5. **Major** — a **Blocker** when those mutations are the workflow's sole output, since nothing converges and it produces no work.
 
 ## 8. Severity rubric (for the report)
 
 | Severity | Definition | Examples |
 | --- | --- | --- |
-| **Blocker** | Fails/throws at runtime, never terminates, or produces no work | `Date.now()`, non-literal `meta`, TS syntax, `>4096` items, unguarded dynamic loop, dedup-vs-confirmed non-termination, unresolved `agentType` |
-| **Major** | Runs, but wastes significant budget or risks a wrong/incomplete answer | Fleet inheriting `xhigh`, unjustified barrier, processed `agent()` without `schema`, missing `.filter(Boolean)`, silent cap, unverified findings |
+| **Blocker** | Fails/throws at runtime, never terminates, or produces no work | `Date.now()`, non-literal `meta`, TS syntax, `>4096` items, unguarded dynamic loop, dedup-vs-confirmed non-termination, unresolved `agentType`, worktree fan-out left unconsolidated when it is the sole output |
+| **Major** | Runs, but wastes significant budget or risks a wrong/incomplete answer | Fleet inheriting `xhigh`, unjustified barrier, processed `agent()` without `schema`, missing `.filter(Boolean)`, silent cap, unverified findings, worktree fan-out left unconsolidated |
 | **Minor** | Style, hygiene, or small optimization | Global `phase()` in stages, weak labels, needless worktree, tiny plain-code-as-agent |
 
 When a finding could sit in two tiers, place it by **blast radius**: does it break the run (blocker), corrupt the answer or burn the budget (major), or merely read poorly (minor)?
