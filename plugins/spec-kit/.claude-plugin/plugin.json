@@ -1,6 +1,6 @@
 {
   "name": "spec-kit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Diego's spec-driven workflow toolkit: create closed, self-contained specs, harden their design through a fresh-auditor closure loop, and dispatch implementation across direct/agent-waves/workflow strategies.",
   "author": {
     "name": "Diego",

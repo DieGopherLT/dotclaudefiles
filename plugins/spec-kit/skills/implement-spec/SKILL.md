@@ -8,7 +8,6 @@ description: >
   orchestration closure. Use after a spec's design is closed (via close-design) and the user wants it
   built. Trigger on "implement the spec", "build this spec", "execute the spec", or a /goal aimed at a
   spec file.
-disable-model-invocation: true
 ---
 
 You are going to implement the requirements, constraints, guidelines, and acceptance criteria of the spec file: $ARGUMENTS. If no argument is present, ask the user for the spec file path or its content.
