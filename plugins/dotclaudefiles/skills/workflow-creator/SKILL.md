@@ -149,7 +149,7 @@ Runtime constraints that bite (full list in `references/primitives.md`):
 - Author the script inline in the `Workflow` call (don't Write it to a file first). Every invocation persists the script and returns its path.
 - To iterate, **edit that path** with Edit/Write and re-invoke with `{scriptPath}` — don't resend the whole script.
 - To resume after a pause/edit, relaunch with `{scriptPath, resumeFromRunId}`: the unchanged prefix of `agent()` calls returns cached results instantly; the first edited/new call onward runs live. Same script + same args → 100% cache hit. (This is *why* `Date.now()`/`Math.random()` are banned.)
-- Use `isolation: 'worktree'` only when agents mutate files in parallel and would conflict — it costs ~200-500ms + disk per agent.
+- Use `isolation: 'worktree'` only when agents mutate files in parallel and would conflict — it costs ~200-500ms + disk per agent. Every worktree that mutates files must then be **consolidated** back into the orchestrating working tree: a sequential barrier agent (git-capable — the script can't touch the filesystem) folds the merges and resolves conflicts in one transaction, a separate agent verifies, and the orchestrator writes any consolidation artifact from the return. See Recipe 5 in `references/recipes.md`.
 
 ## Output: minimal workflow skeleton
 
@@ -222,7 +222,7 @@ Read these when you need depth:
 - `references/primitives.md` — `agent`/`parallel`/`pipeline`/`phase`/`log`/`budget`/`workflow` signatures, `null` semantics, concurrency and total caps, the `meta` block, and every runtime constraint.
 - `references/thinking-load.md` — Assigning model + effort per workflow role: why `agent()` has `model` but no `effort`, the three effort levers (model / session / `agentType`), the role→tier table, and how this differs from tuning a standalone sub-agent.
 - `references/quality-patterns.md` — Full code for adversarial verify, perspective-diverse verify, judge panel, loop-until-dry, multi-modal sweep, and completeness critic, with the convergence pitfalls spelled out.
-- `references/recipes.md` — End-to-end workflow templates: codebase review, multi-source research, large migration (worktree isolation), and exhaustive audit.
+- `references/recipes.md` — End-to-end workflow templates: codebase review, multi-source research, large migration (worktree isolation), worktree consolidation, and exhaustive audit.
 - `references/audit-checklist.md` — The audit-mode source of truth: every check grouped by category (data-flow shape, thinking load, structured output, quality patterns, budget, runtime safety), each with what to look for, why it matters, the fix, and its severity.
 
 ## Golden rules (do not violate)
@@ -234,3 +234,4 @@ Read these when you need depth:
 5. **Schema, then `.filter(Boolean)`.** Force structured output for any processed result, and filter nulls before using fan-out results — skipped or dead agents resolve to `null`.
 6. **No silent truncation.** If the workflow caps coverage (top-N, no retry, sampling), `log()` what was dropped — a silent cap reads as "covered everything."
 7. **Resume-safe code only.** No `Date.now()` / `Math.random()` / argless `new Date()`; `meta` is a pure literal; plain JS, no TypeScript.
+8. **Worktrees must converge.** Any `isolation: 'worktree'` fan-out ends with a consolidation barrier that folds every worktree back into the orchestrating working tree (main or another worktree — the flow lands where it started) — merge plus conflict resolution in one git-capable agent (the script can't touch git), verification in a separate agent, artifact written by the orchestrator from the return. A workflow that mutates files in worktrees but never consolidates leaves the work stranded.

@@ -154,6 +154,57 @@ while (dry < 2 && (!budget.total || budget.remaining() > 80_000)) {
 return { confirmed }
 ```
 
+## Recipe 5: Consolidating worktrees (fan-out -> consolidate -> verify)
+
+The closing half of Recipe 3. A worktree fan-out leaves every mutation stranded in a detached worktree; the work only counts once it **converges back into the working directory where the workflow was orchestrated** (main or another worktree — the flow lands where it started). This recipe is that convergence.
+
+Three non-obvious constraints drive the shape:
+
+- **Consolidation must be an `agent()`, never plain code.** The script has no filesystem and no git access, so it cannot `merge` anything itself. A git-capable agent does the folding.
+- **It is a barrier, not a fan-out.** Everything converges on one working tree, so consolidation is serialized by definition — one agent, after the `pipeline()`/`parallel()`, never concurrent with it. And it must run **while the worktrees still exist** (unchanged ones auto-remove).
+- **Consolidate + resolve conflicts are one transaction, one agent.** They share the same mutable index; a separate conflict-fixer would need the full live state of the merge. The artifact is **output, not a phase** — the agent returns a structured result and the orchestrator (the main loop) writes the report from the return.
+
+```js
+export const meta = {
+  name: 'consolidate-worktrees',
+  description: 'Converge parallel worktree mutations into the orchestrating tree, then verify',
+  phases: [{ title: 'Transform' }, { title: 'Consolidate' }, { title: 'Verify' }],
+}
+
+const modules = args?.modules ?? []   // discovered inline before launching the workflow
+
+// Phase 1 — fan out file mutations, each in its own worktree (see Recipe 3).
+const transformed = (await pipeline(
+  modules,
+  m => agent(`Migrate module ${m.path} from ${m.from} to ${m.to}. Report the worktree branch you committed to.`,
+    { label: `migrate:${m.path}`, phase: 'Transform', agentType: 'chunk-typer', isolation: 'worktree', schema: MIGRATION_SCHEMA }),
+)).filter(Boolean)
+
+// Phase 2 — BARRIER. One git-capable agent folds every worktree back into the orchestrating
+// working tree and resolves conflicts in a single transaction. The script can't touch git, so
+// this MUST be an agent. Merge and conflict resolution are NOT split — they share the index.
+const consolidation = await agent(
+  `Consolidate these worktree branches into the current working tree, in this order: ${JSON.stringify(transformed.map(t => t.branch))}.
+   Merge each; when a conflict arises, resolve it so the result preserves every module's intended change.
+   Report applied branches, conflicts encountered, and how each was resolved.`,
+  { label: 'consolidate', phase: 'Consolidate', schema: CONSOLIDATION_SCHEMA })
+
+// Phase 3 — verify the converged tree ONCE, as a separate read-only gate. The consolidator must
+// not be judge of its own merge.
+const gate = await agent(
+  `Verify the working tree after consolidation: the build and tests pass, and the diff is a pure
+   relocation/transform with zero unintended functional change. Report any failure.`,
+  { label: 'verify', phase: 'Verify', model: 'sonnet', schema: GATE_SCHEMA })
+
+if (!gate?.passed) log(`Consolidation gate failed: ${gate?.summary ?? 'see report'}`)
+
+// The artifact is OUTPUT, not a phase: return the structured result; the orchestrator writes
+// the consolidation report file from it (the script has no filesystem).
+return { consolidation, gate, branches: transformed.map(t => t.branch) }
+```
+
+When the worktrees were partitioned under a **single-owner invariant** — no two agents ever touch the same file — conflicts should be rare to nonexistent, and the consolidator merges cleanly. Keep conflict handling inline anyway: it is the exception path, not a reason to split the agent.
+
 ## Cross-cutting reminders
 
 - **Dedup, filter, sort, route → plain code.** Never spend an `agent()` on what JavaScript does for free.
