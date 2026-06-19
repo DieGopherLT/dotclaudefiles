@@ -81,3 +81,14 @@ Check SSH aliases before connecting to any server. Batch SSH commands to avoid r
 ## Report Behavior
 
 When asked to create a report, preserve session context, or produce a shareable artifact, invoke the `create-report` skill from dotclaudefiles.
+
+## Memory Behavior
+
+- When writing memory entries, always include a reference so the knowledge is auditable and traceable. Use a file path as the minimum; extend to `path::symbol` when the fact is tied to a specific symbol, or a commit SHA when the fact is about a specific change in history.
+- For transient memories — features in progress, pending branches, temporary decisions — add a `stale_when` field to the frontmatter with a short condition (a date, a branch event, or a one-line condition). Omit it for evergreen knowledge.
+
+## Compaction Behavior
+
+Prioritize saving knowledge proportional to the effort required to acquire it, especially when it is non-obvious from reading files — meaning it required deeper inference or additional context from the user.
+
+Knowledge that is easy to re-derive from reading files can be omitted; include a file path reference so it can be found again if needed.
