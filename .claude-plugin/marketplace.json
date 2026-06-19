@@ -54,6 +54,11 @@
       "name": "spec-kit",
       "description": "Spec-driven workflow toolkit: author closed, self-contained specs, harden their design through a fresh-auditor closure loop (closed-design-enforcer), then dispatch implementation across write-directly, agent-waves, and workflow strategies. Pairs with the /goal command.",
       "source": "./plugins/spec-kit"
+    },
+    {
+      "name": "refactoring-guru",
+      "description": "Reactive code-smell analysis and guided refactoring over the refactoring.guru taxonomy. Scans real code for 26 smells across 5 categories via parallel per-category detectors, maps each finding to concrete techniques from a catalog of 67, and applies the chosen transformation step by step under a safe test-refactor-test cycle.",
+      "source": "./plugins/refactoring-guru"
     }
   ]
 }
