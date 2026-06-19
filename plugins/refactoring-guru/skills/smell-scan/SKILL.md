@@ -36,7 +36,7 @@ enumerate files themselves; for a single symbol, narrow to its body and immediat
 Invoke the Workflow at `scripts/workflow.js`, passing the resolved target as `args`:
 
 ```
-Workflow({ scriptPath: "<plugin>/skills/smell-scan/scripts/workflow.js", args: { target: "<resolved target>" } })
+Workflow({ scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/smell-scan/scripts/workflow.js", args: { target: "<resolved target>" } })
 ```
 
 The Workflow runs five `smell-detector` agents in parallel — one per category (Bloaters, OO Abusers,
