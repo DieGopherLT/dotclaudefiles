@@ -18,21 +18,6 @@ clean, and quality-reviewed. Run through the three phases below in order — eac
 
 ## Phase 1 — Preparation
 
-**Pick a design lens first.**
-Before dividing the work, invoke the matching skill to surface non-obvious constraints:
-
-- `software-design-philosophy` — when designing module boundaries or APIs (information hiding,
-  deep vs shallow modules)
-- `pragmatic-programmer` — when choosing between architectural approaches (reversibility,
-  tracer bullets, DRY)
-- `domain-driven-design` — when modeling business domain concepts (entities, bounded contexts,
-  ubiquitous language)
-- `refactoring-patterns` — when the task IS a refactor with no new behavior; if you use this lens,
-  never mix refactoring commits with feature commits in the same commit
-
-If none of the lenses clearly fits, skip this step. The lenses exist to surface constraints, not to add
-process overhead on straightforward tasks.
-
 **Check git status before touching anything.**
 If the working tree shows non-trivial business logic files (not just config, docs, or lockfiles),
 create a new branch or enter a worktree before doing anything. Worktrees are preferred when changes
@@ -47,7 +32,7 @@ Include steps that are easy to skip:
 - Updating CLAUDE.md or documentation that reflects the change
 - Version bumps (package.json, plugin.json, etc.) when applicable
 - Invoking skills the user requested explicitly
-- Quality-review skill invocations (`/code-review xhigh --fix`, `clean-code`, `/security-review`, domain auditors) — register each as its own subtask so Phase 3 is visible in the task list
+- Quality-review skill invocations (`/code-review --fix`, `/security-review`, domain auditors) — register each as its own subtask so Phase 3 is visible in the task list
 
 **Register the breakdown with TaskCreate.**
 This is not optional for work at this scale — call `TaskCreate` with every step from the letter-group
@@ -70,12 +55,11 @@ One caveat: the LSP tool is loaded on demand and may not be available in a given
 present before committing to an LSP-first plan — and if it isn't, fall back to Read/Grep rather than
 stalling. Surface that fallback explicitly so the navigation strategy stays auditable.
 
-**Commit at group boundaries.**
-When all subtasks in a letter group are done (all A's, all B's), evaluate whether those changes form a
-logical unit that a `git bisect` run could isolate. If yes, commit. Use the project's commit format —
-typically `<type>: <description>` in under 96 characters, no body bullets, no emojis. A single commit
-per group is the norm; only split if the group contains genuinely independent changes that shouldn't
-travel together.
+**Commit as you go — not all at the end.**
+When all subtasks in a letter group are done, invoke the `commit` skill. If atomicity favors it,
+committing per subtask (A1, A2…) is valid instead of waiting for the whole group. The patch Phase 3
+reviews must be built commit by commit throughout the session, not dumped in one shot right before
+the review.
 
 **Mark tasks done immediately.**
 Call `TaskUpdate` as soon as a subtask finishes — not in batches at the end of a group. An accurate
@@ -101,14 +85,25 @@ This is a judgment call, not a checkbox:
    descriptions containing terms like `audit`, `review`, `check`, `inspector`, `validator`. Examples:
    `testability-auditor`, `concurrency-checker`, `test-input-auditor`. Identify every one that
    applies to the changeset's domain.
-3. Invoke `/code-review xhigh --fix`, `clean-code`, `/security-review` (focused on entry and exit
-   points of every flow touched by the changeset), and every domain-specific auditor identified in
-   step 2 **all in parallel** — each receives the same patch as context.
+3. Run the reviews in this order:
+   a. If any domain-specific auditors were identified in step 2, invoke them all in parallel first.
+      Skip this step if none apply.
 
-`/code-review xhigh --fix`, `clean-code`, and `/security-review` are always present; domain auditors
-are additive. Skipping any of the three core passes leaves part of the review undone. Domain auditors
-that do not apply to the changeset (e.g. a concurrency auditor on a purely UI change) should be
-skipped — use judgment, not a checklist.
+   b. Invoke `/code-review <effort> --fix` and wait for it to finish. `code-review` spawns multiple
+      internal agents depending on the effort level; running it alone avoids noise in the findings.
+
+      Choose the effort level based on the changeset evaluated in step 1:
+      - `medium` — single-file fix, config tweak, rename, or documentation-only change
+      - `high` — bounded change across 2–4 files, no new business logic
+      - `xhigh` — full feature, cross-cutting change, or new logic in the main data flow
+
+   c. Invoke `/security-review` only if the changeset touches an entry or exit barrier — user input
+      handling, authentication, authorization, API boundaries, or external service calls. Skip it for
+      purely internal changes where no trust boundary is crossed.
+
+Domain auditors are additive; skipping them when none apply is correct. `/code-review --fix` is
+always present. `/security-review` is conditional on barrier exposure — omitting it for internal-only
+changes is intentional, not an oversight.
 
 **If trivial, skip Phase 3 entirely.**
 The multi-agent overhead exceeds the benefit for small changes. The point of this phase is catching
