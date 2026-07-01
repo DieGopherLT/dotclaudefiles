@@ -17,43 +17,50 @@
   - **Behavioral**: Chain of Responsibility, Command, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor
   - **Not fully experienced in**: Mediator, Memento, State, Template Method, Visitor, Flyweight, Proxy, Composite — explain these when they come up rather than assuming familiarity.
 - When managing situations where multiple states are implied, go by default with a Finite State Machine approach, unless the problem clearly calls for a different pattern.
-- Diego is picky regarding code aesthetics, prefers it to be slightly more verbose if it improves readability. Values readability over terseness, but not to the point of excessive boilerplate.
+- Diego values legibility over everything else. Even if it implies additional lines of code, the way he evaluates code as 'legible' is by how fluid it reads, Uncle Bob said it best: "The code you write should read like well-written prose." When proposing solutions, proactively frame them in terms of legibility and readability.
 
 ## Session Behavior
 
 - No emojis in responses, nor code, nor commit messages.
   - If you encounter an emoji in any file, delete it ASAP.
 - All code and comments generated must be in English, all the conversation output must be in Spanish.
-- When asked to create a report or produce a shareable artifact mid-session ("crea un reporte", "documenta esto", "crea un artefacto interactivo"), invoke the `create-report` skill.
 - Parse JSON via `jq`, never Python-based approaches.
 - Before installing a dependency, implementing a feature, or troubleshooting, query docs via the `context7-cli` skill. `ctx7` is installed; do not use `npx`.
 
+## Bash tool behavior
+
+Most of the time, the user runs Claude Code inside a tmux session. Generate shorter answers if the user can also see the output of the commands you execute, in cases like
+running apps, test runs, and debugging sessions.
+
+For information gathering, verification, and general commands, use your own Bash tool directly — do not target tmux panes for these. Reserve tmux pane targeting strictly for launching apps that must stay running independently of the Bash tool.
+
+If you detect being under a tmux session, for every window running Claude Code, the user has at most 3 panes: the Claude Code one takes the left half of the screen, and the other two occupy the right half, split vertically. When a task requires launching an app (or two apps simultaneously, e.g. frontend + backend), target those panes instead of the Bash tool: the top-right pane runs the primary app for the cwd; the bottom-right pane runs the secondary/complementary app.
+
+Respect the layout.
+
 ## Planning Behavior
 
-Given a task that requires careful planning, instead of entering plan mode, drive the spec-driven cycle from the `spec-kit` plugin. The single source of truth is one spec file, and the cycle is **create → close-design → implement**:
+Enter `plan mode` when a prompt describes a non-trivial problem — trust your judgment to tell trivial from non-trivial. A secondary trigger: if you're mid-task and realize the scope is larger than expected, enter plan mode for the remaining work — do not re-litigate what's already been done.
 
-1. **Author the spec** with `spec-kit:create-specification`. The spec must be fully self-contained: it must embed all relevant context from the current conversation so that an agent with zero knowledge of it can execute it cold via a `/goal` command without any additional context.
-
-   Self-contained means two things:
-   - **The whats**: requirements, acceptance criteria (Given-When-Then), and data contracts — field by field, measurable and testable.
-   - **The integration hows**: every decision that was implicit in the conversation or relies on repo conventions must be made explicit. If a cold agent would have to guess how to wire a component, where to place a file, how concurrency is handled, or which existing code to extend — that belongs in the spec. A spec that only covers the whats will cause a cold agent to make at least one wrong integration decision. Integration hows must include:
-     - Concrete `file:line` anchors for every integration point (injection sites, choke points, existing types to extend, route registration locations). A cold agent must be able to navigate directly without exploring.
-     - Non-obvious constraints of the domain made explicit: ordering invariants, lifecycle (create / use / release), state-machine rules, or concurrency constraints if applicable — whatever a cold agent could not infer from the code alone.
-     - The exact wiring shape: which constructor receives which dependency, where the new component is instantiated, and which existing call sites change.
-
-2. **Close the design** with `spec-kit:close-design`. It runs a fresh-auditor loop that surfaces design gaps until none remain, then a single arbitration gate, leaving the spec closed before any code is written.
-
-3. **Implement** with `spec-kit:implement-spec` (typically under `/goal`). It dispatches to the right execution strategy and runs it to a verified result.
-
-When the implementation diverges from the spec — new requirements emerge, constraints change, or the code evolves — use `spec-kit:update-specification` to keep the spec in sync. The spec is a living document: it should always reflect the current state of the work, not just the initial plan.
+- Use all agentic resources available to collect as much information as possible to diminish uncertainty and ambiguity before proposing a plan.
+  - It means looking at skills, sub-agents whose domains might fit into the problem. For example, if the plan requires a migration and the project has a migration skill, use it!
+  - Does the plan involve some domain and there is an agent that specializes in that domain? Use it!
+- Do not include code snippets on plans unless an agent without this session's context would struggle to infer them.
+- Always include a summary of files to create and modify, with paths and brief description of the changes.
+- When a plan involves connecting multiple modules, components, or services, include contract previews, interface definitions, and/or API endpoints to clarify how they integrate and communicate with each other.
+- Before presenting any plan to the user, go through this checklist:
+  - Does the plan start by invoking the `task-planning` skill?
+  - Is the plan detailed enough that an agent without this session's context could execute it without further clarification? If not, add more details; especially on how different modules and components integrate and/or communicate with each other.
+  - Does the plan include a clear and concise summary of files to create and modify, with paths and a brief description of the changes? If not, add it.
 
 ## Task Execution Behavior
 
-When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan (or spec), or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code. It carries the full workflow Diego expects: a design lens up front, letter-group task breakdown registered with TaskCreate, bisectable commits at group boundaries, LSP-first navigation, and a closing `code-review` + `clean-code` + `security-review` quality pass. Do not improvise this structure from memory — the skill is the source of truth, and consulting it keeps execution consistent across sessions. Skip it only for single-file, single-step changes.
+When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan (or spec), or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code.
 
 ## Sub-agent behavior
 
 - The golden rule for foreground vs background: if you'll just wait for the agent to finish, call it on foreground. If you'll do something else while waiting, call it on background.
+- By default, invoke sub-gents on foreground.
 - Before launching a sub-agent, decide whether to split into multiple focused agents. Apply the same rules as real concurrent systems:
   - **Read-only agents**: launch as many as needed in parallel — no coordination required. This includes multi-perspective investigation: if a problem benefits from distinct angles (e.g. security vs. performance vs. correctness), split one agent per angle.
   - **Write agents**: ensure no two agents modify the same files. If overlap is unavoidable, isolate each agent in its own worktree (`isolation: "worktree"`) and combine the changes afterwards.
@@ -62,8 +69,7 @@ When a request is substantial — it touches 2+ files, involves 3+ sequential st
 ## Git Behavior
 
 When asked to commit changes — "commit", "make a commit", "commit this", "ship this", or any equivalent
-phrasing — invoke the `commit` skill. It owns the full workflow: staging, linting, message format,
-explicit approval, and verification. Do not improvise commit message format from memory.
+phrasing — invoke the `commit` skill.
 
 When creating a new branch — "create a branch", "new branch", "branch off", "checkout -b" — invoke the
 `branching` skill to apply the correct naming convention before executing any git command.
@@ -77,10 +83,6 @@ All local databases run in containers. Use `docker exec` with the container name
 ## SSH Behavior
 
 Check SSH aliases before connecting to any server. Batch SSH commands to avoid rate limiting.
-
-## Report Behavior
-
-When asked to create a report, preserve session context, or produce a shareable artifact, invoke the `create-report` skill from dotclaudefiles.
 
 ## Memory Behavior
 
