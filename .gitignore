@@ -29,3 +29,6 @@ node_modules/
 
 # Worktrees creados por skills (p. ej. retrofit-testing)
 .claude/worktrees/
+
+# SoT files transitorios de refactoring-guru (smell-scan / refactor)
+.claude/refactoring-guru/
