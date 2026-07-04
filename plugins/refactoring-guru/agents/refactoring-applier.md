@@ -7,7 +7,7 @@ description: >
   and reports what changed, why, and how it confirmed observable behavior was preserved. Scoped and
   surgical — it applies the single technique it was given, never an open-ended cleanup. Use when the
   refactor skill has identified a finding and chosen the technique to apply.
-tools: Read, Edit, Write, Bash, Grep, Glob
+tools: Read, Edit, Write, Bash, Grep, Glob, LSP
 model: sonnet
 effort: medium
 color: green

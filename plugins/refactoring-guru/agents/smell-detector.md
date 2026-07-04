@@ -8,7 +8,7 @@ description: >
   evidence, a 0-100 confidence score, and the mapped refactoring.guru techniques. Never modifies any
   file. Use when the smell-scan Workflow needs one category swept against real code with verifiable,
   located findings rather than generic Clean Code advice.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, LSP
 model: sonnet
 effort: high
 color: cyan
