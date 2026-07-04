@@ -41,6 +41,8 @@ Begin immediately:
 3. Use `Bash` only for read-only structural counts that speed detection — for example `wc -l` on a file,
    or `grep -c` to count occurrences. Never write, move, or delete anything.
 4. Judge each candidate against the detection criteria below and assign a confidence score.
+5. For each finding that clears the confidence bar, write its `resolution_plan` — the concrete action the
+   applier will take, naming what to extract/move/replace and where.
 
 ## Detection criteria per category
 
@@ -138,7 +140,8 @@ Return a single structured object matching the schema the Workflow enforces:
       "line_range": [45, 120],
       "evidence": "75-line function performs validation, transformation and persistence in one body",
       "confidence": 92,
-      "techniques": ["Extract Method", "Replace Temp with Query"]
+      "techniques": ["Extract Method", "Replace Temp with Query"],
+      "resolution_plan": "Extract validation (45-60), transformation (61-95), persistence (96-120) into three named functions; the body becomes three calls."
     }
   ]
 }
@@ -149,6 +152,8 @@ Return a single structured object matching the schema the Workflow enforces:
 - `line_range` is `[start, end]`; for a whole-file smell use the file's bounds.
 - `evidence` is one sentence stating what was observed, with the concrete number when it matters (line
   count, parameter count, chain length).
+- `resolution_plan` is a concrete, actionable sentence describing what to extract/move/replace and where —
+  written so `refactoring-applier` can execute it without re-reading the code to derive the plan itself.
 - Emit findings only for smells in YOUR category. An empty `findings` array is a valid, correct answer.
 
 ## Confidence Scoring
