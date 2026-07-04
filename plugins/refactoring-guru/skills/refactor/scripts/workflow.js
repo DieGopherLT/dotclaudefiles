@@ -16,9 +16,9 @@ export const meta = {
 //   args.buildCmd:     string    whole-project build/test gate
 //   args.testCmd:      string    scoped safe-cycle test command
 //   args.projectRoot:  string    absolute path inside the dedicated worktree
-//   args.preWorkBase:  string    SHA captured before EnterWorktree (unused
-//                                here — the skill uses it after this Workflow
-//                                returns, to collapse history)
+//   args.preWorkBase:  string    SHA captured before EnterWorktree — used as
+//                                the rollback point when the intra-domain
+//                                lane makes no changes to stage
 // ---------------------------------------------------------------------------
 
 const input = normalizeArgs(args)
@@ -26,6 +26,7 @@ const sotContents = Array.isArray(input?.sotContents) ? input.sotContents : []
 const buildCmd = input?.buildCmd
 const testCmd = input?.testCmd
 const projectRoot = input?.projectRoot
+const preWorkBase = input?.preWorkBase
 
 function normalizeArgs(raw) {
   if (typeof raw === 'string') {
@@ -38,21 +39,21 @@ function normalizeArgs(raw) {
   return raw ?? {}
 }
 
-// Fixed set from CON-004 — findings whose smell is one of these are
-// cross-cutting by name and deferred to Reconcile, never applied in the
-// parallel intra-domain lane.
-const CROSS_CUTTING_SMELLS = new Set(['Shotgun Surgery', 'Inappropriate Intimacy', 'Divergent Change'])
-
+// The applier is frozen (CON-001) and reports in its own Markdown voice — it
+// has no grounding for "domain" (it only ever sees one file/location) and no
+// instruction to reason about a "technique" field distinct from the prose it
+// already writes. Rather than trust an echoed value it was never told to
+// produce faithfully, the schema only asks it for what it CAN judge — whether
+// the edit happened, was skipped, and preserved behavior — and this script
+// fills in domain/technique/code itself from the finding it already knows.
 const APPLIER_SCHEMA = {
   type: 'object',
-  required: ['applied', 'skipped', 'reason', 'behaviorPreserved', 'technique', 'domain'],
+  required: ['applied', 'skipped', 'reason', 'behaviorPreserved'],
   properties: {
     applied: { type: 'boolean' },
     skipped: { type: 'boolean' },
     reason: { type: ['string', 'null'] },
     behaviorPreserved: { type: 'boolean' },
-    technique: { type: 'string' },
-    domain: { type: 'string' },
   },
 }
 
@@ -64,12 +65,12 @@ const RECONCILER_MARK_SCHEMA = {
 
 const RECONCILER_RECONCILE_SCHEMA = {
   type: 'object',
-  required: ['buildPasses', 'intraDomainHealthy', 'crossCuttingApplied'],
+  required: ['buildPasses', 'intraDomainHealthy', 'crossCuttingApplied', 'output'],
   properties: {
     buildPasses: { type: 'boolean' },
     intraDomainHealthy: { type: 'boolean' },
     crossCuttingApplied: { type: 'boolean' },
-    output: { type: 'string' },
+    output: { type: 'string', description: 'captured command output/exit code evidence for the build gate(s) actually run' },
   },
 }
 
@@ -78,10 +79,12 @@ const RECONCILER_RECONCILE_SCHEMA = {
 // has none). Flatten every domain's SoT findings into one array, tag each
 // with its parent domain, then bucket by resolution shape.
 //
-// A finding's cross_cutting flag (assigned by smell-scan's synthesis) is
-// authoritative for the cross-cutting bucket. Everything else is checked
-// against a cheap heuristic: does resolution_plan mention a path outside
-// this finding's own domain? This regex is only a pre-filter — it trims the
+// A finding's cross_cutting flag is already computed by smell-scan's
+// synthesis (CON-004's fixed smell-name set) and persisted in the SoT — it
+// is authoritative here, not recomputed, so the two skills can never drift
+// on what counts as cross-cutting. Everything else is checked against a
+// cheap heuristic: does resolution_plan mention a path outside this
+// finding's own domain? This regex is only a pre-filter — it trims the
 // obvious cases before spending an applier call. It is NOT the single-owner
 // guarantee: that enforcement happens inside the Apply-phase applier prompt
 // itself (the domain-boundary instruction below), since the sandbox here
@@ -98,7 +101,7 @@ const PATH_TOKEN = /[\w.-]+(?:\/[\w.-]+)+/g
 
 function resolutionSpansDomain(finding) {
   const tokens = finding.resolution_plan?.match(PATH_TOKEN) ?? []
-  return tokens.some((token) => !token.startsWith(finding.domain))
+  return tokens.some((token) => token !== finding.domain && !token.startsWith(`${finding.domain}/`))
 }
 
 const crossCutting = []
@@ -106,7 +109,7 @@ const skipped = []
 const intraDomainByDomain = {}
 
 for (const finding of allFindings) {
-  if (CROSS_CUTTING_SMELLS.has(finding.smell)) {
+  if (finding.cross_cutting) {
     crossCutting.push(finding)
     continue
   }
@@ -141,21 +144,38 @@ const applyResults = await parallel(
 async function applyDomain(domain, findings) {
   const outcomes = []
   for (const finding of findings) {
-    const outcome = await agent(applyPrompt(finding), {
+    const outcome = await agent(applyPrompt(finding, { crossCutting: false }), {
       label: `apply:${domain}:${finding.code}`,
       phase: 'Apply',
       schema: APPLIER_SCHEMA,
       agentType: 'refactoring-guru:refactoring-applier',
     })
-    outcomes.push({
-      ...(outcome ?? { applied: false, skipped: true, reason: 'agent call failed', behaviorPreserved: false, technique: finding.technique, domain }),
-      code: finding.code,
-    })
+    outcomes.push(toOutcome(outcome, finding, domain))
   }
   return { domain, outcomes }
 }
 
-function applyPrompt(finding) {
+// Builds the outcome this script reports for one finding, regardless of what
+// the applier echoed. domain/technique/code are always known from the
+// finding itself — the applier is never trusted to restate them (see
+// APPLIER_SCHEMA above).
+function toOutcome(outcome, finding, domain) {
+  return {
+    applied: Boolean(outcome?.applied),
+    skipped: outcome ? Boolean(outcome.skipped) : true,
+    reason: outcome?.reason ?? (outcome ? null : 'agent call failed'),
+    behaviorPreserved: Boolean(outcome?.behaviorPreserved),
+    technique: finding.technique,
+    domain,
+    code: finding.code,
+  }
+}
+
+function applyPrompt(finding, { crossCutting }) {
+  const boundaryConstraint = crossCutting
+    ? `This finding is cross-cutting (${finding.smell}) — its resolution is explicitly allowed to touch files outside a single domain.`
+    : `Only edit files under ${finding.domain}. If completing the resolution plan requires touching a file outside that domain, stop and report { skipped: true, reason: "spans domains" } instead of making the edit.`
+
   return `Apply the technique "${finding.technique}" to address the "${finding.smell}" smell at ${finding.path}:${finding.line_range[0]}-${finding.line_range[1]}.
 Evidence: ${finding.evidence}
 Resolution plan: ${finding.resolution_plan}
@@ -163,7 +183,7 @@ Run the scoped safe cycle with: ${testCmd}
 
 Two hard constraints for this autonomous run, overriding your default interactive behavior:
 - If no test covers this location, do NOT proceed with the smallest-steps fallback described in your own instructions. Instead report { skipped: true, reason: "no safety net" } and stop.
-- Only edit files under ${finding.domain}. If completing the resolution plan requires touching a file outside that domain, stop and report { skipped: true, reason: "spans domains" } instead of making the edit.
+- ${boundaryConstraint}
 
 Do not perform any git operation — staging and committing are handled elsewhere.`
 }
@@ -177,21 +197,31 @@ const intraDomainBehaviorPreserved = applyOutcomes.every((o) => o.skipped || o.b
 // Phase: Mark — single reconciliation agent call at the Apply barrier. Stages
 // the quiescent intra-domain tree and makes an ephemeral internal commit
 // (never surfaced to reviewed history — the skill collapses it after this
-// Workflow returns, per REQ-010).
+// Workflow returns, per REQ-010). Skipped when the intra-domain lane made no
+// actual changes (every finding was skipped, or there was nothing to apply):
+// `git add -A` + commit would fail with nothing staged, so `preWorkBase` —
+// the tree's state at worktree entry — is already the correct rollback point.
 // ---------------------------------------------------------------------------
 
 phase('Mark')
 
-const mark = await agent(
-  `Stage every change under ${projectRoot} with git add -A and make an internal commit capturing this intra-domain-green state. Return the resulting SHA.`,
-  {
-    label: 'mark:rollback-point',
-    phase: 'Mark',
-    schema: RECONCILER_MARK_SCHEMA,
-    agentType: 'refactoring-guru:refactoring-reconciler',
-  },
-)
-const rollbackSha = mark?.rollbackSha ?? null
+const anyIntraDomainApplied = applyOutcomes.some((o) => o.applied)
+
+let rollbackSha = preWorkBase ?? null
+if (anyIntraDomainApplied) {
+  const mark = await agent(
+    `Stage every change under ${projectRoot} with git add -A and make an internal commit capturing this intra-domain-green state. Return the resulting SHA.`,
+    {
+      label: 'mark:rollback-point',
+      phase: 'Mark',
+      schema: RECONCILER_MARK_SCHEMA,
+      agentType: 'refactoring-guru:refactoring-reconciler',
+    },
+  )
+  rollbackSha = mark?.rollbackSha ?? rollbackSha
+} else {
+  log('Mark: no intra-domain changes were applied — using preWorkBase as the rollback point instead of an empty commit.')
+}
 
 // ---------------------------------------------------------------------------
 // Phase: Reconcile — cross-cutting findings applied serially on the quiescent
@@ -206,26 +236,13 @@ phase('Reconcile')
 
 const crossCuttingOutcomes = []
 for (const finding of crossCutting) {
-  const outcome = await agent(applyCrossCuttingPrompt(finding), {
+  const outcome = await agent(applyPrompt(finding, { crossCutting: true }), {
     label: `reconcile:${finding.domain}:${finding.code}`,
     phase: 'Reconcile',
     schema: APPLIER_SCHEMA,
     agentType: 'refactoring-guru:refactoring-applier',
   })
-  crossCuttingOutcomes.push({
-    ...(outcome ?? { applied: false, skipped: true, reason: 'agent call failed', behaviorPreserved: false, technique: finding.technique, domain: finding.domain }),
-    code: finding.code,
-  })
-}
-
-function applyCrossCuttingPrompt(finding) {
-  return `Apply the technique "${finding.technique}" to address the "${finding.smell}" smell at ${finding.path}:${finding.line_range[0]}-${finding.line_range[1]}.
-Evidence: ${finding.evidence}
-Resolution plan: ${finding.resolution_plan}
-This finding is cross-cutting (${finding.smell}) — its resolution is explicitly allowed to touch files outside a single domain.
-Run the scoped safe cycle with: ${testCmd}
-If no test covers this location, report { skipped: true, reason: "no safety net" } and stop rather than proceeding without a safety net.
-Do not perform any git operation — staging and committing are handled elsewhere.`
+  crossCuttingOutcomes.push(toOutcome(outcome, finding, finding.domain))
 }
 
 const reconcile = await agent(
@@ -244,17 +261,25 @@ const intraDomainHealthy = crossCutting.length === 0 ? buildPasses : Boolean(rec
 
 const mergeable = intraDomainBehaviorPreserved && intraDomainHealthy
 
+// When the cross-cutting bucket survived the build gate, its individual
+// applier outcomes are real (each may itself be applied or skipped, e.g. "no
+// safety net") — report them. When it was rolled back, none of those edits
+// survived in the tree, so every cross-cutting finding is reported skipped
+// with the rollback reason instead of its (now-reverted) per-finding outcome.
+const appliedFromCrossCutting = crossCuttingApplied ? crossCuttingOutcomes.filter((o) => o.applied) : []
+const skippedFromCrossCutting = crossCuttingApplied
+  ? crossCuttingOutcomes.filter((o) => o.skipped)
+  : crossCutting.map((f) => ({ domain: f.domain, code: f.code, technique: f.technique, reason: 'cross-cutting reconciliation rolled back' }))
+
 return {
   mergeable,
-  applied: appliedFromApply.map((o) => ({ domain: o.domain, code: o.code, technique: o.technique, behaviorPreserved: o.behaviorPreserved })),
+  applied: [...appliedFromApply, ...appliedFromCrossCutting].map((o) => ({ domain: o.domain, code: o.code, technique: o.technique, behaviorPreserved: o.behaviorPreserved })),
   buildPasses,
   crossCuttingApplied,
   rollbackSha,
   skipped: [
     ...skipped.map((f) => ({ domain: f.domain, code: f.code, reason: f.reason })),
-    ...skippedFromApply.map((o) => ({ domain: o.domain, technique: o.technique, reason: o.reason })),
-    ...(crossCutting.length > 0 && !crossCuttingApplied
-      ? crossCutting.map((f) => ({ domain: f.domain, code: f.code, reason: 'cross-cutting reconciliation rolled back' }))
-      : []),
+    ...skippedFromApply.map((o) => ({ domain: o.domain, code: o.code, technique: o.technique, reason: o.reason })),
+    ...skippedFromCrossCutting.map((o) => ({ domain: o.domain, code: o.code, technique: o.technique, reason: o.reason })),
   ],
 }

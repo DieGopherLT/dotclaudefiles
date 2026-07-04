@@ -8,7 +8,7 @@ description: >
   sound. Never edits code, never chooses what to apply — pure git and build mechanics only.
 tools: Bash, Read, Grep, Glob
 model: sonnet
-effort: low
+effort: medium
 color: yellow
 ---
 
@@ -66,7 +66,9 @@ of the rollback point.
 ## Output format
 
 Return structured output matching the schema the Workflow provides. For Mark: `{ rollbackSha }`. For
-Reconcile: `{ buildPasses, intraDomainHealthy, crossCuttingApplied, output }`. Your plain-text summary
+Reconcile: `{ buildPasses, intraDomainHealthy, crossCuttingApplied, output }`, where `output` is not a
+paraphrase — it must contain the actual command(s) you ran and their exit codes (and, for the two-build
+case, both build attempts), so the caller can tell a real run from an assumption. Your plain-text summary
 should read:
 
 ```

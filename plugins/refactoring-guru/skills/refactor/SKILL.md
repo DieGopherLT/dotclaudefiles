@@ -51,7 +51,9 @@ Count the distinct domains the resolved scope touches.
 Read the matching entry in `references/technique-playbooks.md` for the chosen technique: its group safety
 discipline, execution steps, and pitfalls. This is the mechanics the applier will follow. If the technique
 is OOP-specific and the target is not class/inheritance code, stop and tell the user the technique does not
-apply here — suggest the closest applicable alternative from the smell's technique list.
+apply here — look up the finding's `smell` in `../smell-scan/references/smell-catalog.md` and suggest the
+closest applicable alternative technique for that smell (the persisted finding carries only the single
+chosen `technique`, not the full mapped list, so the catalog is the source for alternatives).
 
 **Step 4 — Verify the safety net before touching code**
 

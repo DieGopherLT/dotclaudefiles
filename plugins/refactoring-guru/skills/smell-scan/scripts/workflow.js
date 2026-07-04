@@ -105,9 +105,11 @@ function severityOf(confidence) {
 
 const results = await pipeline(domains, detectDomain, synthesizeDomain)
 
+const validResults = results.filter(Boolean)
+
 return {
-  domains: results.filter(Boolean),
-  total: results.filter(Boolean).reduce((sum, d) => sum + d.total, 0),
+  domains: validResults,
+  total: validResults.reduce((sum, d) => sum + d.total, 0),
 }
 
 // ---------------------------------------------------------------------------
