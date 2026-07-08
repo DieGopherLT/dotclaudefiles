@@ -18,8 +18,6 @@ Concentration sweet spots:
 - **Rule file**: 100-150 lines. Past that, split by sub-topic.
 - **Base CLAUDE.md**: 200 lines maximum (official ceiling). Treat 150 as the real target.
 
-This repository is itself a worked example: the base CLAUDE.md is ~150 lines of project-wide context, while `.claude/rules/plugins/use-plugin-dev.md` is what made you invoke `/skill-creator` just now. The rule loaded because the work touched plugin development — proof that focused, on-demand rules drive behavior precisely because they are not buried.
-
 ## Reference files (read on demand)
 
 - `references/claude-code-memory-spec.md` — official Claude Code memory/rules spec: loading order, frontmatter syntax, `@` imports, compaction behavior. Consult when you need exact format or hit an edge case.
@@ -48,8 +46,6 @@ This is idempotent and runs on every rulify invocation. Mention the bootstrap (c
 - If absent, ask the user where it lives.
 
 Detect the rules directory: `.claude/rules/` relative to the CLAUDE.md's directory. Create it if missing.
-
-If the CLAUDE.md is a symlink (common with stow-managed dotfiles), edit the source file in the dotfiles repo, not the symlink target. Detect with `readlink`.
 
 #### AGENTS.md convention check
 

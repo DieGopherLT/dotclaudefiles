@@ -15,27 +15,27 @@ A formatter that applies fixed rules needs none of the reasoning a security audi
 
 Prefer the bare alias — `haiku`, `sonnet`, or `opus` — over a pinned model ID. The alias always resolves to the latest model in that tier, so the agent gets capability and price improvements with zero maintenance. Pin a full ID (`claude-opus-4-8`) only when you need reproducibility against a specific version.
 
-| Tier     | Alias    | Context | Effort support              |
-| -------- | -------- | :-----: | --------------------------- |
-| Light    | `haiku`  | 200k    | none                        |
-| Balanced | `sonnet` | 200k    | low / medium / high / max   |
-| Heavy    | `opus`   | 1M      | full ladder (incl. xhigh)   |
+| Tier     | Alias    | Context | Effort support                          |
+| -------- | -------- | :-----: | --------------------------------------- |
+| Light    | `haiku`  | 200k    | none                                    |
+| Balanced | `sonnet` | 1M      | full ladder (`xhigh` not recommended)   |
+| Heavy    | `opus`   | 1M      | full ladder                             |
 
 - **`haiku`** — Fastest and cheapest, no effort dial. Best for read-only search, classification, extraction, and high-volume mechanical work where reasoning adds no value.
 - **`sonnet`** — Strong speed/intelligence balance, adaptive thinking. The sensible default for most coding and agentic work: review, testing, debugging, bounded-complexity refactors.
-- **`opus`** — Highest capability and the only tier with a 1M context window. Reach for it when tasks are open-ended, long-horizon, or must hold large file sets and sub-agent outputs simultaneously — architecture, cross-codebase migrations, orchestrators in ultracode workflows, and audits where a miss is unacceptable.
+- **`opus`** — Highest capability. Reach for it when tasks are open-ended, long-horizon, or demand the deepest reasoning — architecture, cross-codebase migrations, orchestrators in ultracode workflows, and audits where a miss is unacceptable.
 
 `model: inherit` (the default) adopts the parent session's model — use it for agents that should track whatever the caller is running rather than fixing a tier.
 
 ### Context window as a dial
 
-Context window is a third property alongside capability and price. Haiku and Sonnet share a 200k window; Opus has 1M — a 5× advantage that matters in specific scenarios:
+Context window is a third property alongside capability and price. Haiku has a 200k window; Sonnet and Opus both offer 1M — a 5× advantage over the light tier that matters in specific scenarios:
 
 - **Orchestrators in ultracode workflows** — an orchestrator that fans out to dozens of sub-agents must fit all their outputs in its own context before synthesizing. At 200k this becomes a hard ceiling; at 1M it is rarely a constraint.
 - **Cross-codebase migrations and audits** — agents that must hold large file sets, diff output, and reasoning chains simultaneously will thrash at 200k.
-- **Long-horizon agentic loops** — each tool call round-trips adds to the accumulated context. Agents expected to run 50+ tool calls before concluding need the larger window to avoid truncation mid-task.
+- **Long-horizon agentic loops** — each tool call round-trip adds to the accumulated context. Agents expected to run 50+ tool calls before concluding need the larger window to avoid truncation mid-task.
 
-When scope alone would force Opus on a task that fits Sonnet's capability, the context window is usually the deciding factor. Conversely, if the agent's task is bounded (a single file, a fixed set of results), the 200k window is rarely the bottleneck — do not reach for Opus on that basis alone.
+Since Sonnet gained the 1M window, context volume alone no longer forces Opus: a long-horizon task within Sonnet's capability ceiling stays on Sonnet. The Opus decision is now purely about reasoning capability, not scope. The window argument only rules out Haiku for aggregation-heavy roles.
 
 ## The `effort` dial
 
@@ -46,8 +46,26 @@ Effort is a behavioral signal, not a hard token budget. It scales **all** tokens
 | `low`    | Simple, scoped, latency-sensitive work — lookups, classification, mechanical edits, fast loops. |
 | `medium` | Balanced work — most implementers and hybrid "understand then act" tasks.                      |
 | `high`   | Complex reasoning where quality outweighs cost. The default when effort is honored.            |
-| `xhigh`  | Long-horizon agentic work, deep exploration, repeated tool calling. **Opus only.**            |
-| `max`    | Absolute ceiling — frontier problems where correctness matters more than cost or latency.      |
+| `xhigh`  | Long-horizon agentic work, deep exploration, repeated tool calling. Best paired with `opus`; on `sonnet` it is supported but generally not recommended. |
+| `max`    | Absolute ceiling — frontier problems where correctness matters more than cost or latency. On the balanced tier this level is usually a signal to move up a model, not up an effort (see cost crossover below). |
+
+### Cost crossover
+
+The real cost of an agent is rate × tokens consumed per task, not the rate alone. At high effort, a
+cheaper-per-token model iterates more — more agentic turns, more output, more self-correction — and
+that volume can overtake the superior model's price. Measured on the same complex agentic task,
+Sonnet 5 at `max` burns up to 6× the agentic turns and ~40% more output tokens than Opus 4.8,
+averaging ~$2.29 per task — roughly 15% **more** expensive than Opus, despite the lower base rate
+($3/$15 vs $5/$25 per Mtok).
+
+Practical guidance for Sonnet:
+
+- **`low` / `medium`** — the cheap default: 60–70% cheaper per task than Opus.
+- **`high`** — the sweet spot: close to Opus quality on tool-heavy tasks at moderate cost.
+- **`max` (and `xhigh`)** — stops being a "budget Opus". If the task demands that level of
+  reasoning, go straight to `opus` — you pay the same or less and get the higher capability ceiling.
+
+The rule of thumb: **escalate the model before escalating the effort past `high` on a cheaper tier.**
 
 ### Model × effort support matrix
 
@@ -56,16 +74,18 @@ Effort is a behavioral signal, not a hard token budget. It scales **all** tokens
 | Model    | `low` | `medium` | `high` | `xhigh` | `max` |
 | -------- | :---: | :------: | :----: | :-----: | :---: |
 | `haiku`  |   —   |    —     |   —    |    —    |   —   |
-| `sonnet` |   ✓   |    ✓     |   ✓    |    ✗    |   ✓   |
+| `sonnet` |   ✓   |    ✓     |   ✓    |   ✓*    |  ✓*   |
 | `opus`   |   ✓   |    ✓     |   ✓    |    ✓    |   ✓   |
+
+\* Supported but generally not recommended past `high` — the cost crossover makes `opus` the better buy at those levels.
 
 Three rules cover everything:
 
 1. **Haiku has no effort dial.** Omit `effort` on a Haiku agent — it runs at its single baseline regardless.
-2. **Sonnet does not support `xhigh`.** Use `high` or jump to `max`; `xhigh` is silently ignored.
+2. **Sonnet supports the full ladder, but past `high` the cost crossover applies.** `xhigh` and `max` on Sonnet usually cost as much as (or more than) Opus per task — escalate the model instead.
 3. **Opus supports the full ladder**, including `xhigh`.
 
-This is itself a hint: the light tier exposes no effort knob *because* it is meant for deterministic work, while the full ladder lives on the heavy tier where ambiguity lives.
+This is itself a hint: the light tier exposes no effort knob *because* it is meant for deterministic work, while the top rungs of the ladder only pay off on the heavy tier, where ambiguity lives.
 
 ## Mapping by archetype
 
@@ -108,10 +128,10 @@ effort: high       # honored by sonnet; overrides session effort
 
 ## Anti-patterns
 
-- **Defaulting everything to `opus` + `max`.** It feels safe and quietly burns 5x the cost and a multiple of the latency on tasks a lighter pairing would nail. Calibrate down.
+- **Defaulting everything to `opus` + `max`.** It feels safe and quietly burns a multiple of the cost and latency on tasks a lighter pairing would nail. Calibrate down.
 - **Setting `effort` on a Haiku agent.** It is ignored. If the task genuinely needs an effort dial, it needs at least Sonnet.
-- **Setting `xhigh` on Sonnet.** Silently ignored. Use `high`, or move to `opus` if you truly need `xhigh`.
+- **Using `sonnet` + `max` (or `xhigh`) as a budget Opus.** The cost crossover means the per-task cost can exceed Opus with equal or lower quality. If you need the ceiling, change the model, not the effort.
 - **Under-powering an orchestrator or architect with `haiku`.** The capability ceiling is too low for planning and long-horizon coordination, no matter the effort — and Haiku has no effort to raise anyway.
 - **Pinning a full model ID without a reason.** It freezes the agent on one version and adds maintenance. Use the bare alias unless reproducibility demands a pin.
-- **Assigning an orchestrator or long-horizon agent to Haiku or Sonnet when it must aggregate large sub-agent outputs.** The 200k window becomes a hard ceiling before synthesis is possible. If the agent coordinates many sub-agents or holds large file sets simultaneously, the context window — not just capability — justifies Opus.
-- **Reaching for Opus solely because "the task is complex".** Complexity is about reasoning, not always about context volume. If the task fits within 200k and Sonnet's capability ceiling, choosing Opus for the context window is pure waste. Verify scope before escalating.
+- **Assigning an orchestrator or long-horizon agent to Haiku when it must aggregate large sub-agent outputs.** Its 200k window becomes a hard ceiling before synthesis is possible. Aggregation-heavy roles need at least Sonnet's 1M window.
+- **Reaching for Opus solely because "the task is complex" or "the task is long".** Complexity is about reasoning, not context volume — and Sonnet now shares Opus's 1M window, so scope alone never justifies the jump. Escalate to Opus only when the task exceeds Sonnet's capability ceiling.

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing ten specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing eleven specialized plugins:
 
 1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator, create-report)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
@@ -16,6 +16,7 @@ This is a **mono-repo for Claude Code plugins** containing ten specialized plugi
 8. **git-toolkit** - Git workflow enforcement (commit standards, branch naming, conflict resolution for rebases and merges, squash planning for interactive rebases)
 9. **domain-restructure** - Autonomous layer-first to feature-first restructurer (strategic-DDD domain discovery, subdomain classification, parallel per-domain moves, import consolidation with build gate)
 10. **spec-kit** - Spec-driven workflow toolkit (closed self-contained specs, design-closure loop via closed-design-enforcer, implement-spec dispatcher across direct/agent-waves/workflow strategies)
+11. **refactoring-guru** - Reactive code-smell analysis and guided refactoring over the refactoring.guru taxonomy (parallel per-category smell-scan, smell→technique mapping, step-by-step refactor applier)
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -31,7 +32,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 10 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure, spec-kit)
+- **`plugins/`**: Contains the 11 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure, spec-kit, refactoring-guru)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -113,6 +114,15 @@ Spec-driven workflow toolkit that carries a feature from raw idea to verified im
 - **Skills**: `create-specification` / `update-specification` (augmented copies: closed, self-contained specs ready for cold `/goal` execution, with a managed Design Gaps section), `close-design` (loop-until-dry orchestrator: sole writer of the Design Gaps section and stateful seen-set holder; spawns a fresh enforcer per round until zero net-new gaps, then runs a single human arbitration gate), `implement-spec` (Template Method + Strategy dispatcher: selects write-directly / agent-waves / workflow by two axes — context-budget scale and orchestration closure — then executes, quality-gates, and verifies)
 - **Closure philosophy**: the design is closed (no unresolved gaps) before implementation; the dispatcher picks workflow only when coordination is decision-closed, baking the quality gate into the script
 
+### refactoring-guru
+
+Turns passive Clean Code reference into a reactive analysis of real code: given a file, directory, or symbol, it detects concrete smells from the refactoring.guru taxonomy, maps them to named techniques, and applies the chosen transformation step by step. Neither skill dispatches by scale anymore: `smell-scan` always fans out through a `Workflow` regardless of domain count (detection is read-only, so there is no worktree-isolation reason to special-case a single domain); `refactor` always enters a dedicated worktree (unless already inside one) and always runs the full 4-phase Workflow, since worktree isolation is useful independent of scale and the whole-project build gate protects a single-finding change exactly as it protects a multi-domain one:
+
+- **Agents**: `smell-detector` (read-only Auditor, one per category, runs per domain inside the smell-scan Workflow's per-domain pipeline; confidence-scored located findings at >=80 with a `resolution_plan` per finding, never modifies files), `refactoring-applier` (Implementer: applies ONE named technique to ONE location following the playbook mechanics, preserves observable behavior, reports the verification; frozen, never touches git), `refactoring-reconciler` (Bash-capable: owns all git/build mechanics inside the refactor Workflow's Mark and Reconcile phases — ephemeral rollback commit, whole-project build gate, reset on failure — never edits code)
+- **Skills**: `smell-scan` (always pipelines every domain — one or many — through a 5-`smell-detector` batch each via a `Workflow`, then assigns globally-unique reference codes B1/OO1/CP1/D1/C1 over the aggregated findings and persists one source-of-truth JSON file per domain under `.claude/refactoring-guru/findings/`), `refactor` (resolves a finding code, explicit technique+location, or a broader multi-domain request; always enters a dedicated worktree — skipped if already inside one — and always runs the full 4-phase Workflow: parallel intra-domain appliers, cross-cutting smells reconciled serially with a build gate, collapsed to one `refactor:` commit)
+- **References**: `smell-catalog.md` (26 smells: detection criteria + mapped techniques), `refactoring-techniques.md` (67 techniques: when + mechanics), `technique-playbooks.md` (per-group execution steps), `workflow.md` (safe test → refactor → test → commit cycle)
+- **Taxonomy**: 26 smells in 5 categories (Bloaters, OO Abusers, Change Preventers, Dispensables, Couplers); 67 techniques in 6 groups. OOP-specific smells and techniques are kept marked, not suppressed — they apply in C# and TypeScript class code
+
 ## Choosing the Right Plugin
 
 **Use claude-management when:**
@@ -187,6 +197,14 @@ Spec-driven workflow toolkit that carries a feature from raw idea to verified im
 - Implementing a closed spec and wanting the execution strategy chosen automatically by scale and orchestration closure (`implement-spec`)
 - Running the whole create → close-design → implement cycle over one source of truth alongside the `/goal` command
 
+**Use refactoring-guru when:**
+
+- Scanning a specific file, directory, function, or class for code smells — `smell-scan` produces located, confidence-scored findings mapped to concrete techniques, not generic Clean Code advice
+- Auditing code quality reactively against the full refactoring.guru taxonomy (26 smells across 5 categories)
+- Applying a named refactoring technique to a specific location — `refactor` carries the finding into a safe test → refactor → test → commit cycle via the `refactoring-applier` agent
+- Running the `task-planning` Phase 3 quality pass over the files a task actually modified, instead of a passive Clean Code reading
+- Working in C# or TypeScript class hierarchies where OOP-specific smells and techniques (Refused Bequest, Replace Conditional with Polymorphism, the whole Generalization group) apply
+
 ## Installing Plugins
 
 Each plugin can be installed independently:
@@ -206,6 +224,7 @@ Each plugin can be installed independently:
 /plugin install git-toolkit@diegopher
 /plugin install domain-restructure@diegopher
 /plugin install spec-kit@diegopher
+/plugin install refactoring-guru@diegopher
 ```
 
 ## Configuration Files

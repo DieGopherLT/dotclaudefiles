@@ -62,17 +62,23 @@ git switch -c <type>/<description>
 ## Worktrees
 
 The same naming convention applies to the branch created alongside the worktree. Worktrees are
-placed under `.claude/worktrees/` inside the project root so they stay out of the working tree
-but remain easy to locate.
+placed under `.claude/worktrees/` inside the project root so they stay out of version control
+(`.claude/worktrees/` must be gitignored — add the entry if it is missing) but remain easy to
+locate.
+
+The branch keeps the `<type>/<description>` format, but the worktree path flattens the `/` into
+a hyphen: `<type>-<description>`. Reusing the branch name verbatim as the path would create an
+extra `<type>/` nesting level under `.claude/worktrees/`, which adds nothing and makes worktrees
+harder to list and clean up.
 
 Propose the branch name first. Once approved:
 
 ```bash
-git worktree add .claude/worktrees/<type>/<description> -b <type>/<description>
+git worktree add .claude/worktrees/<type>-<description> -b <type>/<description>
 ```
 
 After creating the worktree, enter it with the `EnterWorktree` tool — never with `cd`:
 
 ```
-EnterWorktree({ path: ".claude/worktrees/<type>/<description>" })
+EnterWorktree({ path: ".claude/worktrees/<type>-<description>" })
 ```
