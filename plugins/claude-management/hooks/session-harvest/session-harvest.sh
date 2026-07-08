@@ -11,30 +11,31 @@ set -euo pipefail
 source "${CLAUDE_PLUGIN_ROOT}/hooks/lib/common.sh"
 trap 'exit 0' ERR
 
+# These substrings are coupled to Claude Code's internal transcript formatting
+# for synthetic/injected user turns. If harvest classification stops firing
+# (the autonomy signal always sees too many "user" messages), reconfirm these
+# markers still match the current transcript format before changing anything
+# else.
+TEAMMATE_PREFIX="Another Claude session sent a message:"
+LOCAL_COMMAND_MARKER="<local-command"
+INTERRUPT_PREFIX="[Request interrupted"
+
 main() {
-  local input session_id cwd transcript_path stop_hook_active
+  local queue_file pending_count threshold
 
-  input=$(cat)
-  session_id=$(echo "$input" | jq -r '.session_id // empty')
-  cwd=$(echo "$input" | jq -r '.cwd // empty')
-  transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
-  stop_hook_active=$(echo "$input" | jq -r '.stop_hook_active // false')
+  read_hook_input
+  stop_guards_pass || exit 0
+  [ -s "$HOOK_TRANSCRIPT_PATH" ] || exit 0
+  marker_present "${HOOK_SESSION_ID}.harvest-appended" && exit 0
 
-  [ "$stop_hook_active" = "true" ] && exit 0
-  [ -z "$session_id" ] && exit 0
-  [ -s "$transcript_path" ] || exit 0
-  marker_present "${session_id}.harvest-appended" && exit 0
+  session_is_harvestable "$HOOK_TRANSCRIPT_PATH" || exit 0
 
-  session_is_harvestable "$transcript_path" || exit 0
-
-  local queue_file pending_count
-  queue_file=$(queue_file_for_repo "$cwd")
-  append_to_queue "$queue_file" "$transcript_path"
-  set_marker "${session_id}.harvest-appended"
+  queue_file=$(queue_file_for_repo "$HOOK_CWD")
+  append_to_queue "$queue_file" "$HOOK_TRANSCRIPT_PATH"
+  set_marker "${HOOK_SESSION_ID}.harvest-appended"
 
   pending_count=$(jq '.pending | length' "$queue_file")
-  local threshold
-  threshold=$(config_value '.harvest.queue_threshold' 3)
+  threshold=$(config_positive_int '.harvest.queue_threshold' 3)
   [ "$pending_count" -lt "$threshold" ] && exit 0
 
   emit_additional_context "Stop" \
@@ -46,13 +47,16 @@ session_is_harvestable() {
   # messages relative to the work — the autonomy signature).
   local transcript_path="$1" transcript_bytes min_bytes max_user_messages
 
-  min_bytes=$(config_value '.harvest.min_transcript_bytes' 300000)
-  transcript_bytes=$(stat -c%s "$transcript_path")
+  min_bytes=$(config_positive_int '.harvest.min_transcript_bytes' 300000)
+  transcript_bytes=$(wc -c < "$transcript_path" | tr -d ' ')
   [ "$transcript_bytes" -lt "$min_bytes" ] && return 1
 
-  max_user_messages=$(config_value '.harvest.max_user_messages' 8)
+  max_user_messages=$(config_positive_int '.harvest.max_user_messages' 8)
 
-  jq -n --argjson max_user "$max_user_messages" '
+  jq -n --argjson max_user "$max_user_messages" \
+        --arg teammate_prefix "$TEAMMATE_PREFIX" \
+        --arg local_command_marker "$LOCAL_COMMAND_MARKER" \
+        --arg interrupt_prefix "$INTERRUPT_PREFIX" '
     [inputs] as $lines
     | ($lines | any(.type == "assistant"
                     and (.message.content[]?
@@ -60,9 +64,9 @@ session_is_harvestable() {
     | ($lines
        | map(select(.type == "user" and (.message.content | type == "string"))
              | .message.content
-             | select(startswith("Another Claude session sent a message:") | not)
-             | select(contains("<local-command") | not)
-             | select(startswith("[Request interrupted") | not))
+             | select(startswith($teammate_prefix) | not)
+             | select(contains($local_command_marker) | not)
+             | select(startswith($interrupt_prefix) | not))
        | length) as $user_messages
     | if $plan_approved or ($user_messages <= $max_user) then empty else error("not harvestable") end
   ' "$transcript_path" >/dev/null 2>&1
@@ -70,13 +74,19 @@ session_is_harvestable() {
 
 queue_file_for_repo() {
   # One queue per repository; worktrees resolve to the main repo through the
-  # git common dir. Non-git directories fall back to the cwd itself.
-  local cwd="$1" repo_root
-  repo_root=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs -r dirname)
-  [ -z "$repo_root" ] && repo_root="$cwd"
+  # git common dir. Non-git directories fall back to the cwd itself. The key
+  # appends a checksum of repo_root because `tr '/' '-'` alone is not
+  # injective (e.g. /u/a/b and /u/a-b would collide on the same queue file).
+  local cwd="$1" repo_root key
+  repo_root=$(dirname "$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")
+  case "$repo_root" in
+    ''|.) repo_root="$cwd" ;;
+  esac
+
+  key="$(echo "$repo_root" | tr '/' '-')-$(printf '%s' "$repo_root" | cksum | cut -d' ' -f1)"
 
   mkdir -p "$HARVEST_STATE_DIR"
-  echo "${HARVEST_STATE_DIR}/$(echo "$repo_root" | tr '/' '-').json"
+  echo "${HARVEST_STATE_DIR}/${key}.json"
 }
 
 append_to_queue() {

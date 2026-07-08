@@ -68,6 +68,8 @@ Field notes:
 
 - `verdict`: `confirmed` | `adjusted` | `refuted`.
 - `corrections` is only populated on `adjusted` — concrete fixes stabilize applies to the candidate BEFORE materializing it.
-- `confidence` scores the verdict itself (0-100). Stabilize materializes only `confirmed`/`adjusted` verdicts with confidence >= 80; everything else is reported, not written.
+- `confidence` scores the verdict itself (0-100). Stabilize materializes only verdicts the practice-verifier agent deems actionable per its own confidence contract (the agent owns the bar); everything else is reported, not written.
+
+Both contracts on this page are mirrored copies. The agents (`agents/transcript-digester.md`, `agents/practice-verifier.md`) are the operative owners — if either shape or the confidence bar changes, update the agent first and mirror the change here.
 
 Candidate aggregation rules (what counts as recurring, how merges work) live in the skill body, Step 3 — they are stabilize-internal logic, not part of these contracts.

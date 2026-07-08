@@ -113,7 +113,7 @@ For trivial extractions, proceed without asking. Always confirm before deleting 
 
 **Verify practices before they become rules.** A rule file gives its content authority over every future session, so an extracted section that encodes a *practice* deserves a correctness check before materializing — being in the old CLAUDE.md is evidence of habit, not of correctness:
 
-- If the section states how an external tool, framework, or language should be used (commands, API patterns, version-sensitive behavior), launch the `practice-verifier` agent with the claim(s) before writing. Only `confirmed` or `adjusted` verdicts with confidence >= 80 get written; apply `adjusted` corrections first. Report refuted claims to the user instead of extracting them.
+- If the section states how an external tool, framework, or language should be used (commands, API patterns, version-sensitive behavior), launch the `practice-verifier` agent with the claim(s) before writing. Materialize only what the agent deems actionable per its own contract (`agents/practice-verifier.md` owns the confidence bar); apply its corrections when the verdict is `adjusted`. Report refuted claims to the user instead of extracting them.
 - If the section states an internal project convention, verify it against the current codebase (Read/Grep/LSP): a convention the code no longer follows gets flagged to the user, not silently re-enshrined.
 - Sections that are pure project facts (paths, names, orientation) need no verification — extract them directly.
 

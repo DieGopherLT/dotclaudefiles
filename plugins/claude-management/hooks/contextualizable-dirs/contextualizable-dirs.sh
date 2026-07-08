@@ -14,33 +14,27 @@ trap 'exit 0' ERR
 SUPPORT_DIR_NAMES="__tests__|__mocks__|fixtures|testdata|node_modules|dist|build|vendor|coverage"
 
 main() {
-  local input session_id cwd stop_hook_active start_marker
+  local start_marker suggestions="" candidate_dir claudify_marker
 
-  input=$(cat)
-  session_id=$(echo "$input" | jq -r '.session_id // empty')
-  cwd=$(echo "$input" | jq -r '.cwd // empty')
-  stop_hook_active=$(echo "$input" | jq -r '.stop_hook_active // false')
+  read_hook_input
+  stop_guards_pass || exit 0
+  [ -d "$HOOK_CWD" ] || exit 0
 
-  [ "$stop_hook_active" = "true" ] && exit 0
-  [ -z "$session_id" ] && exit 0
-  [ -d "$cwd" ] || exit 0
-
-  start_marker="${HOOK_STATE_DIR}/${session_id}.start-marker"
+  start_marker=$(start_marker_path "$HOOK_SESSION_ID")
   [ -f "$start_marker" ] || exit 0
 
-  MIN_SOURCE_FILES=$(config_value '.contextualizable.min_source_files' 3)
-  MIN_TOUCHED_FILES=$(config_value '.contextualizable.min_touched_files' 3)
+  MIN_SOURCE_FILES=$(config_positive_int '.contextualizable.min_source_files' 3)
+  MIN_TOUCHED_FILES=$(config_positive_int '.contextualizable.min_touched_files' 3)
   SOURCE_FILE_PATTERN=$(build_source_file_pattern)
 
-  local suggestions=""
-  local candidate_dir
   while IFS= read -r candidate_dir; do
     [ -z "$candidate_dir" ] && continue
-    if should_suggest_claudify "$candidate_dir" "$session_id" "$start_marker"; then
-      set_marker "${session_id}.claudify-$(path_fingerprint "$candidate_dir")"
-      suggestions="${suggestions}- ${candidate_dir#"$cwd"/}"$'\n'
+    claudify_marker="${HOOK_SESSION_ID}.claudify-$(path_fingerprint "$candidate_dir")"
+    if should_suggest_claudify "$candidate_dir" "$start_marker" "$claudify_marker"; then
+      set_marker "$claudify_marker"
+      suggestions="${suggestions}- ${candidate_dir#"$HOOK_CWD"/}"$'\n'
     fi
-  done < <(dirs_touched_this_session "$cwd" "$start_marker")
+  done < <(dirs_touched_this_session "$HOOK_CWD" "$start_marker")
 
   [ -z "$suggestions" ] && exit 0
 
@@ -51,14 +45,22 @@ Consider invoking the claudify skill on each one to capture the non-obvious cont
 }
 
 dirs_touched_this_session() {
-  # Unique direct parents of files modified since the session started,
-  # under the configured roots.
-  local cwd="$1" start_marker="$2" root
+  # Unique direct parents of files modified since the session started, under
+  # the configured roots. Prunes VCS internals plus the same support-dir set
+  # is_container_directory treats as noise, both built from SUPPORT_DIR_NAMES
+  # so the two checks can never drift apart.
+  local cwd="$1" start_marker="$2" root name
+  local -a prune_args=(-name .git) support_names
+
+  IFS='|' read -ra support_names <<< "$SUPPORT_DIR_NAMES"
+  for name in "${support_names[@]}"; do
+    prune_args+=(-o -name "$name")
+  done
 
   config_array '.contextualizable.roots' '["src/"]' | while IFS= read -r root; do
     [ -d "${cwd}/${root}" ] || continue
     find "${cwd}/${root}" \
-      \( -name .git -o -name node_modules \) -prune -o \
+      \( "${prune_args[@]}" \) -prune -o \
       -type f -newer "$start_marker" -print 2>/dev/null \
       | xargs -r -n1 dirname \
       | sort -u
@@ -66,13 +68,15 @@ dirs_touched_this_session() {
 }
 
 should_suggest_claudify() {
-  local dir="$1" session_id="$2" start_marker="$3"
+  local dir="$1" start_marker="$2" claudify_marker="$3" own_source_files
 
-  marker_present "${session_id}.claudify-$(path_fingerprint "$dir")" && return 1
+  marker_present "$claudify_marker" && return 1
   has_module_doc "$dir" && return 1
   is_substantial_work "$dir" "$start_marker" || return 1
-  [ "$(count_direct_source_files "$dir")" -ge "$MIN_SOURCE_FILES" ] || return 1
-  is_container_directory "$dir" && return 1
+
+  own_source_files=$(count_direct_source_files "$dir")
+  [ "$own_source_files" -ge "$MIN_SOURCE_FILES" ] || return 1
+  is_container_directory "$dir" "$own_source_files" && return 1
   return 0
 }
 
@@ -103,17 +107,28 @@ count_direct_source_files() {
 is_container_directory() {
   # Container = its qualifying module children outnumber its own source files
   # (e.g. src/modules holding one subdir per domain plus a couple of barrels).
-  local dir="$1" child qualifying_children=0 own_source_files
+  # Single pass over grandchildren, counted per child by awk, instead of a
+  # find+grep+basename per child directory.
+  local dir="$1" own_source_files="$2" qualifying_children
 
-  while IFS= read -r child; do
-    [ -z "$child" ] && continue
-    basename "$child" | grep -qE "^(${SUPPORT_DIR_NAMES}|\..*)$" && continue
-    if [ "$(count_direct_source_files "$child")" -ge "$MIN_SOURCE_FILES" ]; then
-      qualifying_children=$((qualifying_children + 1))
-    fi
-  done < <(find "$dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+  qualifying_children=$(
+    find "$dir" -mindepth 2 -maxdepth 2 -type f 2>/dev/null \
+      | grep -E "$SOURCE_FILE_PATTERN" \
+      | awk -F/ -v support_re="^(${SUPPORT_DIR_NAMES})\$" -v min="$MIN_SOURCE_FILES" '
+          {
+            child = $(NF - 1)
+            if (child ~ /^\./ || child ~ support_re) next
+            count[child]++
+          }
+          END {
+            qualifying = 0
+            for (c in count) if (count[c] >= min) qualifying++
+            print qualifying
+          }
+        ' || true
+  )
+  qualifying_children=${qualifying_children:-0}
 
-  own_source_files=$(count_direct_source_files "$dir")
   [ "$qualifying_children" -ge 2 ] && [ "$qualifying_children" -gt "$own_source_files" ]
 }
 

@@ -6,15 +6,18 @@ set -euo pipefail
 source "${CLAUDE_PLUGIN_ROOT}/hooks/lib/common.sh"
 trap 'exit 0' ERR
 
-INPUT=$(cat)
-SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
-[ -z "$SESSION_ID" ] && exit 0
+main() {
+  local session_id marker
 
-MARKER="${HOOK_STATE_DIR}/${SESSION_ID}.start-marker"
+  session_id=$(jq -r '.session_id // empty')
+  [ -z "$session_id" ] && exit 0
 
-# SessionStart also fires on resume/clear; keeping the earliest marker preserves
-# the full session window for the -newer scans.
-mkdir -p "$HOOK_STATE_DIR"
-[ -f "$MARKER" ] || touch "$MARKER"
+  marker=$(start_marker_path "$session_id")
 
-exit 0
+  # SessionStart also fires on resume/clear; keeping the earliest marker
+  # preserves the full session window for the -newer scans.
+  mkdir -p "$HOOK_STATE_DIR"
+  [ -f "$marker" ] || touch "$marker"
+}
+
+main

@@ -1,6 +1,6 @@
 ---
 name: end-session
-description: Esta skill debe usarse cuando el usuario pide "end session", "terminar sesion", "cierra la sesion de trabajo", "end the session", "guarda el contexto de la sesion", "hacer commits y documentar", "wrap up the session", "cerrar la sesion", "commitea y documenta", o cuando quiere hacer el cierre formal de una sesion de trabajo. Proporciona automatizacion de commits de logica de negocio y generacion de un documento de contexto autocontenido para reconstruccion futura.
+description: Skill de invocacion manual exclusiva, ejecutada por el usuario via /end-session; el modelo nunca debe autoinvocarla. Cierra formalmente una sesion de trabajo: commitea los cambios de logica de negocio y genera un documento de contexto autocontenido para reconstruccion futura de la sesion.
 version: 1.0.0
 disable-model-invocation: true
 ---

@@ -7,24 +7,33 @@ set -euo pipefail
 source "${CLAUDE_PLUGIN_ROOT}/hooks/lib/common.sh"
 trap 'exit 0' ERR
 
-INPUT=$(cat)
-SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+main() {
+  local session_id file_path ceiling line_count marker tsv_line
 
-[ -z "$SESSION_ID" ] && exit 0
-[ -z "$FILE_PATH" ] && exit 0
-[ "$(basename "$FILE_PATH")" != "CLAUDE.md" ] && exit 0
-[ -f "$FILE_PATH" ] || exit 0
+  # Split with `cut -f`, not `IFS=$'\t' read -r`: tab is always treated as IFS
+  # whitespace in bash regardless of what IFS is set to, so `read` would
+  # collapse consecutive tabs and silently drop an empty field.
+  tsv_line=$(jq -r '[.session_id // "", .tool_input.file_path // ""] | @tsv')
+  session_id=$(cut -f1 <<< "$tsv_line")
+  file_path=$(cut -f2 <<< "$tsv_line")
 
-CEILING=$(config_value '.claudemd_ceiling' 200)
-LINE_COUNT=$(wc -l < "$FILE_PATH" | tr -d ' ')
-[ "$LINE_COUNT" -le "$CEILING" ] && exit 0
+  [ -z "$session_id" ] && exit 0
+  [ -z "$file_path" ] && exit 0
+  [ "$(basename "$file_path")" != "CLAUDE.md" ] && exit 0
+  [ -f "$file_path" ] || exit 0
 
-# Once per file per session — without this, rulify's own intermediate edits to
-# the CLAUDE.md it is splitting would re-trigger the suggestion.
-MARKER="${SESSION_ID}.claudemd-$(path_fingerprint "$FILE_PATH")"
-marker_present "$MARKER" && exit 0
-set_marker "$MARKER"
+  ceiling=$(config_positive_int '.claudemd_ceiling' 200)
+  line_count=$(wc -l < "$file_path" | tr -d ' ')
+  [ "$line_count" -le "$ceiling" ] && exit 0
 
-emit_additional_context "PostToolUse" \
-"${FILE_PATH} is now at ${LINE_COUNT} lines, above the ${CEILING}-line ceiling where CLAUDE.md attention starts to dilute. Invoke the rulify skill on it to extract scoped sections into on-demand .claude/rules/ files."
+  # Once per file per session — without this, rulify's own intermediate edits
+  # to the CLAUDE.md it is splitting would re-trigger the suggestion.
+  marker="${session_id}.claudemd-$(path_fingerprint "$file_path")"
+  marker_present "$marker" && exit 0
+  set_marker "$marker"
+
+  emit_additional_context "PostToolUse" \
+"${file_path} is now at ${line_count} lines, above the ${ceiling}-line ceiling where CLAUDE.md attention starts to dilute. Invoke the rulify skill on it to extract scoped sections into on-demand .claude/rules/ files."
+}
+
+main

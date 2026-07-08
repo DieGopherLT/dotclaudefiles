@@ -73,6 +73,8 @@ Return ONLY this JSON object as your final message — raw JSON, no markdown cod
 
 `confidence` is the score for the verdict itself, per the scale below. The caller only materializes candidates whose verdict is `confirmed` or `adjusted` with confidence >= 80. `corrections` is always present: an empty array unless the verdict is `adjusted`.
 
+This contract is mirrored in the stabilize skill's `references/digest-schema.md`; if this shape or the confidence bar changes, update both copies together.
+
 ## Confidence Scoring
 
 Rate your verdict on a scale from 0 to 100:

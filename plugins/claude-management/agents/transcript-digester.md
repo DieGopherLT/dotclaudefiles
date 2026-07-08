@@ -91,6 +91,8 @@ Return ONLY this JSON object as your final message — raw JSON, no prose around
 
 Empty arrays are valid — a session with no recurring mechanics yields `{"flows": [], "conventions": [], "session_summary": "..."}`. Do not pad.
 
+This contract is mirrored in the stabilize skill's `references/digest-schema.md`; if this shape changes, update both copies together.
+
 ## Constraints
 
 - Read-only: never Write, Edit, or run mutating Bash commands. Bash is for `jq`, `wc`, `head`, `grep` over the transcript only.
