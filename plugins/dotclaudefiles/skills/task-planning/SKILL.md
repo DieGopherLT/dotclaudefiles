@@ -78,9 +78,10 @@ This is a judgment call, not a checkbox:
   where readability or duplication concerns are plausible
 - Does not warrant a pass: single-file edit, documentation-only change, config tweak, trivial rename
 
-**If the changeset warrants a pass, run the full quality suite in parallel:**
+**If the changeset warrants a pass, run the full quality suite:**
 1. Generate `git diff main..HEAD` as a patch file — this is the shared scope for every review in
-   this phase
+   this phase. `main` here is the base branch the work diverged from; if the branch was cut from
+   another ref, use that ref instead. The rest of this phase calls it the **base branch**.
 2. Scan the available agents list for any with an auditing or review role — look for names or
    descriptions containing terms like `audit`, `review`, `check`, `inspector`, `validator`. Examples:
    `testability-auditor`, `concurrency-checker`, `test-input-auditor`. Identify every one that
@@ -123,7 +124,7 @@ This is a judgment call, not a checkbox:
       legitimate (a mechanical diff already covered by auditors). `max` only from base `xhigh` plus
       an aggravator. Declare the decision in the report: "base high, +1 no tests, −1 auditors → high".
 
-      Anchors: a 30-file mass rename → base medium, −1 mechanical → `low`/`medium`; one file in the
+      Anchors: a 30-file mass rename → base medium, −1 mechanical → `low`; one file in the
       payments flow with no tests → base xhigh, +1 → `max`. File count is explicitly a weak proxy —
       it never sets the band by itself. `ultra` is out of scope: it is user-triggered and billed,
       not automatable from this skill.
@@ -142,7 +143,8 @@ adds value:
 1. Discard false positives using its knowledge of the changeset.
 2. Split the remaining findings into **in-scope** (introduced by this changeset) and **pre-existing
    out-of-scope** (surfaced by the review but present before the branch).
-3. Dispatch both groups as described below, then commit the applied in-scope fixes at the end.
+3. Dispatch both groups as described below, then commit the applied in-scope fixes at the end via
+   the `commit` skill, as in Phase 2.
 
 **In-scope findings — parallel appliers on the current branch.**
 Group findings so that no two write agents ever touch the same file, and prefer fewer agents with
@@ -154,7 +156,7 @@ calibrate to the heaviest finding in its group:
 |---|---|
 | CONFIRMED with an explicit fix (missing guard, off-by-one, rename, existing helper) | `haiku` (no effort) |
 | Bounded local fix requiring tactical judgment (restructure one function, call sites of one module) | `sonnet` + `low`/`medium` |
-| Cross-cutting fix, PLAUSIBLE that requires investigating the trigger, or an altitude finding | `opus` + `medium`/`high` — never `sonnet` + `max` as a substitute (cost crossover) |
+| Cross-cutting fix, PLAUSIBLE that requires investigating the trigger, or an altitude finding (design-level, above the line-by-line diff) | `opus` + `medium`/`high` — never `sonnet` + `max` as a substitute (cost crossover) |
 
 Transversal escalator: a fix in a critical domain moves up one row even if it looks mechanical.
 
@@ -162,10 +164,14 @@ Transversal escalator: a fix in a critical domain moves up one row even if it lo
 Never touch them on the current branch. Instead, dispatch them as background agents:
 1. Collect the out-of-scope findings when the review step ends.
 2. Group them by file/module so no two agents ever write the same files.
-3. For each group, launch an implementer agent with the Agent tool using `isolation: "worktree"` —
-   the worktree starts from the baseRef, not from the current branch — and `run_in_background: true`.
-4. Each agent's prompt includes: the concrete finding(s) with location, the instruction to fix only
-   that, verify (build/tests), and commit in its worktree with a `fix:` message; never push.
+3. For each group, launch an implementer agent with the Agent tool using `isolation: "worktree"`
+   and `run_in_background: true`. The fix must be based on the base branch, not on the current
+   branch — the worktree is created from the current state, so the agent's first instruction is to
+   switch to a fresh branch cut from the base branch (`git switch -c fix/<slug> <base-branch>`)
+   before touching anything.
+4. Each agent's prompt includes: the concrete finding(s) with location, the branch-from-base
+   instruction above, the instruction to fix only that, verify (build/tests), and commit in its
+   worktree with a `fix:` message; never push.
 5. At the close of Phase 3, report the list of dispatched agents with their worktree/branch for later
    review and merge. Do not block the task's closure waiting for these agents.
 

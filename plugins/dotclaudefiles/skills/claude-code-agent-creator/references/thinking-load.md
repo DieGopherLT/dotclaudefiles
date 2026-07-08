@@ -74,10 +74,10 @@ The rule of thumb: **escalate the model before escalating the effort past `high`
 | Model    | `low` | `medium` | `high` | `xhigh` | `max` |
 | -------- | :---: | :------: | :----: | :-----: | :---: |
 | `haiku`  |   —   |    —     |   —    |    —    |   —   |
-| `sonnet` |   ✓   |    ✓     |   ✓    |   ✓*    |   ✓   |
+| `sonnet` |   ✓   |    ✓     |   ✓    |   ✓*    |  ✓*   |
 | `opus`   |   ✓   |    ✓     |   ✓    |    ✓    |   ✓   |
 
-\* Supported but generally not recommended — the cost crossover makes `opus` the better buy at that level.
+\* Supported but generally not recommended past `high` — the cost crossover makes `opus` the better buy at those levels.
 
 Three rules cover everything:
 
@@ -85,7 +85,7 @@ Three rules cover everything:
 2. **Sonnet supports the full ladder, but past `high` the cost crossover applies.** `xhigh` and `max` on Sonnet usually cost as much as (or more than) Opus per task — escalate the model instead.
 3. **Opus supports the full ladder**, including `xhigh`.
 
-This is itself a hint: the light tier exposes no effort knob *because* it is meant for deterministic work, while the full ladder lives on the heavy tier where ambiguity lives.
+This is itself a hint: the light tier exposes no effort knob *because* it is meant for deterministic work, while the top rungs of the ladder only pay off on the heavy tier, where ambiguity lives.
 
 ## Mapping by archetype
 
@@ -128,7 +128,7 @@ effort: high       # honored by sonnet; overrides session effort
 
 ## Anti-patterns
 
-- **Defaulting everything to `opus` + `max`.** It feels safe and quietly burns 5x the cost and a multiple of the latency on tasks a lighter pairing would nail. Calibrate down.
+- **Defaulting everything to `opus` + `max`.** It feels safe and quietly burns a multiple of the cost and latency on tasks a lighter pairing would nail. Calibrate down.
 - **Setting `effort` on a Haiku agent.** It is ignored. If the task genuinely needs an effort dial, it needs at least Sonnet.
 - **Using `sonnet` + `max` (or `xhigh`) as a budget Opus.** The cost crossover means the per-task cost can exceed Opus with equal or lower quality. If you need the ceiling, change the model, not the effort.
 - **Under-powering an orchestrator or architect with `haiku`.** The capability ceiling is too low for planning and long-horizon coordination, no matter the effort — and Haiku has no effort to raise anyway.

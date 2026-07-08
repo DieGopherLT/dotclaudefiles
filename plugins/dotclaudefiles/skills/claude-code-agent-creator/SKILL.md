@@ -73,7 +73,7 @@ The principle: the more **mechanical and deterministic** (and smaller) the task,
 - **Default pairing by archetype**: researcher → `haiku` (no effort); implementer → `sonnet` + `medium`; auditor → `sonnet` + `high` (or `opus` + `max` when a miss is unacceptable); orchestrator → `opus` + `high`/`xhigh`.
 - **Effort support is not uniform** — set it only where it is honored:
   - `haiku` has **no** effort dial — omit `effort` entirely.
-  - `sonnet` supports the full ladder, but `xhigh` is generally not recommended (see cost crossover below).
+  - `sonnet` supports the full ladder, but past `high` (`xhigh`, `max`) it is generally not recommended (see cost crossover below).
   - `opus` supports the full ladder, including `xhigh`.
 - **Cost crossover**: high effort on a cheaper model can cost more per task than the superior model — at that level the cheaper model iterates more (more turns, more output) and the volume overtakes the rate. On Sonnet, `max` is not a cheap shortcut to Opus: escalate the model before escalating the effort.
 
@@ -125,7 +125,7 @@ name: <kebab-case-name>
 description: <triggering description — "Use proactively when...">
 tools: <comma-separated list>
 model: <haiku|sonnet|opus|inherit>   # optional — bare alias auto-resolves to the latest in that tier
-effort: <low|medium|high|xhigh|max>   # optional — honored only by models that support it (none on haiku; xhigh on sonnet not recommended)
+effort: <low|medium|high|xhigh|max>   # optional — honored only by models that support it (none on haiku; past high on sonnet not recommended)
 color: <red|blue|green|yellow|purple|orange|pink|cyan>   # optional
 ---
 
@@ -160,7 +160,7 @@ Read these when you need to drill into a specific area:
 
 1. **Description is everything**: a vague description = an agent Claude never invokes. Spend time on it.
 2. **Least privilege**: list tools explicitly. If you're unsure a tool is needed, leave it out.
-3. **Calibrate thinking load**: match `model` + `effort` to the task's determinism and scope — mechanical/small gets a light model and low effort; open-ended/long-horizon gets a heavy model and high effort. Never default everything to `opus` + `max`. Prefer bare model aliases, and respect the effort support matrix (no `effort` on `haiku`; `xhigh` on `sonnet` supported but not recommended). Remember the cost crossover: high effort on a cheap model can cost more per task than the superior model — escalate the model before the effort.
+3. **Calibrate thinking load**: match `model` + `effort` to the task's determinism and scope — mechanical/small gets a light model and low effort; open-ended/long-horizon gets a heavy model and high effort. Never default everything to `opus` + `max`. Prefer bare model aliases, and respect the effort support matrix (no `effort` on `haiku`; past `high` on `sonnet` supported but not recommended). Remember the cost crossover: high effort on a cheap model can cost more per task than the superior model — escalate the model before the effort.
 4. **Auditor without scoring = noise**: if it's an auditor, the 0-100 confidence system with >=80 threshold is mandatory.
 5. **Sub-agents do not nest**: a standard sub-agent cannot invoke another sub-agent. If you need sustained orchestration, use agent teams or coordinate from the main conversation.
 6. **Plugin restrictions**: inside plugins, `hooks`, `mcpServers`, and `permissionMode` are NOT supported. If the agent needs them, it must live in `.claude/agents/` or `~/.claude/agents/`.
