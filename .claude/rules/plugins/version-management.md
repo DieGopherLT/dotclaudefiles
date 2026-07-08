@@ -9,7 +9,7 @@ paths:
 
 **ALWAYS bump the version in the affected plugin's `plugin.json` BEFORE committing changes.**
 
-If you commit without updating the version, Ragnarök will occur. This is not negotiable.
+If you commit without updating the version, the plugin will not update on the marketplace. This is not negotiable.
 
 ```bash
 # 1. Edit plugins/<plugin-name>/.claude-plugin/plugin.json
@@ -27,15 +27,8 @@ git commit -m "chore(<plugin-name>): bump version to X.Y.Z - <description>"
 
 When changes affect multiple plugins, bump all affected plugin versions.
 
-### After committing
-
-```bash
-git push
-
-# Update marketplace and reinstall affected plugin(s)
-/plugin marketplace update diegopher
-/plugin install <plugin-name>@diegopher
-```
+Commit the bump along the changes that triggered the bump to happen. Do not commit a version bump in isolation.
+Also, do not include the version bump in the commit message, just the description of the change.
 
 ## Creating a new plugin
 
