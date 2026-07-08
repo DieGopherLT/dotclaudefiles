@@ -73,8 +73,9 @@ The principle: the more **mechanical and deterministic** (and smaller) the task,
 - **Default pairing by archetype**: researcher → `haiku` (no effort); implementer → `sonnet` + `medium`; auditor → `sonnet` + `high` (or `opus` + `max` when a miss is unacceptable); orchestrator → `opus` + `high`/`xhigh`.
 - **Effort support is not uniform** — set it only where it is honored:
   - `haiku` has **no** effort dial — omit `effort` entirely.
-  - `sonnet` supports `low`, `medium`, `high`, `max` — but **not** `xhigh`.
+  - `sonnet` supports the full ladder, but `xhigh` is generally not recommended (see cost crossover below).
   - `opus` supports the full ladder, including `xhigh`.
+- **Cost crossover**: high effort on a cheaper model can cost more per task than the superior model — at that level the cheaper model iterates more (more turns, more output) and the volume overtakes the rate. On Sonnet, `max` is not a cheap shortcut to Opus: escalate the model before escalating the effort.
 
 An unsupported effort level is silently ignored, not an error — so a wrong pairing fails quietly. When in doubt, consult the matrix in `references/thinking-load.md`.
 
@@ -111,7 +112,7 @@ Before writing the file, check:
 - `description` is specific, with explicit trigger phrases
 - `tools` is declared explicitly (not omitted unless intentional)
 - Read-only agents have no write tools
-- `model` uses a bare alias (`haiku` / `sonnet` / `opus`) unless a pinned ID is intentional, and the `model` + `effort` pairing is valid (no `effort` on `haiku`, no `xhigh` on `sonnet`)
+- `model` uses a bare alias (`haiku` / `sonnet` / `opus`) unless a pinned ID is intentional, and the `model` + `effort` pairing is sensible (no `effort` on `haiku`; avoid `xhigh`/`max` on `sonnet` when the task justifies `opus`)
 - Auditors include the Confidence Scoring section
 
 By default, write the file directly to the chosen location with the `Write` tool. If the user wants to review first, present the contents as a code block and clearly state the destination path.
@@ -124,7 +125,7 @@ name: <kebab-case-name>
 description: <triggering description — "Use proactively when...">
 tools: <comma-separated list>
 model: <haiku|sonnet|opus|inherit>   # optional — bare alias auto-resolves to the latest in that tier
-effort: <low|medium|high|xhigh|max>   # optional — honored only by models that support it (none on haiku, no xhigh on sonnet)
+effort: <low|medium|high|xhigh|max>   # optional — honored only by models that support it (none on haiku; xhigh on sonnet not recommended)
 color: <red|blue|green|yellow|purple|orange|pink|cyan>   # optional
 ---
 
@@ -159,7 +160,7 @@ Read these when you need to drill into a specific area:
 
 1. **Description is everything**: a vague description = an agent Claude never invokes. Spend time on it.
 2. **Least privilege**: list tools explicitly. If you're unsure a tool is needed, leave it out.
-3. **Calibrate thinking load**: match `model` + `effort` to the task's determinism and scope — mechanical/small gets a light model and low effort; open-ended/long-horizon gets a heavy model and high effort. Never default everything to `opus` + `max`. Prefer bare model aliases, and respect the effort support matrix (no `effort` on `haiku`, no `xhigh` on `sonnet`).
+3. **Calibrate thinking load**: match `model` + `effort` to the task's determinism and scope — mechanical/small gets a light model and low effort; open-ended/long-horizon gets a heavy model and high effort. Never default everything to `opus` + `max`. Prefer bare model aliases, and respect the effort support matrix (no `effort` on `haiku`; `xhigh` on `sonnet` supported but not recommended). Remember the cost crossover: high effort on a cheap model can cost more per task than the superior model — escalate the model before the effort.
 4. **Auditor without scoring = noise**: if it's an auditor, the 0-100 confidence system with >=80 threshold is mandatory.
 5. **Sub-agents do not nest**: a standard sub-agent cannot invoke another sub-agent. If you need sustained orchestration, use agent teams or coordinate from the main conversation.
 6. **Plugin restrictions**: inside plugins, `hooks`, `mcpServers`, and `permissionMode` are NOT supported. If the agent needs them, it must live in `.claude/agents/` or `~/.claude/agents/`.
