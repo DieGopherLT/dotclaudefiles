@@ -16,10 +16,9 @@ directory, or a specific function/type — detect concrete code smells from the 
 persist them as a source-of-truth (SoT) file per domain, report each finding with its location, confidence,
 and mapped techniques, then offer to apply a fix via the `refactor` skill.
 
-This skill is a **scale dispatcher**: it picks its execution strategy by how many physical domains the
-target spans. A single-domain target runs inline — you spawn the 5 category detectors directly, no
-orchestration overhead. A multi-domain target fans out through a `Workflow` that pipelines each domain
-through its own detector batch. Either way, detection and reporting only — this skill never edits code.
+Detection always fans out through a `Workflow` that pipelines each domain through its own 5-detector
+batch — one domain or many, the mechanism is the same, so there is only one synthesis path to keep
+correct. Detection and reporting only — this skill never edits code.
 
 ## Step 1 — Resolve the target
 
@@ -47,40 +46,27 @@ though absolute paths are what gets passed to the Workflow in Step 3.
 If `domainCount` is 0 (the target does not resolve to anything scannable), tell the user there is nothing
 to scan and stop here.
 
-## Step 3 — Dispatch by domain count
+## Step 3 — Dispatch the Workflow
 
-**One domain — run inline.** Do not invoke the `Workflow` tool for a single domain; that would spin up
-orchestration for work you can do directly. Launch the 5 `smell-detector` agents yourself via the `Agent`
-tool, foreground, no `name`, one per category (`bloaters`, `oo-abusers`, `change-preventers`,
-`dispensables`, `couplers`), each scoped to this domain. Once all 5 return, synthesize their findings
-by hand using **exactly** these rules — they must stay byte-identical to the Workflow's synthesis logic
-in `scripts/workflow.js` so a domain scanned inline or via Workflow always produces the same SoT file:
-
-1. Merge all 5 detectors' `findings` arrays into one list for this domain.
-2. Rename each finding's `file` field to `path`.
-3. Add `technique`: the first element of that finding's `techniques` array (the most-direct one). Keep
-   `techniques` off the final finding object — the SoT schema (Step 4) carries `technique` singular only.
-4. Add `severity`, derived from `confidence`: `>= 95` → `critical`, `>= 90` → `high`, `>= 85` → `medium`,
-   otherwise `low`.
-5. Add `cross_cutting: true` iff `smell` is exactly one of `Shotgun Surgery`, `Inappropriate Intimacy`, or
-   `Divergent Change` — `false` for every other smell.
-
-**Two or more domains — dispatch the Workflow.** Invoke:
+Invoke, regardless of `domainCount` — one domain and many both flow through the same pipeline, so there
+is no separate manual synthesis path to keep in sync by hand:
 
 ```
 Workflow({ scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/smell-scan/scripts/workflow.js", args: { domains: ["<absolute path to domain 1>", "<absolute path to domain 2>", ...] } })
 ```
 
-The Workflow pipelines each domain through its own 5-detector batch and applies the identical synthesis
-rules above (see the script's `synthesizeDomain`), returning `{ domains: [{ domain, total, findings }],
-total }` with no filesystem writes and no `code` assigned yet — codes are assigned next, over the
-aggregated set.
+The Workflow pipelines each domain through its own 5-detector batch (`bloaters`, `oo-abusers`,
+`change-preventers`, `dispensables`, `couplers`) and synthesizes its findings in plain JS (see the
+script's `synthesizeDomain`): merging the 5 detectors' results, renaming `file` to `path`, deriving
+`technique` from the head of `techniques`, computing `severity` from `confidence` bands, and flagging
+`cross_cutting` for `Shotgun Surgery`, `Inappropriate Intimacy`, and `Divergent Change`. It returns
+`{ domains: [{ domain, total, findings }], total }` with no filesystem writes and no `code` assigned
+yet — codes are assigned next, over the aggregated set.
 
 ## Step 4 — Assign codes and persist
 
-Whether Step 3 ran inline (one domain) or via Workflow (many), you now hold one or more domains' worth of
-findings. Assign reference codes **globally**, over the full aggregated set across every domain in this
-scan, so a code is never ambiguous:
+The Workflow returns one or more domains' worth of findings. Assign reference codes **globally**, over
+the full aggregated set across every domain in this scan, so a code is never ambiguous:
 
 - Sort findings by `confidence` descending.
 - Assign `code` sequentially per category prefix — `B` (Bloaters), `OO` (OO Abusers), `CP` (Change
