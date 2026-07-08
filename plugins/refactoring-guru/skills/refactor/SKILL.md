@@ -34,6 +34,12 @@ Resolve which finding(s) are in play, from one of:
   - **Location**: `.claude/refactoring-guru/findings/_adhoc-<domain-slug>-<file-slug>-L<start>-<end>.json`
     — the `_adhoc-` prefix keeps it visibly distinct from a real scan's `<domain-slug>.json`, so it can
     never collide with or overwrite persisted scan output for that domain.
+  - **Shape**: wrap the single finding in the same envelope a real SoT file uses — `{ domain, scanned_at,
+    total, findings: [...] }` — not a bare finding object. `domain` is the resolved top-level module folder
+    (repo-relative, e.g. `src/orders`) containing the target file; `scanned_at` is the current ISO 8601
+    timestamp; `total: 1`; `findings` holds the one finding object with the fields below. Step 3 reads
+    `sot.domain` and flattens `sot.findings` exactly like a real scan's file — a flat, unwrapped file
+    resolves to zero findings and the request silently does nothing.
   - **Fields**: `code: "AD1"` (single-use — no cross-scan global uniqueness needed); `path`/`line_range`/
     `technique` taken directly from the user's request; `evidence` is a literal echo of the user's
     instruction (e.g. `"User explicitly requested this technique at this location."`); `confidence: 100`
@@ -67,11 +73,20 @@ a. Read and parse the relevant SoT JSON file(s) (or the ad-hoc file from Step 1)
    not the Workflow script. Detect the project's whole-project build/test command (`buildCmd`) and its
    scoped safe-cycle test command (`testCmd`).
 
+   While reading, check each finding's `technique` against `${CLAUDE_PLUGIN_ROOT}/references/
+   technique-playbooks.md`: if it is one of the OOP-specific techniques and the finding's `path` is not
+   class/inheritance code, do not include it as-is — look up the finding's `smell` in
+   `${CLAUDE_PLUGIN_ROOT}/references/smell-catalog.md` for a non-OOP alternative technique, or flag the
+   mismatch to the user before dispatching, instead of forcing an inapplicable technique through.
+
 b. Check whether the current working tree is already a dedicated (non-main) worktree, so a worktree never
    nests inside another: compare `git rev-parse --git-dir` against `git rev-parse --git-common-dir`
    (resolve both to absolute paths) — if they differ, you are already inside a linked worktree.
-   - **Already in a worktree**: capture `baseRef = git rev-parse HEAD` in place and skip ahead to (d) —
-     do not call `EnterWorktree`.
+   - **Already in a worktree**: confirm `git status` is clean (or that any uncommitted changes present are
+     ones you intend to fold in) before proceeding — Step 4's `git reset --soft <baseRef>` collapses
+     everything between `baseRef` and the final tree into one commit, so pre-existing unrelated uncommitted
+     work in this worktree would be swept in too. Then capture `baseRef = git rev-parse HEAD` in place and
+     skip ahead to (d) — do not call `EnterWorktree`.
    - **Not in a worktree**: capture `baseRef = git rev-parse HEAD` in the current checkout, **before**
      entering any worktree — this is what the final history collapse in Step 4 resets onto.
 
@@ -84,6 +99,10 @@ d. Dispatch the Workflow:
 ```
 Workflow({ scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/refactor/scripts/workflow.js", args: { sotContents: [<parsed SoT objects>], sotFilePaths: { "<domain>": "<absolute path to that domain's SoT file>", ... }, buildCmd: "<detected build/test gate>", testCmd: "<detected scoped test command>", projectRoot: "<absolute path inside the worktree>", baseRef: "<the SHA captured in step b>" } })
 ```
+
+`sotFilePaths`' keys are each SoT file's own `domain` field value as parsed from its JSON content (e.g.
+`"src/orders"`) — the same string the Workflow finds on each `finding.domain` after flattening
+`sotContents` — not the filename slug (`src-orders`) used to name the file on disk.
 
 Do not set `isolation: 'worktree'` on anything you invoke afterward — you are already operating inside the
 dedicated worktree (entered in step c, or already active per step b) and every sub-agent should inherit it
