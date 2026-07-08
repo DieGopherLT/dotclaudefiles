@@ -63,7 +63,8 @@ git switch -c <type>/<description>
 
 The same naming convention applies to the branch created alongside the worktree. Worktrees are
 placed under `.claude/worktrees/` inside the project root so they stay out of version control
-(the `.claude/` directory is gitignored) but remain easy to locate.
+(`.claude/worktrees/` must be gitignored — add the entry if it is missing) but remain easy to
+locate.
 
 The branch keeps the `<type>/<description>` format, but the worktree path flattens the `/` into
 a hyphen: `<type>-<description>`. Reusing the branch name verbatim as the path would create an
