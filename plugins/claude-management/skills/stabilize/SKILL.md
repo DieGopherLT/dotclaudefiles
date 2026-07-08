@@ -30,22 +30,33 @@ The session-harvest hook maintains one queue per repository at:
 ~/.claude/claude-management/harvest/<repo-key>.json
 ```
 
-where `<repo-key>` is the repo root path with slashes replaced by dashes (including the leading one). Derive it with the exact pipeline the hook uses — the intermediate `dirname` matters, because `--git-common-dir` returns the `.git` directory, not the root:
+and — the primary source — **prints the exact queue path inside the Stop suggestion that launches this skill**. Use that path verbatim; do not re-derive what the announcement already gives you.
 
-```bash
-git rev-parse --path-format=absolute --git-common-dir | xargs dirname | tr '/' '-'
-```
-
-Worktree sessions resolve to the main repo's queue through the common dir. If the cwd is not a git repository, the hook falls back to the cwd itself as the repo root — do the same.
+Only when invoked manually, without an announcement in context, reconstruct the path. The single source of truth for the key derivation is the `queue_file_for_repo` function in this plugin's `hooks/session-harvest/session-harvest.sh` — read it and replicate it exactly. Do not derive the key from memory or from this paragraph: the hook owns the format (repo root from the git common dir, worktrees resolving to the main repo's queue, non-git cwd falling back to the cwd itself).
 
 Read `.pending` from the queue file and record the list you got — Step 6 removes exactly these entries, nothing else. If the file is missing or the array is empty, report there is nothing to stabilize and stop — do not go hunting for transcripts outside the queue; the hook already classified which sessions are worth mining.
 
 ## Step 2 — Digest each transcript in parallel
 
-Launch one `transcript-digester` agent per pending transcript, all in parallel — they are read-only and share nothing. Pass each agent:
+One `transcript-digester` agent per pending transcript, all in parallel — they are read-only and share nothing. Pass each agent the transcript's absolute path and the project root.
 
-- The transcript's absolute path
-- The project root
+Prefer running this fan-out through the **Workflow tool**: its `agent()` accepts a JSON Schema, which forces the sub-agent through StructuredOutput and validates the digest at the tool-call layer (with automatic retry on mismatch) — malformed JSON never reaches you. This skill instructing the call counts as explicit Workflow opt-in. Sketch:
+
+```javascript
+export const meta = {
+  name: 'stabilize-digest',
+  description: 'Digest harvested session transcripts in parallel',
+  phases: [{ title: 'Digest' }],
+}
+// DIGEST_SCHEMA: declare as a const — the JSON Schema form of the digest
+// contract in references/digest-schema.md (flows, conventions, session_summary)
+const digests = await parallel(args.transcripts.map(path => () =>
+  agent(`Digest the Claude Code session transcript at ${path}. Project root: ${args.projectRoot}.`,
+        { agentType: 'claude-management:transcript-digester', schema: DIGEST_SCHEMA, phase: 'Digest' })))
+return digests.filter(Boolean)
+```
+
+If the Workflow tool is unavailable in the session, fall back to launching the agents with the Agent tool in parallel and parsing each final message as raw JSON — the agents are prompted to emit it fence-free either way.
 
 Each returns a digest JSON (`flows`, `conventions`, `session_summary`) — the contract is in `references/digest-schema.md`. A digest with empty arrays is a valid result, not a failure. Drop agents that error out and continue with the rest; note the dropped transcript in the final report. Failed transcripts are consumed along with the rest in Step 6 — they are not retried, because a transcript that failed to digest once will almost certainly fail again and would clog the queue.
 
@@ -59,13 +70,13 @@ When merging occurrences into one candidate, keep the union of observed steps an
 
 ## Step 4 — Verify every candidate
 
-Launch one `practice-verifier` agent per candidate, in parallel. Pass the candidate (the full flow or convention, with its steps or claim and its `applies_to`/`files_touched_pattern` glob) and the project root — the verifier does its own external/internal classification per claim. It returns a verdict JSON (contract also in `references/digest-schema.md`).
+Launch one `practice-verifier` agent per candidate, in parallel. Pass the candidate (the full flow or convention, with its steps or claim and its `applies_to`/`files_touched_pattern` glob) and the project root — the verifier does its own external/internal classification per claim. It returns a verdict JSON (contract also in `references/digest-schema.md`). Same mechanism as Step 2: prefer a Workflow fan-out with a VERDICT_SCHEMA const so StructuredOutput validates each verdict; Agent-tool parallel with raw-JSON parsing is the fallback.
 
-Materialization rule — apply it strictly:
+Materialization rule — apply it strictly. The confidence bar is owned by the verifier's own contract (`agents/practice-verifier.md`), not by this skill:
 
-- `confirmed` with confidence >= 80 → materialize as-is
-- `adjusted` with confidence >= 80 → apply the listed corrections, then materialize
-- `refuted`, or any verdict below 80 → do NOT materialize; report it with the verifier's evidence
+- `confirmed` at or above the verifier's actionable bar → materialize as-is
+- `adjusted` at or above the bar → apply the listed corrections, then materialize
+- `refuted`, or anything below the bar → do NOT materialize; report it with the verifier's evidence
 
 Do not argue with a refutation because the pattern appeared often. Frequency got the candidate this far; correctness decides the rest.
 
