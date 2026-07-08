@@ -120,7 +120,7 @@ domain, say the target is clean of high-confidence smells — do not pad with lo
 
 Reference codes are assigned per scan, sequentially within each category prefix, globally across every
 domain scanned. They are stable only within this scan; re-scanning may renumber. The smell *types* and
-their detection criteria live in `references/smell-catalog.md`.
+their detection criteria live in `${CLAUDE_PLUGIN_ROOT}/references/smell-catalog.md`.
 
 ## Step 6 — Offer to refactor
 
@@ -138,11 +138,12 @@ Do not start refactoring from this skill. This skill detects and reports; `refac
 
 Load on demand, only when needed:
 
-- `references/smell-catalog.md` — the 26 smells: reference code, detection criteria, problem, and mapped
-  techniques. Consult to explain a finding or justify a confidence call.
-- `references/refactoring-techniques.md` — the 67 techniques: when to apply and mechanics. Consult to
-  explain why a technique maps to a smell.
-- `references/workflow.md` — the safe test → refactor → test → commit cycle that any fix should follow.
+- `${CLAUDE_PLUGIN_ROOT}/references/smell-catalog.md` — the 26 smells: reference code, detection
+  criteria, problem, and mapped techniques. Consult to explain a finding or justify a confidence call.
+- `${CLAUDE_PLUGIN_ROOT}/references/refactoring-techniques.md` — the 67 techniques: when to apply and
+  mechanics. Consult to explain why a technique maps to a smell.
+- `${CLAUDE_PLUGIN_ROOT}/references/workflow.md` — the safe test → refactor → test → commit cycle that
+  any fix should follow.
 
 ## Scope notes
 
