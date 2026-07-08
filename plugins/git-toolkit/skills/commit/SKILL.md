@@ -93,9 +93,9 @@ Present the staged files and the proposed message. Do not commit until the user 
 Phrases like "go ahead", "yes", "do it", "looks good" count as approval. Silence or ambiguity does not.
 
 **Exception — orchestrated context.** When this skill runs as part of executing an already-approved
-plan or a multi-task orchestration (for example, the execution cycle of `task-planning` from
-dotclaudefiles, which commits per letter group), the plan's approval counts as authorization for its
-commits. Do not pause to ask for confirmation: commit directly and report the message and hash.
+plan or a user-approved multi-task orchestration (for example, the execution cycle of `task-planning`
+from dotclaudefiles, which commits per letter group), that prior approval counts as authorization for
+its commits. Do not pause to ask for confirmation: commit directly and report the message and hash.
 The explicit approval gate above is reserved for standalone commits initiated by the user.
 
 Everything else in this step — the heredoc, the flag restrictions, the post-commit verification —
