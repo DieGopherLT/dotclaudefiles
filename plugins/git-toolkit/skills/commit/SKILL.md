@@ -4,8 +4,9 @@ description: >
   Execute a complete, standards-compliant git commit. Invoke immediately whenever the user says
   "commit", "make a commit", "commit these changes", "let's commit", "ship this", "stage and commit",
   or any phrase that signals they want to record changes to git history. Do not wait for the user to
-  specify format details — own the full workflow: staging, linting, message authoring, approval, and
-  execution. If in doubt, invoke it — a bad commit message is permanent history.
+  specify format details — own the full workflow: staging, linting, message authoring, approval when
+  the commit is standalone, and execution. If in doubt, invoke it — a bad commit message is permanent
+  history.
 ---
 
 # Commit
@@ -90,6 +91,15 @@ committing. One logical change per commit is the rule — not one file, not one 
 
 Present the staged files and the proposed message. Do not commit until the user explicitly approves.
 Phrases like "go ahead", "yes", "do it", "looks good" count as approval. Silence or ambiguity does not.
+
+**Exception — orchestrated context.** When this skill runs as part of executing an already-approved
+plan or a multi-task orchestration (for example, the execution cycle of `task-planning` from
+dotclaudefiles, which commits per letter group), the plan's approval counts as authorization for its
+commits. Do not pause to ask for confirmation: commit directly and report the message and hash.
+The explicit approval gate above is reserved for standalone commits initiated by the user.
+
+Everything else in this step — the heredoc, the flag restrictions, the post-commit verification —
+applies in both modes.
 
 Execute using a heredoc to avoid quoting issues:
 
