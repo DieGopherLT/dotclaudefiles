@@ -1,8 +1,8 @@
 export const meta = {
   name: 'refactor',
-  description: 'Apply refactoring.guru techniques across two or more domains: intra-domain fan-out in parallel, cross-cutting findings reconciled serially with a whole-project build gate.',
+  description: 'Apply refactoring.guru techniques: intra-domain fan-out in parallel, cross-cutting findings reconciled serially with a whole-project build gate.',
   phases: [
-    { title: 'Plan', detail: 'bucket findings into intra-domain, cross-cutting, and skipped (plain JS, no fs)' },
+    { title: 'Plan', detail: 'split findings into intra-domain, cross-cutting, and skipped batches (plain JS, no fs)' },
     { title: 'Apply', detail: 'one refactoring-applier per domain, serial within a domain, parallel across domains' },
     { title: 'Mark', detail: 'refactoring-reconciler stages the quiescent tree and makes the rollback commit' },
     { title: 'Reconcile', detail: 'cross-cutting findings applied serially, then a whole-project build gate' },
@@ -12,21 +12,26 @@ export const meta = {
 // ---------------------------------------------------------------------------
 // Input (from the refactor skill via args) — the skill pre-loads everything;
 // this script touches no filesystem.
-//   args.sotContents:  object[]  per-domain SoT objects, already parsed
-//   args.buildCmd:     string    whole-project build/test gate
-//   args.testCmd:      string    scoped safe-cycle test command
-//   args.projectRoot:  string    absolute path inside the dedicated worktree
-//   args.preWorkBase:  string    SHA captured before EnterWorktree — used as
-//                                the rollback point when the intra-domain
-//                                lane makes no changes to stage
+//   args.sotContents:   object[]  per-domain SoT objects, already parsed
+//   args.sotFilePaths:  object    domain -> absolute SoT file path, so Apply
+//                                 can point each applier at its finding's
+//                                 file instead of re-embedding every field
+//   args.buildCmd:      string    whole-project build/test gate
+//   args.testCmd:       string    scoped safe-cycle test command
+//   args.projectRoot:   string    absolute path inside the dedicated worktree
+//   args.baseRef:       string    SHA captured before entering (or already
+//                                 inside) the dedicated worktree — used as
+//                                 the rollback point when the intra-domain
+//                                 lane makes no changes to stage
 // ---------------------------------------------------------------------------
 
 const input = normalizeArgs(args)
 const sotContents = Array.isArray(input?.sotContents) ? input.sotContents : []
+const sotFilePaths = input?.sotFilePaths ?? {}
 const buildCmd = input?.buildCmd
 const testCmd = input?.testCmd
 const projectRoot = input?.projectRoot
-const preWorkBase = input?.preWorkBase
+const baseRef = input?.baseRef
 
 function normalizeArgs(raw) {
   if (typeof raw === 'string') {
@@ -104,24 +109,24 @@ function resolutionSpansDomain(finding) {
   return tokens.some((token) => token !== finding.domain && !token.startsWith(`${finding.domain}/`))
 }
 
-const crossCutting = []
-const skipped = []
-const intraDomainByDomain = {}
+const crossCuttingBatch = allFindings.filter((finding) => finding.cross_cutting)
 
-for (const finding of allFindings) {
-  if (finding.cross_cutting) {
-    crossCutting.push(finding)
-    continue
-  }
-  if (resolutionSpansDomain(finding)) {
-    skipped.push({ ...finding, reason: 'resolution spans domains, not in cross-cutting set — manual follow-up' })
-    continue
-  }
-  intraDomainByDomain[finding.domain] ??= []
-  intraDomainByDomain[finding.domain].push(finding)
-}
+const skippedBatch = allFindings
+  .filter((finding) => !finding.cross_cutting && resolutionSpansDomain(finding))
+  .map((finding) => ({
+    ...finding,
+    reason: 'resolution spans domains, not in cross-cutting set — manual follow-up',
+  }))
 
-log(`Plan: ${allFindings.length} findings — ${Object.values(intraDomainByDomain).flat().length} intra-domain, ${crossCutting.length} cross-cutting, ${skipped.length} skipped (spanning-but-unnamed).`)
+const intraDomainBatches = allFindings
+  .filter((finding) => !finding.cross_cutting && !resolutionSpansDomain(finding))
+  .reduce((batches, finding) => {
+    batches[finding.domain] ??= []
+    batches[finding.domain].push(finding)
+    return batches
+  }, {})
+
+log(`Plan: ${allFindings.length} findings — ${Object.values(intraDomainBatches).flat().length} intra-domain, ${crossCuttingBatch.length} cross-cutting, ${skippedBatch.length} skipped (spanning-but-unnamed).`)
 
 // ---------------------------------------------------------------------------
 // Phase: Apply — parallel() across domains that have intra-domain findings;
@@ -135,10 +140,10 @@ log(`Plan: ${allFindings.length} findings — ${Object.values(intraDomainByDomai
 
 phase('Apply')
 
-const domainsWithWork = Object.keys(intraDomainByDomain)
+const domainsWithWork = Object.keys(intraDomainBatches)
 
 const applyResults = await parallel(
-  domainsWithWork.map((domain) => () => applyDomain(domain, intraDomainByDomain[domain])),
+  domainsWithWork.map((domain) => () => applyDomain(domain, intraDomainBatches[domain])),
 )
 
 async function applyDomain(domain, findings) {
@@ -172,13 +177,12 @@ function toOutcome(outcome, finding, domain) {
 }
 
 function applyPrompt(finding, { crossCutting }) {
+  const sotFilePath = sotFilePaths[finding.domain]
   const boundaryConstraint = crossCutting
-    ? `This finding is cross-cutting (${finding.smell}) — its resolution is explicitly allowed to touch files outside a single domain.`
+    ? `This finding is cross-cutting — its resolution is explicitly allowed to touch files outside a single domain.`
     : `Only edit files under ${finding.domain}. If completing the resolution plan requires touching a file outside that domain, stop and report { skipped: true, reason: "spans domains" } instead of making the edit.`
 
-  return `Apply the technique "${finding.technique}" to address the "${finding.smell}" smell at ${finding.path}:${finding.line_range[0]}-${finding.line_range[1]}.
-Evidence: ${finding.evidence}
-Resolution plan: ${finding.resolution_plan}
+  return `Read finding "${finding.code}" from ${sotFilePath} — it is the source of truth for the technique, file, location, smell context, and resolution plan to apply.
 Run the scoped safe cycle with: ${testCmd}
 
 Two hard constraints for this autonomous run, overriding your default interactive behavior:
@@ -199,15 +203,16 @@ const intraDomainBehaviorPreserved = applyOutcomes.every((o) => o.skipped || o.b
 // (never surfaced to reviewed history — the skill collapses it after this
 // Workflow returns, per REQ-010). Skipped when the intra-domain lane made no
 // actual changes (every finding was skipped, or there was nothing to apply):
-// `git add -A` + commit would fail with nothing staged, so `preWorkBase` —
-// the tree's state at worktree entry — is already the correct rollback point.
+// `git add -A` + commit would fail with nothing staged, so `baseRef` — the
+// tree's state at worktree entry (or already-in-worktree capture) — is
+// already the correct rollback point.
 // ---------------------------------------------------------------------------
 
 phase('Mark')
 
 const anyIntraDomainApplied = applyOutcomes.some((o) => o.applied)
 
-let rollbackSha = preWorkBase ?? null
+let rollbackSha = baseRef ?? null
 if (anyIntraDomainApplied) {
   const mark = await agent(
     `Stage every change under ${projectRoot} with git add -A and make an internal commit capturing this intra-domain-green state. Return the resulting SHA.`,
@@ -220,7 +225,7 @@ if (anyIntraDomainApplied) {
   )
   rollbackSha = mark?.rollbackSha ?? rollbackSha
 } else {
-  log('Mark: no intra-domain changes were applied — using preWorkBase as the rollback point instead of an empty commit.')
+  log('Mark: no intra-domain changes were applied — using baseRef as the rollback point instead of an empty commit.')
 }
 
 // ---------------------------------------------------------------------------
@@ -235,7 +240,7 @@ if (anyIntraDomainApplied) {
 phase('Reconcile')
 
 const crossCuttingOutcomes = []
-for (const finding of crossCutting) {
+for (const finding of crossCuttingBatch) {
   const outcome = await agent(applyPrompt(finding, { crossCutting: true }), {
     label: `reconcile:${finding.domain}:${finding.code}`,
     phase: 'Reconcile',
@@ -256,8 +261,8 @@ const reconcile = await agent(
 )
 
 const buildPasses = Boolean(reconcile?.buildPasses)
-const crossCuttingApplied = crossCutting.length > 0 && Boolean(reconcile?.crossCuttingApplied)
-const intraDomainHealthy = crossCutting.length === 0 ? buildPasses : Boolean(reconcile?.intraDomainHealthy)
+const crossCuttingApplied = crossCuttingBatch.length > 0 && Boolean(reconcile?.crossCuttingApplied)
+const intraDomainHealthy = crossCuttingBatch.length === 0 ? buildPasses : Boolean(reconcile?.intraDomainHealthy)
 
 const mergeable = intraDomainBehaviorPreserved && intraDomainHealthy
 
@@ -269,7 +274,7 @@ const mergeable = intraDomainBehaviorPreserved && intraDomainHealthy
 const appliedFromCrossCutting = crossCuttingApplied ? crossCuttingOutcomes.filter((o) => o.applied) : []
 const skippedFromCrossCutting = crossCuttingApplied
   ? crossCuttingOutcomes.filter((o) => o.skipped)
-  : crossCutting.map((f) => ({ domain: f.domain, code: f.code, technique: f.technique, reason: 'cross-cutting reconciliation rolled back' }))
+  : crossCuttingBatch.map((f) => ({ domain: f.domain, code: f.code, technique: f.technique, reason: 'cross-cutting reconciliation rolled back' }))
 
 return {
   mergeable,
@@ -278,7 +283,7 @@ return {
   crossCuttingApplied,
   rollbackSha,
   skipped: [
-    ...skipped.map((f) => ({ domain: f.domain, code: f.code, reason: f.reason })),
+    ...skippedBatch.map((f) => ({ domain: f.domain, code: f.code, reason: f.reason })),
     ...skippedFromApply.map((o) => ({ domain: o.domain, code: o.code, technique: o.technique, reason: o.reason })),
     ...skippedFromCrossCutting.map((o) => ({ domain: o.domain, code: o.code, technique: o.technique, reason: o.reason })),
   ],
