@@ -6,7 +6,8 @@ description: >
   en skill", o — el disparador principal — cuando un hook de Stop anuncia que la cola de
   stabilize alcanzó su umbral de transcripts cosechables. Tambien usarla si el usuario
   menciona querer extraer flujos mecanicos repetidos (migraciones, wiring, boilerplate)
-  de sesiones pasadas y convertirlos en skills o rules del proyecto. Mina los transcripts
+  de sesiones pasadas y convertirlos en skills o rules del proyecto ("cosecha los flujos",
+  "estabiliza lo aprendido"). Mina los transcripts
   encolados con agentes transcript-digester en paralelo, cruza sesiones buscando flujos y
   convenciones recurrentes, verifica cada candidato con practice-verifier y materializa
   solo los confirmados como recursos del proyecto. Ejecutable en background.
@@ -29,9 +30,15 @@ The session-harvest hook maintains one queue per repository at:
 ~/.claude/claude-management/harvest/<repo-key>.json
 ```
 
-where `<repo-key>` is the repo root path with slashes as dashes, and the repo root comes from `git rev-parse --path-format=absolute --git-common-dir` (worktree sessions share the main repo's queue). Resolve it the same way from the current cwd.
+where `<repo-key>` is the repo root path with slashes replaced by dashes (including the leading one). Derive it with the exact pipeline the hook uses — the intermediate `dirname` matters, because `--git-common-dir` returns the `.git` directory, not the root:
 
-Read `.pending` from the queue file. If the file is missing or the array is empty, report there is nothing to stabilize and stop — do not go hunting for transcripts outside the queue; the hook already classified which sessions are worth mining.
+```bash
+git rev-parse --path-format=absolute --git-common-dir | xargs dirname | tr '/' '-'
+```
+
+Worktree sessions resolve to the main repo's queue through the common dir. If the cwd is not a git repository, the hook falls back to the cwd itself as the repo root — do the same.
+
+Read `.pending` from the queue file and record the list you got — Step 6 removes exactly these entries, nothing else. If the file is missing or the array is empty, report there is nothing to stabilize and stop — do not go hunting for transcripts outside the queue; the hook already classified which sessions are worth mining.
 
 ## Step 2 — Digest each transcript in parallel
 
@@ -40,7 +47,7 @@ Launch one `transcript-digester` agent per pending transcript, all in parallel �
 - The transcript's absolute path
 - The project root
 
-Each returns a digest JSON (`flows`, `conventions`, `session_summary`) — the contract is in `references/digest-schema.md`. A digest with empty arrays is a valid result, not a failure. Drop agents that error out and continue with the rest; note the dropped transcript in the final report.
+Each returns a digest JSON (`flows`, `conventions`, `session_summary`) — the contract is in `references/digest-schema.md`. A digest with empty arrays is a valid result, not a failure. Drop agents that error out and continue with the rest; note the dropped transcript in the final report. Failed transcripts are consumed along with the rest in Step 6 — they are not retried, because a transcript that failed to digest once will almost certainly fail again and would clog the queue.
 
 ## Step 3 — Synthesize candidates across sessions
 
@@ -52,7 +59,7 @@ When merging occurrences into one candidate, keep the union of observed steps an
 
 ## Step 4 — Verify every candidate
 
-Launch one `practice-verifier` agent per candidate, in parallel. Pass the candidate (flow or claim), its type hints, and the project root. The verifier returns a verdict JSON (contract also in `references/digest-schema.md`).
+Launch one `practice-verifier` agent per candidate, in parallel. Pass the candidate (the full flow or convention, with its steps or claim and its `applies_to`/`files_touched_pattern` glob) and the project root — the verifier does its own external/internal classification per claim. It returns a verdict JSON (contract also in `references/digest-schema.md`).
 
 Materialization rule — apply it strictly:
 
@@ -74,7 +81,7 @@ Name resources by intent (`prisma-migrations`, not `flow-1`). If a resource with
 
 ## Step 6 — Consume the queue and report
 
-Rewrite the queue file: empty `pending`, set `last_stabilize` to the current timestamp. The queue is a work list, not a log — leaving entries behind would re-mine the same transcripts next time.
+Rewrite the queue file: remove from `pending` exactly the paths you read in Step 1 (a `jq` filter against your recorded list), and set `last_stabilize` to the current timestamp. Do NOT empty the array wholesale — this skill runs long, and the harvest hook may have queued new transcripts while it worked; wiping `pending` would silently drop them un-mined. Consumed entries never come back: the queue is a work list, not a log.
 
 Report to the user:
 

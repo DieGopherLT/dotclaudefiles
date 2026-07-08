@@ -54,6 +54,9 @@ path_fingerprint() {
 
 emit_additional_context() {
   # emit_additional_context <hook-event-name> <context-text>
+  # additionalContext on Stop was verified against the hooks guide; if a future
+  # Claude Code release stops delivering it there, the fallback is emitting a
+  # top-level {"systemMessage": ...} instead.
   jq -n --arg event "$1" --arg context "$2" \
     '{hookSpecificOutput: {hookEventName: $event, additionalContext: $context}}'
 }

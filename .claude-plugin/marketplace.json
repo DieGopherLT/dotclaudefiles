@@ -12,7 +12,7 @@
     },
     {
       "name": "claude-management",
-      "description": "Skills for managing Claude Code memory files: split heavy CLAUDE.md into on-demand rules (rulify) and generate token-efficient module documentation (claudify).",
+      "description": "Memory-file management and self-improvement harness for Claude Code: rulify, claudify, remember, end-session, transcript mining into project skills/rules (stabilize), and suggestion-only hooks with a practice-verifier quality gate.",
       "source": "./plugins/claude-management"
     },
     {

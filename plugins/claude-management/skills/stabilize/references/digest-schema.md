@@ -70,7 +70,4 @@ Field notes:
 - `corrections` is only populated on `adjusted` — concrete fixes stabilize applies to the candidate BEFORE materializing it.
 - `confidence` scores the verdict itself (0-100). Stabilize materializes only `confirmed`/`adjusted` verdicts with confidence >= 80; everything else is reported, not written.
 
-## Candidate rules (stabilize-internal)
-
-- Candidate = same flow/convention (by intent and shape) in >= 2 distinct sessions, OR >= 3 occurrences within one session.
-- Merged candidates keep the union of steps; inter-session discrepancies are flagged to the verifier rather than silently resolved.
+Candidate aggregation rules (what counts as recurring, how merges work) live in the skill body, Step 3 — they are stabilize-internal logic, not part of these contracts.

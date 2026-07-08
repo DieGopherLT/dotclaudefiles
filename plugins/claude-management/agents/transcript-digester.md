@@ -7,9 +7,9 @@ description: >
   (constraints or patterns repeated across files). One instance per transcript — the caller
   launches several in parallel. Never modifies files, never judges whether a pattern is worth
   keeping; it reports what happened so the caller can cross sessions and decide.
-tools: Bash, Read, Grep
+tools: Bash, Read
 model: sonnet
-effort: low
+effort: medium
 color: cyan
 ---
 
@@ -65,7 +65,7 @@ One line: what the session was about, at the level a human would tag it with.
 
 ## Output format
 
-Return ONLY this JSON object as your final message — no prose around it, the caller parses it:
+Return ONLY this JSON object as your final message — raw JSON, no prose around it, no markdown code fences, no backticks. The caller parses your final message directly:
 
 ```json
 {

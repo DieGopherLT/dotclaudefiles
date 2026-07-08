@@ -53,7 +53,7 @@ The internet knows nothing about this repo; the code is the authority. Verify wi
 
 ## Output format
 
-Return ONLY this JSON object as your final message — the caller parses it:
+Return ONLY this JSON object as your final message — raw JSON, no markdown code fences, no backticks. The caller parses your final message directly:
 
 ```json
 {
@@ -71,7 +71,7 @@ Return ONLY this JSON object as your final message — the caller parses it:
 }
 ```
 
-`confidence` is the score for the verdict itself, per the scale below. The caller only materializes candidates whose verdict is `confirmed` or `adjusted` with confidence >= 80.
+`confidence` is the score for the verdict itself, per the scale below. The caller only materializes candidates whose verdict is `confirmed` or `adjusted` with confidence >= 80. `corrections` is always present: an empty array unless the verdict is `adjusted`.
 
 ## Confidence Scoring
 
