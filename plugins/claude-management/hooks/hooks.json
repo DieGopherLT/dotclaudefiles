@@ -1,0 +1,49 @@
+{
+  "description": "Self-improvement harness: deterministic detectors that suggest the right claude-management skill (remember, rulify, claudify, stabilize) at the right moment. Suggestion-only — no hook ever blocks, commits, or documents.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session-marker/session-marker.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/claudemd-size/claudemd-size.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/failure-scan/failure-scan.sh",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/contextualizable-dirs/contextualizable-dirs.sh",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session-harvest/session-harvest.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
