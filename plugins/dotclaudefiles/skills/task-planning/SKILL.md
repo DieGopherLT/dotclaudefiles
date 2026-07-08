@@ -32,7 +32,7 @@ Include steps that are easy to skip:
 - Updating CLAUDE.md or documentation that reflects the change
 - Version bumps (package.json, plugin.json, etc.) when applicable
 - Invoking skills the user requested explicitly
-- Quality-review skill invocations (`/code-review --fix`, `/security-review`, domain auditors) — register each as its own subtask so Phase 3 is visible in the task list
+- Quality-review skill invocations (`/code-review`, `/security-review`, domain auditors) — register each as its own subtask so Phase 3 is visible in the task list
 
 **Register the breakdown with TaskCreate.**
 This is not optional for work at this scale — call `TaskCreate` with every step from the letter-group
@@ -89,21 +89,85 @@ This is a judgment call, not a checkbox:
    a. If any domain-specific auditors were identified in step 2, invoke them all in parallel first.
       Skip this step if none apply.
 
-   b. Invoke `/code-review <effort> --fix` and wait for it to finish. `code-review` spawns multiple
-      internal agents depending on the effort level; running it alone avoids noise in the findings.
+   b. Invoke `/code-review <effort>` — **without `--fix`** — and wait for it to finish. `code-review`
+      spawns multiple internal agents depending on the effort level; running it alone avoids noise
+      in the findings. The review only produces verified findings; applying them is delegated to
+      sub-agents (see "Dispatching the findings" below). By this point the main agent has spent its
+      context on the feature — applying fixes already specified by the verifiers is low-density work
+      that contaminates it.
 
-      Choose the effort level based on the changeset evaluated in step 1:
-      - `medium` — single-file fix, config tweak, rename, or documentation-only change
-      - `high` — bounded change across 2–4 files, no new business logic
-      - `xhigh` — full feature, cross-cutting change, or new logic in the main data flow
+      Choose the effort with a two-step scheme, auditable and reproducible. The guiding question:
+      *what does a false negative cost, and how much noise do I tolerate to avoid it?* `low`/`medium`
+      optimize precision (few findings, all actionable); `high` through `max` widen coverage and
+      accept uncertain findings — desirable when a miss is expensive.
+
+      **Step 1 — the dominant criterion sets the base band (cost of a miss):**
+
+      | What does a false negative cost? | Base band |
+      |---|---|
+      | Expensive: critical domain — payments, auth, persistence, concurrency, contracts others consume | `xhigh` |
+      | Moderate: normal business logic, visible but contained error | `high` |
+      | Cheap: internal, mechanical, reversible change with no new logic | `medium` |
+
+      **Step 2 — yes/no modifiers of ±1 level** (bounded to the full ladder `low → max`):
+
+      | Modifier | Effect |
+      |---|---|
+      | New logic with real decision density? | +1 |
+      | No tests — the review is the only defense? | +1 |
+      | Real coupling (many call sites of what changed)? | +1 |
+      | Pure mechanical transformation (rename, move, config)? | −1 |
+      | Domain auditors already covered this same patch? | −1 |
+
+      `low` is reachable only from base `medium` plus a mitigator — rare by construction, and
+      legitimate (a mechanical diff already covered by auditors). `max` only from base `xhigh` plus
+      an aggravator. Declare the decision in the report: "base high, +1 no tests, −1 auditors → high".
+
+      Anchors: a 30-file mass rename → base medium, −1 mechanical → `low`/`medium`; one file in the
+      payments flow with no tests → base xhigh, +1 → `max`. File count is explicitly a weak proxy —
+      it never sets the band by itself. `ultra` is out of scope: it is user-triggered and billed,
+      not automatable from this skill.
 
    c. Invoke `/security-review` only if the changeset touches an entry or exit barrier — user input
       handling, authentication, authorization, API boundaries, or external service calls. Skip it for
       purely internal changes where no trust boundary is crossed.
 
-Domain auditors are additive; skipping them when none apply is correct. `/code-review --fix` is
-always present. `/security-review` is conditional on barrier exposure — omitting it for internal-only
+Domain auditors are additive; skipping them when none apply is correct. `/code-review` is always
+present. `/security-review` is conditional on barrier exposure — omitting it for internal-only
 changes is intentional, not an oversight.
+
+**Dispatching the findings.**
+After the review returns, the main agent only **arbitrates** — this is where its accumulated context
+adds value:
+1. Discard false positives using its knowledge of the changeset.
+2. Split the remaining findings into **in-scope** (introduced by this changeset) and **pre-existing
+   out-of-scope** (surfaced by the review but present before the branch).
+3. Dispatch both groups as described below, then commit the applied in-scope fixes at the end.
+
+**In-scope findings — parallel appliers on the current branch.**
+Group findings so that no two write agents ever touch the same file, and prefer fewer agents with
+more fixes each: the more fixes a single sub-agent can apply, the better. Dispatch the groups in
+parallel with the Agent tool. Calibrate model + effort per finding — when one agent carries several,
+calibrate to the heaviest finding in its group:
+
+| Finding level | Model + effort |
+|---|---|
+| CONFIRMED with an explicit fix (missing guard, off-by-one, rename, existing helper) | `haiku` (no effort) |
+| Bounded local fix requiring tactical judgment (restructure one function, call sites of one module) | `sonnet` + `low`/`medium` |
+| Cross-cutting fix, PLAUSIBLE that requires investigating the trigger, or an altitude finding | `opus` + `medium`/`high` — never `sonnet` + `max` as a substitute (cost crossover) |
+
+Transversal escalator: a fix in a critical domain moves up one row even if it looks mechanical.
+
+**Pre-existing out-of-scope findings — fire-and-forget dispatch.**
+Never touch them on the current branch. Instead, dispatch them as background agents:
+1. Collect the out-of-scope findings when the review step ends.
+2. Group them by file/module so no two agents ever write the same files.
+3. For each group, launch an implementer agent with the Agent tool using `isolation: "worktree"` —
+   the worktree starts from the baseRef, not from the current branch — and `run_in_background: true`.
+4. Each agent's prompt includes: the concrete finding(s) with location, the instruction to fix only
+   that, verify (build/tests), and commit in its worktree with a `fix:` message; never push.
+5. At the close of Phase 3, report the list of dispatched agents with their worktree/branch for later
+   review and merge. Do not block the task's closure waiting for these agents.
 
 **If trivial, skip Phase 3 entirely.**
 The multi-agent overhead exceeds the benefit for small changes. The point of this phase is catching
