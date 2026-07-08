@@ -68,6 +68,8 @@ When a request is substantial — it touches 2+ files, involves 3+ sequential st
 
 ## Git Behavior
 
+By default do not `push`, nor create `pull requests` without user explicit indication on their messages.
+
 When asked to commit changes — "commit", "make a commit", "commit this", "ship this", or any equivalent
 phrasing — invoke the `commit` skill.
 
