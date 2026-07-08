@@ -1,7 +1,7 @@
 {
   "name": "claude-management",
-  "version": "1.3.1",
-  "description": "Skills for managing Claude Code memory files: splitting heavy CLAUDE.md into on-demand rules (rulify), generating token-efficient module-level documentation (claudify), routing information to the correct storage location (remember), and automating session closing with commits and context documentation (end-session).",
+  "version": "1.4.0",
+  "description": "Skills, hooks, and agents for managing Claude Code memory files as a self-improvement harness: splitting heavy CLAUDE.md into on-demand rules (rulify), generating token-efficient module-level documentation (claudify), routing information to the correct storage location (remember), automating session closing with commits and context documentation (end-session), mining harvested session transcripts for recurring flows worth stabilizing as project skills or rules (stabilize), and suggestion-only hooks that detect the right moment to invoke each skill, with a practice-verifier gate so repetition never outranks correctness.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"
@@ -22,6 +22,10 @@
     "end-session",
     "session-closing",
     "context-preservation",
-    "commit-automation"
+    "commit-automation",
+    "stabilize",
+    "hooks",
+    "self-improvement",
+    "harness"
   ]
 }

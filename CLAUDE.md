@@ -8,7 +8,7 @@ This is a **mono-repo for Claude Code plugins** containing ten specialized plugi
 
 1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator, create-report)
 2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting)
-3. **claude-management** - Claude Code memory file management (rulify, claudify, remember)
+3. **claude-management** - Claude Code memory file management and self-improvement harness (rulify, claudify, remember, end-session, stabilize, suggestion hooks)
 4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
 5. **react-dev** - React development helpers (conditional JSX refactoring, component splitting)
 6. **testing** - Retrofit testing pipeline for existing code (testability auditing, seams, characterization tests, test-quality auditing)
@@ -66,9 +66,12 @@ Helpers for React development:
 
 ### claude-management
 
-Skills for managing Claude Code memory files:
+Skills, hooks, and agents for managing Claude Code memory files — a self-improvement harness where deterministic hooks detect the moment and suggest the right skill, and a quality gate verifies knowledge before it becomes permanent:
 
-- **Skills**: `rulify` (split heavy CLAUDE.md into on-demand `.claude/rules/` files), `claudify` (generate token-efficient module-level CLAUDE.md documentation), `remember` (classify and route a piece of information to the correct memory destination)
+- **Skills**: `rulify` (split heavy CLAUDE.md into on-demand `.claude/rules/` files), `claudify` (generate token-efficient module-level CLAUDE.md documentation), `remember` (classify and route a piece of information to the correct memory destination), `end-session` (manual-only session closing: commits + context doc), `stabilize` (mine harvested session transcripts for recurring flows/conventions, verify them, materialize survivors as project skills or rules)
+- **Agents**: `transcript-digester` (read-only distiller: one per transcript, reduces a JSONL session to flows + conventions via jq projections), `practice-verifier` (read-only quality gate: verifies transferable practices against official docs/ctx7 and internal conventions against the codebase; confirmed/adjusted/refuted with confidence >= 80 to materialize)
+- **Hooks** (suggestion-only, never block or commit): `claudemd-size` (PostToolUse: CLAUDE.md over 200 lines → suggest rulify), `failure-scan` (Stop: repeated same-family Bash/MCP failures in the transcript → suggest remember), `contextualizable-dirs` (Stop: substantial work in an undocumented module directory → suggest claudify), `session-harvest` (Stop: queue long autonomous sessions per repo; at threshold → suggest stabilize), `session-marker` (SessionStart: timestamp for session-scoped scans)
+- **Config**: optional per-project `.claude/claude-management.local.json` (ceilings, thresholds, extension allowlists); harvest queue state in `~/.claude/claude-management/harvest/`
 
 ### testing
 
@@ -117,6 +120,9 @@ Spec-driven workflow toolkit that carries a feature from raw idea to verified im
 - CLAUDE.md has grown past 200 lines and needs splitting into `.claude/rules/` files
 - Generating or updating a module-level CLAUDE.md with non-obvious documentation
 - Deciding where to persist a piece of project information (local env, project-wide context, path-scoped rule, or memory)
+- A harness hook suggests it: repeated failures worth remembering, an oversized CLAUDE.md, an undocumented module, or a full stabilize queue
+- Mining past session transcripts for recurring mechanical flows to crystallize as project skills or rules (`stabilize`)
+- Closing a work session with commits and a context document (`end-session` — user-invoked only)
 
 **Use dotclaudefiles when:**
 
