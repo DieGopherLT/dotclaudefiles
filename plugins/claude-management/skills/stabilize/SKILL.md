@@ -9,8 +9,9 @@ description: >
   de sesiones pasadas y convertirlos en skills o rules del proyecto ("cosecha los flujos",
   "estabiliza lo aprendido"). Mina los transcripts
   encolados con agentes transcript-digester en paralelo, cruza sesiones buscando flujos y
-  convenciones recurrentes, verifica cada candidato con practice-verifier y materializa
-  solo los confirmados como recursos del proyecto. Ejecutable en background.
+  convenciones recurrentes ademas de correcciones explicitas del usuario, verifica cada
+  candidato con practice-verifier y materializa solo los confirmados como recursos del
+  proyecto o memoria de feedback. Ejecutable en background.
 ---
 
 # Stabilize
@@ -58,7 +59,11 @@ return digests.filter(Boolean)
 
 If the Workflow tool is unavailable in the session, fall back to launching the agents with the Agent tool in parallel and parsing each final message as raw JSON — the agents are prompted to emit it fence-free either way.
 
-Each returns a digest JSON (`flows`, `conventions`, `session_summary`) — the contract is in `references/digest-schema.md`. A digest with empty arrays is a valid result, not a failure. Drop agents that error out and continue with the rest; note the dropped transcript in the final report. Failed transcripts are consumed along with the rest in Step 6 — they are not retried, because a transcript that failed to digest once will almost certainly fail again and would clog the queue.
+**Pass `transcripts` as a real JSON value in `args`, never as a JSON-encoded string.** A production run of this exact fan-out failed with `undefined is not an object (evaluating 'args.transcripts.map')` because the invocation serialized `args` to a string (`args: "{\"transcripts\":...}"`) instead of passing the object itself — the script then saw `args` as a string, so `args.transcripts` was `undefined`. The `Workflow` tool description already warns about this; the fix is on the calling side, not in the script above. If you find yourself reaching for a JSON.stringify-style workaround, inline the transcript list as a `const` in the script body instead of routing it through `args`.
+
+Each returns a digest JSON (`flows`, `conventions`, `user_corrections`, `session_summary`) — the contract is in `references/digest-schema.md`. A digest with empty arrays is a valid result, not a failure. Drop agents that error out and continue with the rest; note the dropped transcript in the final report. Failed transcripts are consumed along with the rest in Step 6 — they are not retried, because a transcript that failed to digest once will almost certainly fail again and would clog the queue.
+
+A large fan-out can return a combined result too big for the task-notification to show in full — the notification gets truncated in context. That is expected, not a failure: the notification's own `<diagnostics>` block gives the path to the full `.output` file and the per-agent `journal.jsonl`. Read one of those before concluding a digest is missing or malformed.
 
 ## Step 3 — Synthesize candidates across sessions
 
@@ -67,6 +72,8 @@ This is the step where cross-session mining actually happens, and it runs in you
 A **candidate** is a flow or convention that shows up in **2 or more distinct sessions**, or 3+ times within a single session. Match by intent and shape, not by literal strings — "add DB migration" and "create schema migration" digested from different sessions are the same flow if their steps have the same shape. The cross-session bar exists because one session's repetition may be a one-off task; the same mechanics resurfacing in independent sessions is what "this will happen again" actually looks like.
 
 When merging occurrences into one candidate, keep the union of observed steps and note discrepancies — a step present in one session and absent in another is worth flagging for the verifier.
+
+This repetition bar applies only to `flows` and `conventions` — patterns inferred by observing behavior, where repetition is the only evidence that it's a habit rather than a one-off. Every entry in `user_corrections` is its own candidate regardless of how many times it appears, in this session or across others: it is feedback the user already gave directly, not something you inferred. Dedupe near-identical corrections across sessions (same rule, different wording) into one candidate, but never hold one back waiting for a second occurrence.
 
 ## Step 4 — Verify every candidate
 
@@ -80,6 +87,8 @@ Materialization rule — apply it strictly. The confidence bar is owned by the v
 
 Do not argue with a refutation because the pattern appeared often. Frequency got the candidate this far; correctness decides the rest.
 
+For `user_corrections` candidates, the verifier's job is different: it is not judging whether the correction was right — the user already decided that — but whether the corrected practice is still current (the corrected code, tool, or convention hasn't since changed in a way that makes the correction stale). Pass this framing to the verifier explicitly so it doesn't re-litigate the correction itself.
+
 ## Step 5 — Materialize through remember's routing
 
 For each surviving candidate, classify its destination with the decision tree in `../remember/references/storage-decision-guide.md`:
@@ -87,6 +96,7 @@ For each surviving candidate, classify its destination with the decision tree in
 - **Executable multi-step procedure** (flows) → `.claude/skills/<name>/SKILL.md`, following that guide's Skill destination spec — including its third-person description format
 - **Convention tied to file types or directories** → `.claude/rules/<topic>.md` with a `paths` frontmatter scoped to the candidate's `applies_to` glob
 - **Project-wide orientation** (rare from mining, but possible) → the project's CLAUDE.md
+- **Explicit user correction** (`user_corrections`) → Memory, `type: feedback`, per the guide's Memory destination spec
 
 Name resources by intent (`prisma-migrations`, not `flow-1`). If a resource with the same purpose already exists, merge into it instead of creating a sibling — an update to an existing rule beats a near-duplicate.
 

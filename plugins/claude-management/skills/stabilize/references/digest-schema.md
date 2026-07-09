@@ -4,7 +4,7 @@ The two JSON contracts that move between stabilize and its agents. Both agents r
 
 ## Digest (transcript-digester → stabilize)
 
-One digest per transcript. Two knowledge shapes, because they route to different destinations later: `flows` are executable procedures (skill candidates), `conventions` are constraints applied repeatedly without being a procedure (rule candidates).
+One digest per transcript. Three knowledge shapes, because they route to different destinations later: `flows` are executable procedures (skill candidates), `conventions` are constraints applied repeatedly without being a procedure (rule candidates), `user_corrections` are explicit feedback the user gave mid-session (feedback-memory candidates).
 
 ```json
 {
@@ -28,6 +28,13 @@ One digest per transcript. Two knowledge shapes, because they route to different
       "occurrences": 3
     }
   ],
+  "user_corrections": [
+    {
+      "correction": "always run the seed script before integration tests, never rely on fixture data left from a prior run",
+      "context": "wrote an integration test suite assuming a clean DB state",
+      "applies_to": "tests/integration/**"
+    }
+  ],
   "session_summary": "added rabbit-shot payout migrations and two mongoose models"
 }
 ```
@@ -36,7 +43,8 @@ Field notes:
 
 - `steps` describe shape, not literal filenames — the flow must be replayable on a future, differently-named instance.
 - `occurrences` counts within THIS transcript only; stabilize aggregates across transcripts.
-- Empty `flows`/`conventions` arrays are valid — do not pad a session that had no recurring mechanics.
+- `user_corrections` entries carry no `occurrences` — each is an individual candidate regardless of repeat count, since it is feedback already validated by the user giving it, not a pattern inferred from repeated observation. This is why Step 3's cross-session repetition bar does not apply to this array (see the skill body).
+- Empty `flows`/`conventions`/`user_corrections` arrays are valid — do not pad a session that had no recurring mechanics.
 
 ## Verdict (practice-verifier → stabilize)
 

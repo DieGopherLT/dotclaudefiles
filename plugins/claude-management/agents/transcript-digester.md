@@ -3,10 +3,11 @@ name: transcript-digester
 description: >
   Read-only transcript distiller invoked by the stabilize skill. Receives the path to ONE
   Claude Code session transcript (JSONL, usually megabytes) and reduces it to a compact
-  digest of recurring work: executable flows (multi-step procedures) and applied conventions
-  (constraints or patterns repeated across files). One instance per transcript — the caller
-  launches several in parallel. Never modifies files, never judges whether a pattern is worth
-  keeping; it reports what happened so the caller can cross sessions and decide.
+  digest of recurring work: executable flows (multi-step procedures), applied conventions
+  (constraints or patterns repeated across files), and explicit user corrections (feedback the
+  user gave mid-session, valid even as a single occurrence). One instance per transcript — the
+  caller launches several in parallel. Never modifies files, never judges whether a pattern is
+  worth keeping; it reports what happened so the caller can cross sessions and decide.
 tools: Bash, Read
 model: sonnet
 effort: medium
@@ -59,6 +60,18 @@ A convention is a constraint or pattern applied repeatedly WITHOUT being a proce
 
 Record the file-glob each convention applies to — the caller routes conventions to path-scoped rules.
 
+### 3.5. Reconstruct user corrections
+
+A user correction is a moment where the user redirected Claude's approach or output mid-session — "no, do X instead", a rejected first attempt, an explicit "don't do that". Unlike a convention, this does not need to repeat within the session: one clear correction is a valid candidate on its own, because it is feedback the user already validated by giving it, not a pattern you inferred from observing repeated code.
+
+Look in the assistant/user text turns (not tool calls) for:
+
+- Direct corrections ("no, don't...", "actually use...", "stop doing...")
+- Rejected first attempts followed by a different approach that stuck
+- Explicit confirmations of a non-obvious choice ("yes, exactly", "keep doing that") — these are also worth capturing, since they validate an approach as much as a correction invalidates one
+
+Record what was corrected (the rule itself, in the user's intent) and what Claude was doing when it happened — enough context for a future reader to judge when it applies.
+
 ### 4. Summarize the session
 
 One line: what the session was about, at the level a human would tag it with.
@@ -85,11 +98,20 @@ Return ONLY this JSON object as your final message — raw JSON, no prose around
       "occurrences": 3
     }
   ],
+  "user_corrections": [
+    {
+      "correction": "<what the user corrected, stated as the user's intent>",
+      "context": "<what Claude was doing when it was corrected>",
+      "applies_to": "<glob, or 'general' if not file-scoped>"
+    }
+  ],
   "session_summary": "<one line>"
 }
 ```
 
-Empty arrays are valid — a session with no recurring mechanics yields `{"flows": [], "conventions": [], "session_summary": "..."}`. Do not pad.
+`user_corrections` entries carry no `occurrences` field — unlike flows and conventions, each one is an individual candidate regardless of repeat count, since it is feedback the user already validated by giving it.
+
+Empty arrays are valid — a session with no recurring mechanics yields `{"flows": [], "conventions": [], "user_corrections": [], "session_summary": "..."}`. Do not pad.
 
 This contract is mirrored in the stabilize skill's `references/digest-schema.md`; if this shape changes, update both copies together.
 

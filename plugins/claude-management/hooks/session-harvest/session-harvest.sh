@@ -35,7 +35,7 @@ main() {
   set_marker "${HOOK_SESSION_ID}.harvest-appended"
 
   pending_count=$(jq '.pending | length' "$queue_file")
-  threshold=$(config_positive_int '.harvest.queue_threshold' 3)
+  threshold=$(config_positive_int '.harvest.queue_threshold' 7)
   [ "$pending_count" -lt "$threshold" ] && exit 0
 
   emit_additional_context "Stop" \
