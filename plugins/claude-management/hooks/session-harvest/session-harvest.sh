@@ -39,7 +39,7 @@ main() {
   [ "$pending_count" -lt "$threshold" ] && exit 0
 
   emit_additional_context "Stop" \
-"The stabilize queue for this repository reached ${pending_count} harvestable session transcript(s) (threshold: ${threshold}). Launch the stabilize skill as a background task: it digests the queued transcripts, mines recurring flows and conventions, verifies them, and materializes the survivors as project-level skills or rules. The queue lives at ${queue_file} and stabilize consumes it."
+"The stabilize queue for this repository reached ${pending_count} harvestable session transcript(s) (threshold: ${threshold}). Launch the stabilize skill as a background task: it digests the queued transcripts, mines recurring flows, conventions, and explicit user corrections, verifies them, and materializes the survivors as project-level skills, rules, or feedback memory. The queue lives at ${queue_file} and stabilize consumes it."
 }
 
 session_is_harvestable() {
