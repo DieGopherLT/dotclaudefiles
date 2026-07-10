@@ -79,9 +79,19 @@ The principle: the more **mechanical and deterministic** (and smaller) the task,
 
 An unsupported effort level is silently ignored, not an error — so a wrong pairing fails quietly. When in doubt, consult the matrix in `references/thinking-load.md`.
 
+### 4b. Persistent memory across invocations — use `memory`, never a hand-rolled notes file
+
+If the agent needs to accumulate knowledge across sessions (confirmed facts, codebase patterns, prior findings) instead of re-deriving it every invocation, set the native `memory` frontmatter field — do NOT invent a custom notes-file protocol in the system prompt. The runtime handles injection and tooling for you. Full details in `references/frontmatter-spec.md` under "Persistent memory".
+
+- `memory: project` — knowledge is project-specific and shareable via version control (`.claude/agent-memory/<name>/`)
+- `memory: user` — knowledge should persist across every project (`~/.claude/agent-memory/<name>/`)
+- `memory: local` — knowledge is project-specific but must NOT be committed (`.claude/agent-memory-local/<name>/`)
+
+Setting `memory` automatically enables `Read`, `Write`, and `Edit`, injects reading/writing instructions into the system prompt, and auto-injects the first ~200 lines / 25KB of that directory's `MEMORY.md` at startup. Do not add `Write`/`Edit` to `tools` yourself just for memory management, and do not describe a memory file path or read/write protocol by hand in the body — that duplicates what `memory` already does and risks drifting from how the runtime actually persists it.
+
 ### 5. Write a description that triggers correctly
 
-`description` (plus optional `when_to_use`) is the only field Claude reads when deciding whether to auto-invoke the agent. Combined cap: 1,536 characters.
+`description` is the only field Claude reads when deciding whether to auto-invoke the agent. There is no separate `when_to_use` frontmatter field and no documented character cap — write it as long as it needs to be to carry concrete trigger phrases.
 
 Patterns that work:
 - Lead with the role: "Expert code reviewer specialized in..."
@@ -111,8 +121,9 @@ Before writing the file, check:
 - `name` is kebab-case and unique within its scope
 - `description` is specific, with explicit trigger phrases
 - `tools` is declared explicitly (not omitted unless intentional)
-- Read-only agents have no write tools
+- Read-only agents have no write tools, UNLESS `memory` is set — in that case `Read`/`Write`/`Edit` are auto-enabled and scoped to the agent's own memory directory, which is fine
 - `model` uses a bare alias (`haiku` / `sonnet` / `opus`) unless a pinned ID is intentional, and the `model` + `effort` pairing is sensible (no `effort` on `haiku`; avoid `xhigh`/`max` on `sonnet` when the task justifies `opus`)
+- If the agent needs cross-session knowledge, `memory` is set to the right scope (`user`/`project`/`local`) instead of a hand-rolled notes-file protocol
 - Auditors include the Confidence Scoring section
 
 By default, write the file directly to the chosen location with the `Write` tool. If the user wants to review first, present the contents as a code block and clearly state the destination path.
@@ -124,9 +135,10 @@ By default, write the file directly to the chosen location with the `Write` tool
 name: <kebab-case-name>
 description: <triggering description — "Use proactively when...">
 tools: <comma-separated list>
-model: <haiku|sonnet|opus|inherit>   # optional — bare alias auto-resolves to the latest in that tier
+model: <haiku|sonnet|opus|fable|inherit>   # optional — bare alias auto-resolves to the latest in that tier
 effort: <low|medium|high|xhigh|max>   # optional — honored only by models that support it (none on haiku; past high on sonnet not recommended)
 color: <red|blue|green|yellow|purple|orange|pink|cyan>   # optional
+memory: <user|project|local>   # optional — only if the agent needs knowledge to persist across invocations
 ---
 
 # <Agent role>
