@@ -19,7 +19,7 @@ paths:
 
 ## Mandatory Workflows
 
-- **Hook creation/modification**: When the user asks to create or modify a hook, invoke `/hookify:hookify` immediately before writing any code. The skill provides the correct structure and patterns.
+- **Hook creation/modification**: When the user asks to create or modify a hook, invoke `/plugin-dev:hook-development` immediately before writing any code. The skill provides the correct structure and patterns.
 - **Post-change validation**: After finishing ANY plugin change (commands, agents, skills, hooks, config), run the `plugin-validator` agent to verify the plugin structure remains valid. Do not skip this step.
 
 ## Component Review
