@@ -1,7 +1,7 @@
 {
   "name": "dotclaudehooks",
-  "version": "1.2.0",
-  "description": "Diego's Claude Code hooks for automatic commit validation and code formatting. Enforces conventional commits, blocks emoji/co-author attribution, and runs formatters (ESLint, Prettier, gofmt, markdownlint) after file edits.",
+  "version": "1.3.0",
+  "description": "Diego's Claude Code hooks for automatic commit validation, code formatting, and LSP-first navigation nudges. Enforces conventional commits, blocks emoji/co-author attribution, runs formatters (ESLint, Prettier, gofmt, markdownlint) after file edits, and nudges symbol-shaped Grep/Glob/grep-Bash calls toward the LSP tool when a matching language server plugin is installed.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"
@@ -15,6 +15,8 @@
     "linting",
     "conventional-commits",
     "pre-commit",
-    "auto-format"
+    "auto-format",
+    "lsp",
+    "code-navigation"
   ]
 }
