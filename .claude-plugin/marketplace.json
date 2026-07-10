@@ -17,7 +17,7 @@
     },
     {
       "name": "dotclaudehooks",
-      "description": "Personal collection of hooks for daily development",
+      "description": "Personal hook for LSP-first navigation nudges",
       "source": "./plugins/dotclaudehooks"
     },
     {

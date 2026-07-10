@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a **mono-repo for Claude Code plugins** containing eleven specialized plugins:
 
 1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator, create-report)
-2. **dotclaudehooks** - Standalone hooks plugin (commit validation, auto-formatting, LSP-first navigation nudges)
+2. **dotclaudehooks** - Standalone hooks plugin (LSP-first navigation nudges)
 3. **claude-management** - Claude Code memory file management and self-improvement harness (rulify, claudify, remember, end-session, stabilize, suggestion hooks)
 4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
 5. **react-dev** - React development helpers (conditional JSX refactoring, component splitting)
@@ -46,11 +46,9 @@ Skills plugin for structured task execution and team setup:
 
 ### dotclaudehooks
 
-Standalone hooks plugin for automated quality enforcement:
+Standalone hooks plugin for LSP-first navigation enforcement:
 
 - **Hooks**:
-  - `commit-validator` (PreToolUse on `git commit`) — enforces conventional commits, blocks emojis and co-author attribution, integrates with commitlint if available
-  - `format-dispatcher` (PostToolUse on `Edit|Write`) — auto-runs ESLint, Prettier, gofmt, markdownlint based on project config detection
   - `lsp-nudge` (PreToolUse on `Grep|Glob|Bash`) — nudges symbol-shaped searches toward the LSP tool: blocks until it's loaded via `ToolSearch`, warns once when loaded-but-unused, goes silent for the rest of the session after that warning or once used; only fires when a matching LSP plugin is actually enabled (global/project/local `settings.json`) for a language present in the project; every terminal outcome is session-cached so the underlying checks run at most once
 
 ### document-api
@@ -145,8 +143,7 @@ Turns passive Clean Code reference into a reactive analysis of real code: given 
 
 **Use dotclaudehooks when:**
 
-- You want automatic commit message validation without the rest of dotclaudefiles
-- You want auto-formatting after file edits (ESLint, Prettier, gofmt, markdownlint)
+- You want symbol-shaped Grep/Glob/grep-Bash calls nudged toward the LSP tool when a matching language server plugin is installed
 - Installing hooks independently on a machine or project
 
 **Use document-api when:**
