@@ -18,9 +18,25 @@ set -euo pipefail
 trap 'exit 0' ERR
 
 INPUT=$(cat)
+SESSION_ID=$(jq -r '.session_id // ""' <<<"$INPUT")
+
+# Session-scoped cache, not project state -- intentionally outside $CLAUDE_PROJECT_DIR.
+MARKER_DIR="/tmp/claude-hooks"
+MARKER_PREFIX="${MARKER_DIR}/${SESSION_ID}-lsp-nudge"
+USED_MARKER="${MARKER_PREFIX}-used"
+WARNED_MARKER="${MARKER_PREFIX}-warned"
+NO_MATCH_MARKER="${MARKER_PREFIX}-no-match"
+MATCH_CACHE="${MARKER_PREFIX}-match"
+
+# Every one of these is a terminal outcome for the rest of the session, true
+# regardless of what this particular call is even searching for -- check them
+# before doing any work on the tool call itself, so the common case (already
+# resolved this session) costs three file-existence checks and nothing else.
+[ -f "$USED_MARKER" ] && exit 0
+[ -f "$WARNED_MARKER" ] && exit 0
+[ -f "$NO_MATCH_MARKER" ] && exit 0
 
 TOOL_NAME=$(jq -r '.tool_name // ""' <<<"$INPUT")
-SESSION_ID=$(jq -r '.session_id // ""' <<<"$INPUT")
 TRANSCRIPT_PATH=$(jq -r '.transcript_path // ""' <<<"$INPUT")
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(jq -r '.cwd // "."' <<<"$INPUT")}"
 
@@ -41,21 +57,6 @@ esac
 
 # Gate 1: only symbol-declaration-shaped searches are worth an LSP nudge.
 grep -qE "$SYMBOL_REGEX" <<<"$SEARCH_STRING" || exit 0
-
-# Session-scoped cache, not project state -- intentionally outside $CLAUDE_PROJECT_DIR.
-MARKER_DIR="/tmp/claude-hooks"
-MARKER_PREFIX="${MARKER_DIR}/${SESSION_ID}-lsp-nudge"
-USED_MARKER="${MARKER_PREFIX}-used"
-WARNED_MARKER="${MARKER_PREFIX}-warned"
-NO_MATCH_MARKER="${MARKER_PREFIX}-no-match"
-MATCH_CACHE="${MARKER_PREFIX}-match"
-
-# Every one of these is a terminal outcome for the rest of the session -- once
-# any of them exists, skip straight past both the extension scan and the
-# transcript parse instead of redoing them on every matched call.
-[ -f "$USED_MARKER" ] && exit 0
-[ -f "$WARNED_MARKER" ] && exit 0
-[ -f "$NO_MATCH_MARKER" ] && exit 0
 
 declare -A EXT_TO_LANGUAGE=(
   [go]="Go" [ts]="TypeScript" [tsx]="TypeScript" [js]="TypeScript" [jsx]="TypeScript"
