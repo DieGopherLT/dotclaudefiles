@@ -1,6 +1,6 @@
 {
   "name": "claude-management",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Skills, hooks, and agents for managing Claude Code memory files as a self-improvement harness: splitting heavy CLAUDE.md into on-demand rules (rulify), generating token-efficient module-level documentation (claudify), routing information to the correct storage location (remember), automating session closing with commits and context documentation (end-session), mining harvested session transcripts for recurring flows worth stabilizing as project skills or rules (stabilize), and suggestion-only hooks that detect the right moment to invoke each skill, with a practice-verifier gate so repetition never outranks correctness.",
   "author": {
     "name": "Diego",
