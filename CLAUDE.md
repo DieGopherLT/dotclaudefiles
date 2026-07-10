@@ -51,7 +51,7 @@ Standalone hooks plugin for automated quality enforcement:
 - **Hooks**:
   - `commit-validator` (PreToolUse on `git commit`) — enforces conventional commits, blocks emojis and co-author attribution, integrates with commitlint if available
   - `format-dispatcher` (PostToolUse on `Edit|Write`) — auto-runs ESLint, Prettier, gofmt, markdownlint based on project config detection
-  - `lsp-nudge` (PreToolUse on `Grep|Glob|Bash`) — nudges symbol-shaped searches toward the LSP tool: blocks until it's loaded via `ToolSearch`, warns while loaded-but-unused, goes silent for the rest of the session once used; only fires when a matching LSP plugin is actually enabled (global/project/local `settings.json`) for a language present in the project
+  - `lsp-nudge` (PreToolUse on `Grep|Glob|Bash`) — nudges symbol-shaped searches toward the LSP tool: blocks until it's loaded via `ToolSearch`, warns once when loaded-but-unused, goes silent for the rest of the session after that warning or once used; only fires when a matching LSP plugin is actually enabled (global/project/local `settings.json`) for a language present in the project; every terminal outcome is session-cached so the underlying checks run at most once
 
 ### document-api
 
