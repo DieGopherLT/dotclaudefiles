@@ -1,24 +1,16 @@
 #!/usr/bin/env bash
 # Event: Stop
-# Classifies the session as "harvestable" (long and mostly autonomous — the kind
-# whose transcript contains mechanical flows worth stabilizing) and queues its
-# transcript. When the queue reaches the threshold, suggests launching the
-# stabilize skill, which consumes the queue.
+# Classifies the session as "harvestable" (big transcript with substantial
+# generated work — the kind whose transcript contains mechanical flows worth
+# stabilizing) and queues its transcript. When the queue reaches the threshold,
+# notifies the user (systemMessage) that the queue is ready — running stabilize
+# is the user's call, never this hook's.
 #
 # The queue is keyed by the git common dir so sessions run inside worktrees
 # accumulate into the SAME queue as the main checkout.
 set -euo pipefail
 source "${CLAUDE_PLUGIN_ROOT}/hooks/lib/common.sh"
 trap 'exit 0' ERR
-
-# These substrings are coupled to Claude Code's internal transcript formatting
-# for synthetic/injected user turns. If harvest classification stops firing
-# (the autonomy signal always sees too many "user" messages), reconfirm these
-# markers still match the current transcript format before changing anything
-# else.
-TEAMMATE_PREFIX="Another Claude session sent a message:"
-LOCAL_COMMAND_MARKER="<local-command"
-INTERRUPT_PREFIX="[Request interrupted"
 
 main() {
   local queue_file pending_count threshold
@@ -38,37 +30,46 @@ main() {
   threshold=$(config_positive_int '.harvest.queue_threshold' 7)
   [ "$pending_count" -lt "$threshold" ] && exit 0
 
-  emit_additional_context "Stop" \
-"The stabilize queue for this repository reached ${pending_count} harvestable session transcript(s) (threshold: ${threshold}). Launch the stabilize skill as a background task: it digests the queued transcripts, mines recurring flows, conventions, and explicit user corrections, verifies them, and materializes the survivors as project-level skills, rules, or feedback memory. The queue lives at ${queue_file} and stabilize consumes it."
+  emit_system_message \
+"claude-management: the stabilize queue for this repository reached ${pending_count} harvestable session transcript(s) (threshold: ${threshold}). Run the stabilize skill whenever you want to mine them for recurring flows, conventions, and corrections. Queue file: ${queue_file}."
 }
 
 session_is_harvestable() {
-  # Harvestable = big transcript AND (a plan was approved OR few human
-  # messages relative to the work — the autonomy signature).
-  local transcript_path="$1" transcript_bytes min_bytes max_user_messages
+  # Harvestable = big transcript (cheap byte pre-filter) AND substantial work:
+  # enough generated output AND enough tool activity. Thresholds mined
+  # empirically from real transcripts (substantial sessions >= 14k output
+  # tokens; long Q&A stays <= 8k regardless of size or tool count). The 10k
+  # default deliberately sits inside that empirical gap, as margin against
+  # drift on both sides.
+  local transcript_path="$1" transcript_bytes min_bytes min_output_tokens min_tool_uses
 
   min_bytes=$(config_positive_int '.harvest.min_transcript_bytes' 300000)
   transcript_bytes=$(wc -c < "$transcript_path" | tr -d ' ')
   [ "$transcript_bytes" -lt "$min_bytes" ] && return 1
 
-  max_user_messages=$(config_positive_int '.harvest.max_user_messages' 8)
+  min_output_tokens=$(config_positive_int '.harvest.min_output_tokens' 10000)
+  min_tool_uses=$(config_positive_int '.harvest.min_tool_uses' 12)
 
-  jq -n --argjson max_user "$max_user_messages" \
-        --arg teammate_prefix "$TEAMMATE_PREFIX" \
-        --arg local_command_marker "$LOCAL_COMMAND_MARKER" \
-        --arg interrupt_prefix "$INTERRUPT_PREFIX" '
+  jq -n --argjson min_tokens "$min_output_tokens" \
+        --argjson min_tools "$min_tool_uses" '
     [inputs] as $lines
-    | ($lines | any(.type == "assistant"
-                    and (.message.content[]?
-                         | type == "object" and .type == "tool_use" and .name == "ExitPlanMode"))) as $plan_approved
+    # Assistant messages are split across several JSONL lines per content
+    # block, each repeating .message.usage.output_tokens for the same
+    # .message.id — dedupe by id (taking max) before summing, or the total
+    # inflates by the block count. If harvest stops queueing anything,
+    # reconfirm this schema still holds before touching thresholds.
     | ($lines
-       | map(select(.type == "user" and (.message.content | type == "string"))
-             | .message.content
-             | select(startswith($teammate_prefix) | not)
-             | select(contains($local_command_marker) | not)
-             | select(startswith($interrupt_prefix) | not))
-       | length) as $user_messages
-    | if $plan_approved or ($user_messages <= $max_user) then empty else error("not harvestable") end
+       | map(select(.type == "assistant" and .message.id != null)
+             | {id: .message.id, tokens: (.message.usage.output_tokens // 0)})
+       | group_by(.id) | map(map(.tokens) | max) | add // 0) as $output_tokens
+    # Content blocks are not repeated across the split lines (one block per
+    # line), so counting tool_use blocks directly is duplicate-free.
+    | ($lines
+       | [.[] | select(.type == "assistant") | .message.content[]?
+          | select(type == "object" and .type == "tool_use")]
+       | length) as $tool_uses
+    | if ($output_tokens >= $min_tokens) and ($tool_uses >= $min_tools)
+      then empty else error("not harvestable") end
   ' "$transcript_path" >/dev/null 2>&1
 }
 

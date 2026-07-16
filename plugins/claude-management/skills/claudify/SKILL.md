@@ -1,12 +1,14 @@
 ---
 name: claudify
-description: Esta skill debe usarse cuando el usuario pide "documenta el modulo", "claudify", "generate module docs", "actualiza el CLAUDE.md de este modulo", "onboarding del modulo", "necesito un CLAUDE.md para X", o quiere crear/actualizar un CLAUDE.md a nivel de modulo. Genera documentacion token-efficient con referencias LSP-optimizadas (`file::Symbol`) enfocada en informacion no-obvia que ahorra al agente tener que inferirla del codigo.
+description: Esta skill debe usarse cuando el usuario pide "documenta el modulo", "claudify", "generate module docs", "actualiza el CLAUDE.md de este modulo", "onboarding del modulo", "necesito un CLAUDE.md para X", o quiere crear/actualizar un CLAUDE.md a nivel de modulo. Corre como fork en background — no roba contexto a la sesion principal y devuelve solo un resumen de una linea. Genera documentacion token-efficient con referencias LSP-optimizadas (`file::Symbol`) enfocada en informacion no-obvia que ahorra al agente tener que inferirla del codigo.
 argument-hint: <module-relative-path>
+context: fork
+agent: claude-management:module-documenter
 ---
 
 # Claudify
 
-Generate or update a module-level `CLAUDE.md` for the directory at `$1`.
+You are documenting the module at `$1`. You run in a forked context with no conversation history — everything you need is in this prompt, in the reference files it points to, and on disk. Generate or update the module-level memory file yourself, end to end, and return a one-line summary.
 
 ## North Star
 
@@ -33,12 +35,18 @@ If a section would only contain inferable or generic content, **omit it**.
 
 ## Reference files (read on demand)
 
-- `references/template.md` — the exact CLAUDE.md structure to produce, with section-by-section guidance on what counts as non-obvious. Read at Step 2.
-- `references/style-rules.md` — token-efficiency rules, the `file::Symbol` LSP format, and the 150-line budget. Read at Step 2.
+- `references/template.md` — the exact CLAUDE.md structure to produce, with section-by-section guidance on what counts as non-obvious. Read at Step 3.
+- `references/style-rules.md` — token-efficiency rules, the `file::Symbol` LSP format, and the 150-line budget. Read at Step 3.
+
+These paths are relative to this skill's own directory (the base directory announced when the skill loads), not to the project. If that resolution fails, glob for them under `~/.claude/plugins/**/claude-management/skills/claudify/references/` (installed plugin) or `**/claude-management/skills/claudify/references/` (repo checkout).
 
 ## Workflow
 
-### Step 0: Detect repo convention and check existing documentation
+### Step 0: Validate the argument
+
+Fail fast at the boundary: if `$1` is empty, or `$1/` does not exist as a directory (resolve it relative to the working directory — the project root), do not explore anything. Return a single line asking to be re-invoked with the module's relative path, e.g. `error: claudify needs an existing module path — re-invoke as /claudify <module-relative-path>`. With no conversation history there is nothing to recover the target from; guessing a module would be worse than stopping.
+
+### Step 1: Resolve paths and convention
 
 First, detect which memory-file convention the repo uses by inspecting the project root:
 
@@ -50,49 +58,35 @@ First, detect which memory-file convention the repo uses by inspecting the proje
 
 Then check whether the target file (CLAUDE.md, or AGENTS.md under the AGENTS convention) already exists at `$1/`:
 
-- If yes: keep its content as baseline for the explorer (verify, update, fill gaps — do not start from scratch).
+- If yes: keep its content as baseline (verify, update, fill gaps — do not start from scratch).
 - If no: proceed with fresh exploration.
 
 For the rest of the workflow, "memory file" refers to whichever target file the convention selected.
 
-### Step 1: Explore the module
+### Step 2: Explore the module yourself
 
-Use the `Explore` subagent with "very thorough" depth. Pass this prompt (substitute `$1` and the existing content if any):
+Explore `$1` and its subdirectories directly with Glob, Read, Grep, and read-only Bash — never launch subagents. Include source, config, env vars, and tests (tests reveal patterns and invariants); exclude node_modules, vendor, dist, and build artifacts.
 
-```
-Context: Documenting module at path: $1
-Objective: Surface non-obvious information for a token-efficient CLAUDE.md.
+Operational guide: Glob the tree first to grasp the shape, identify the entry points, trace imports pointing OUT of the module (they reveal its role and dependencies), and read the tests for the invariants they pin down. Read files with intent — you are hunting the deliverables below, not building a full inventory.
 
-[If existing CLAUDE.md was found, include this section:]
-Existing Documentation (baseline — verify, update, do not duplicate):
----
-[paste the existing CLAUDE.md content here]
----
+Surface, focusing on what the code does NOT make obvious:
 
-Scope:
-  - Start: $1 and subdirectories
-  - Include: source, config, env vars, tests (for understanding patterns)
-  - Exclude: node_modules, vendor, dist, build artifacts
+1. The module's role in the larger system (where does it sit, who calls it, what does it produce)
+2. Entry points by symbol (`file::Symbol` format) — only the ones that matter, not every export
+3. Key files whose role is non-obvious from the filename
+4. Business logic, decision rules, and invariants that live across multiple files
+5. Internal/external dependencies and WHY each is needed (not just "uses lodash")
+6. Architectural choices that would surprise a new reader, with the reason
+7. Side effects, ordering constraints, hidden coupling
+8. Failure modes, recovery patterns, common pitfalls observed in the code or tests
 
-Deliverables — focus on what the code does NOT make obvious:
-  1. Module's role in the larger system (where does it sit, who calls it, what does it produce)
-  2. Entry points by symbol (file::Symbol format) — only the ones that matter, not every export
-  3. Key files where the role is non-obvious from the filename
-  4. Business logic, decision rules, and invariants that live across multiple files
-  5. Internal/external dependencies and WHY each is needed (not just "uses lodash")
-  6. Architectural choices that would surprise a new reader, with the reason
-  7. Side effects, ordering constraints, hidden coupling
-  8. Failure modes, recovery patterns, common pitfalls observed in the code or tests
+For each finding, ask: "Could a fresh agent infer this in 30 seconds by reading the relevant file?" If yes, drop it. If no, it belongs in the memory file.
 
-For each finding, ask: "Could a fresh agent infer this in 30 seconds by reading the relevant file?"
-If yes, drop it. If no, it belongs in the CLAUDE.md.
+If a baseline exists (Step 1), verify each of its claims against the current code as you explore — carry forward what is still true, correct what drifted, and fill the gaps.
 
-Depth: very thorough
-```
+### Step 3: Read references and write
 
-### Step 2: Generate or update CLAUDE.md
-
-Read `references/template.md` for the structure and `references/style-rules.md` for formatting rules. Write the content to the target memory file determined in Step 0 (`$1/CLAUDE.md` under the CLAUDE.md convention; `$1/AGENTS.md` plus a one-line `$1/CLAUDE.md` containing `@AGENTS.md` under the AGENTS convention).
+Read `references/template.md` for the structure and `references/style-rules.md` for formatting rules. Write the content to the target memory file determined in Step 1 (`$1/CLAUDE.md` under the CLAUDE.md convention; `$1/AGENTS.md` plus a one-line `$1/CLAUDE.md` containing `@AGENTS.md` under the AGENTS convention).
 
 Critical rules from those references:
 
@@ -103,17 +97,17 @@ Critical rules from those references:
 
 When updating an existing file, rebuild it from scratch using the template — do not patch in place. Patching tends to leave stale fragments. Carry forward only what is still true.
 
-If the module is genuinely large and the most aggressive trimming still leaves the file over 200 lines, stop and recommend `rulify` (same plugin) to extract scope-specific or always-on content into `.claude/rules/`. A 400-line CLAUDE.md does not document better than a 150-line one plus a handful of focused rules — it documents worse.
+If the module is genuinely large and the most aggressive trimming still leaves the file over 200 lines, do NOT chain into other skills from this fork — recommend `rulify` (same plugin) in your summary instead. A 400-line CLAUDE.md does not document better than a 150-line one plus a handful of focused rules — it documents worse.
 
-### Step 3: Confirm
+### Step 4: Report
 
-Report:
+Your final message is the deliverable the main session relays. One line:
 
-- Action: created / updated
-- Path
-- Final line count (and how it compares to the 150-line target)
-- 2-3 non-obvious findings the new doc captures
-- Anything intentionally omitted as inferable from code
+```
+created|updated <path> (<N> lines)
+```
+
+Append a rulify recommendation only if Step 3 triggered it. Nothing else — no findings dump, no exploration narrative.
 
 ## Final check before finishing
 

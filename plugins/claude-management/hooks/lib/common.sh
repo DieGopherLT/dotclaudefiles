@@ -110,3 +110,13 @@ emit_additional_context() {
   jq -n --arg event "$1" --arg context "$2" \
     '{hookSpecificOutput: {hookEventName: $event, additionalContext: $context}}'
 }
+
+emit_system_message() {
+  # emit_system_message <message-text>
+  # systemMessage is the user-facing channel per the hooks spec (shown in the
+  # UI), unlike additionalContext which is injected into the model's context.
+  # Used when the decision belongs to the user, not the agent. If a future
+  # release stops showing it, the fallback is emit_additional_context with the
+  # text reworded as "inform the user; do NOT act on this yourself".
+  jq -n --arg message "$1" '{systemMessage: $message}'
+}

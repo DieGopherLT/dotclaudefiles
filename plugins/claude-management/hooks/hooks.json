@@ -1,5 +1,5 @@
 {
-  "description": "Self-improvement harness: deterministic detectors that suggest the right claude-management skill (remember, rulify, claudify, stabilize) at the right moment. Suggestion-only — no hook ever blocks, commits, or documents.",
+  "description": "Self-improvement harness: deterministic detectors that suggest the right claude-management skill (remember, rulify, claudify) to the agent, or notify the user when the stabilize queue is ready. Suggestion/notification-only — no hook ever blocks, commits, or documents.",
   "hooks": {
     "SessionStart": [
       {

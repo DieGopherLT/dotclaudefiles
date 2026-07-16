@@ -49,7 +49,8 @@ ${suggestions}
 Run claudify only on the ones YOU judge worth it, using what you just experienced in this session as the signal — qualifying structurally does not mean qualifying semantically:
 - Prioritize modules that are self-contained/cohesive over ones fragmented across many external pieces.
 - Prioritize modules that were costly for you to mentally reconstruct this session (by size or by how many relationships you had to track) — those pay off most from being pre-documented for next time.
-- Skip directories that are mostly types, helpers, or generic utilities with no real domain logic."
+- Skip directories that are mostly types, helpers, or generic utilities with no real domain logic.
+claudify runs as a forked background task and costs you no context: invoke it once per chosen directory (fire-and-forget) and relay each one-line summary when it returns."
 }
 
 dirs_touched_this_session() {

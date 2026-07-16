@@ -3,8 +3,9 @@ name: stabilize
 description: >
   Esta skill debe usarse cuando el usuario pide "stabilize", "estabiliza los flujos",
   "cosecha las sesiones", "harvest flows", "mina los transcripts", "convierte lo repetido
-  en skill", o — el disparador principal — cuando un hook de Stop anuncia que la cola de
-  stabilize alcanzó su umbral de transcripts cosechables. Tambien usarla si el usuario
+  en skill", o cuando decide actuar sobre el aviso del hook session-harvest de que la cola
+  alcanzo su umbral — ese aviso es una notificacion al usuario, y correr esta skill es
+  siempre decision suya. Tambien usarla si el usuario
   menciona querer extraer flujos mecanicos repetidos (migraciones, wiring, boilerplate)
   de sesiones pasadas y convertirlos en skills o rules del proyecto ("cosecha los flujos",
   "estabiliza lo aprendido"). Mina los transcripts
@@ -31,9 +32,9 @@ The session-harvest hook maintains one queue per repository at:
 ~/.claude/claude-management/harvest/<repo-key>.json
 ```
 
-and — the primary source — **prints the exact queue path inside the Stop suggestion that launches this skill**. Use that path verbatim; do not re-derive what the announcement already gives you.
+The hook's threshold announcement is a user-facing notification (systemMessage) — it never lands in your context, so **the primary path is reconstruction**. The single source of truth for the key derivation is the `queue_file_for_repo` function in this plugin's `hooks/session-harvest/session-harvest.sh` — read it and replicate it exactly. Do not derive the key from memory or from this paragraph: the hook owns the format (repo root from the git common dir, worktrees resolving to the main repo's queue, non-git cwd falling back to the cwd itself).
 
-Only when invoked manually, without an announcement in context, reconstruct the path. The single source of truth for the key derivation is the `queue_file_for_repo` function in this plugin's `hooks/session-harvest/session-harvest.sh` — read it and replicate it exactly. Do not derive the key from memory or from this paragraph: the hook owns the format (repo root from the git common dir, worktrees resolving to the main repo's queue, non-git cwd falling back to the cwd itself).
+Shortcut: if the user pasted the queue path from the hook's notification, use it verbatim instead of re-deriving it.
 
 Read `.pending` from the queue file and record the list you got — Step 6 removes exactly these entries, nothing else. If the file is missing or the array is empty, report there is nothing to stabilize and stop — do not go hunting for transcripts outside the queue; the hook already classified which sessions are worth mining.
 
@@ -50,7 +51,7 @@ export const meta = {
   phases: [{ title: 'Digest' }],
 }
 // DIGEST_SCHEMA: declare as a const — the JSON Schema form of the digest
-// contract in references/digest-schema.md (flows, conventions, session_summary)
+// contract in references/digest-schema.md (flows, conventions, user_corrections, session_summary)
 const digests = await parallel(args.transcripts.map(path => () =>
   agent(`Digest the Claude Code session transcript at ${path}. Project root: ${args.projectRoot}.`,
         { agentType: 'claude-management:transcript-digester', schema: DIGEST_SCHEMA, phase: 'Digest' })))
