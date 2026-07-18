@@ -49,11 +49,13 @@ to scan and stop here.
 
 ## Step 3 — Dispatch the Workflow
 
-First capture one `scanned_at` timestamp for the whole scan — the script cannot compute it itself
-(`Date.now()`/`new Date()` would break Workflow resume), so it is passed in:
+First capture two values the script needs but cannot derive itself — one `scanned_at` timestamp
+(`Date.now()`/`new Date()` would break Workflow resume) and the absolute `repoRoot` (used to normalize
+paths and to build absolute write paths):
 
 ```
 date -u +%Y-%m-%dT%H:%M:%SZ
+git rev-parse --show-toplevel
 ```
 
 Then invoke, regardless of `domainCount` — one domain and many both flow through the same pipeline, so
@@ -73,21 +75,23 @@ script's `synthesizeDomain`): merging the 5 detectors' results, normalizing `fil
 domain) and serializes one source-of-truth file per domain.
 
 It returns `{ domains: [{ domain, total, findings }], total, files: [{ path, content }] }` with no
-filesystem writes — the `files` array carries each domain's SoT already serialized, ready to persist
-verbatim in Step 4.
+filesystem writes — the `files` array carries each domain's SoT already serialized, with an **absolute**
+`path` (joined under `repoRoot`) ready to persist verbatim in Step 4.
 
 ## Step 4 — Persist the returned files
 
-The Workflow has already assigned codes and serialized each domain's source-of-truth file. This step has
-no derivation left — just write what the script returned:
+The Workflow has already assigned codes and serialized each domain's source-of-truth file, and each
+`files` entry's `path` is already absolute. This step has no derivation left — just write what the
+script returned:
 
 ```
-mkdir -p .claude/refactoring-guru/findings
+mkdir -p "<repoRoot>/.claude/refactoring-guru/findings"
 ```
 
 Then, for each entry of the returned `files` array, `Write(file_path=<entry.path>, content=<entry.content>)`
-verbatim. Each `content` is a fully-formed SoT document; do not reshape, re-sort, or re-slug it. Its
-shape, for reference:
+verbatim. Each `content` is a fully-formed SoT document; do not reshape, re-sort, or re-slug it, and do
+not rewrite the absolute `path`. A clean domain (zero findings) still returns an entry — write it too;
+its SoT records the scan with an empty `findings` array. The `content` shape, for reference:
 
 ```json
 {

@@ -62,7 +62,10 @@ const CATEGORY_PREFIX = Object.fromEntries(CATEGORIES.map((cat) => [cat.name, ca
 
 // FINDING_SCHEMA is what each detector returns. Note it has NO `code` field:
 // detectors are blind to sibling findings, so `code` is injected later by
-// assignGlobalCodes over the full aggregated set (see below).
+// assignGlobalCodes over the full aggregated set (see below). The `category`
+// field is still requested but NOT trusted downstream — synthesizeDomain
+// overrides it with the batch's authoritative category, since the code prefix
+// keys on it and an LLM echo could drift.
 const FINDING_SCHEMA = {
   type: 'object',
   required: ['findings'],
@@ -163,7 +166,10 @@ async function detectDomain(domain) {
           schema: FINDING_SCHEMA,
           agentType: 'refactoring-guru:smell-detector',
         },
-      ),
+        // Tag each batch with its authoritative category (the one it was asked
+        // to scan) so downstream code assignment never depends on the LLM
+        // echoing the category name correctly.
+      ).then((result) => ({ category: cat.name, findings: result?.findings ?? [] })),
     ),
   )
 
@@ -185,19 +191,22 @@ function synthesizeDomain(detected) {
 
   const findings = detectorResults
     .filter(Boolean)
-    .flatMap((r) => r.findings ?? [])
-    .map(({ file, techniques, smell, category, line_range, evidence, confidence, resolution_plan }) => ({
-      smell,
-      category,
-      path: toRepoRelative(file),
-      line_range,
-      evidence,
-      confidence,
-      severity: severityOf(confidence ?? 0),
-      technique: techniques?.[0],
-      resolution_plan,
-      cross_cutting: CROSS_CUTTING_SMELLS.has(smell),
-    }))
+    .flatMap((batch) =>
+      (batch.findings ?? []).map(({ file, techniques, smell, line_range, evidence, confidence, resolution_plan }) => ({
+        smell,
+        // Authoritative category from the detector batch, not the LLM-echoed
+        // field — this is what CATEGORY_PREFIX keys on, so it must be exact.
+        category: batch.category,
+        path: toRepoRelative(file),
+        line_range,
+        evidence,
+        confidence,
+        severity: severityOf(confidence ?? 0),
+        technique: techniques?.[0],
+        resolution_plan,
+        cross_cutting: CROSS_CUTTING_SMELLS.has(smell),
+      })),
+    )
 
   return { domain, total: findings.length, findings }
 }
@@ -237,6 +246,12 @@ function assignGlobalCodes(domainResults) {
 // skill's Step 4 just writes each entry verbatim; all path/slug/JSON logic
 // lives here so the skill stays free of derivation. `domain` is already
 // repo-relative by the time this runs.
+//
+// The returned `path` is ABSOLUTE (joined under repoRoot) because the Write
+// tool the skill uses requires an absolute file_path — Step 4 must not have to
+// resolve it. The SoT's INTERNAL paths (its `domain` field and each finding's
+// `path`) stay repo-relative so the persisted document is portable. If repoRoot
+// is missing, fall back to the repo-relative path rather than emit a broken join.
 // ---------------------------------------------------------------------------
 
 function serializeDomain(domain) {
@@ -248,8 +263,11 @@ function serializeDomain(domain) {
     findings: domain.findings,
   }
 
+  const relativePath = `.claude/refactoring-guru/findings/${slug}.json`
+  const root = repoRoot.replace(/\/$/, '')
+
   return {
-    path: `.claude/refactoring-guru/findings/${slug}.json`,
+    path: root ? `${root}/${relativePath}` : relativePath,
     content: JSON.stringify(sot, null, 2),
   }
 }
