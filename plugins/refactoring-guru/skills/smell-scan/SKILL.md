@@ -40,41 +40,54 @@ contain it:
 
 `domainCount` is the number of distinct top-level domains the target resolves to. The domain identifier
 used everywhere downstream (SoT filename, `domain` field, `path` field on findings) is the **repo-relative
-path** (e.g. `src/orders`, `plugins/refactoring-guru`) — convert to repo-relative before persisting even
-though absolute paths are what gets passed to the Workflow in Step 3.
+path** (e.g. `src/orders`, `plugins/refactoring-guru`). Absolute paths are what gets passed to the Workflow
+in Step 3; the script derives the repo-relative form itself from the `repoRoot` argument, so no manual
+conversion happens here.
 
 If `domainCount` is 0 (the target does not resolve to anything scannable), tell the user there is nothing
 to scan and stop here.
 
 ## Step 3 — Dispatch the Workflow
 
-Invoke, regardless of `domainCount` — one domain and many both flow through the same pipeline, so there
-is no separate manual synthesis path to keep in sync by hand:
+First capture one `scanned_at` timestamp for the whole scan — the script cannot compute it itself
+(`Date.now()`/`new Date()` would break Workflow resume), so it is passed in:
 
 ```
-Workflow({ scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/smell-scan/scripts/workflow.js", args: { domains: ["<absolute path to domain 1>", "<absolute path to domain 2>", ...] } })
+date -u +%Y-%m-%dT%H:%M:%SZ
+```
+
+Then invoke, regardless of `domainCount` — one domain and many both flow through the same pipeline, so
+there is no separate manual synthesis path to keep in sync by hand:
+
+```
+Workflow({ scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/smell-scan/scripts/workflow.js", args: { domains: ["<absolute path to domain 1>", "<absolute path to domain 2>", ...], repoRoot: "<absolute repo root>", scannedAt: "<captured ISO timestamp>" } })
 ```
 
 The Workflow pipelines each domain through its own 5-detector batch (`bloaters`, `oo-abusers`,
 `change-preventers`, `dispensables`, `couplers`) and synthesizes its findings in plain JS (see the
-script's `synthesizeDomain`): merging the 5 detectors' results, renaming `file` to `path`, deriving
-`technique` from the head of `techniques`, computing `severity` from `confidence` bands, and flagging
-`cross_cutting` for `Shotgun Surgery`, `Inappropriate Intimacy`, and `Divergent Change`. It returns
-`{ domains: [{ domain, total, findings }], total }` with no filesystem writes and no `code` assigned
-yet — codes are assigned next, over the aggregated set.
+script's `synthesizeDomain`): merging the 5 detectors' results, normalizing `file` to a repo-relative
+`path` (via `repoRoot`), deriving `technique` from the head of `techniques`, computing `severity` from
+`confidence` bands, and flagging `cross_cutting` for `Shotgun Surgery`, `Inappropriate Intimacy`, and
+`Divergent Change`. It then assigns reference `code`s **globally** across every domain (stable-sorted by
+`confidence` descending, one counter per category prefix — `B`/`OO`/`CP`/`D`/`C` — never restarting per
+domain) and serializes one source-of-truth file per domain.
 
-## Step 4 — Assign codes and persist
+It returns `{ domains: [{ domain, total, findings }], total, files: [{ path, content }] }` with no
+filesystem writes — the `files` array carries each domain's SoT already serialized, ready to persist
+verbatim in Step 4.
 
-The Workflow returns one or more domains' worth of findings. Assign reference codes **globally**, over
-the full aggregated set across every domain in this scan, so a code is never ambiguous:
+## Step 4 — Persist the returned files
 
-- Sort findings by `confidence` descending.
-- Assign `code` sequentially per category prefix — `B` (Bloaters), `OO` (OO Abusers), `CP` (Change
-  Preventers), `D` (Dispensables), `C` (Couplers) — counting across all domains, not restarting per domain.
+The Workflow has already assigned codes and serialized each domain's source-of-truth file. This step has
+no derivation left — just write what the script returned:
 
-Capture one `scanned_at` ISO 8601 timestamp for this whole scan. For each domain, slug its repo-relative
-path (`/` → `-`) and write its findings to `.claude/refactoring-guru/findings/<domain-slug>.json`,
-conforming to:
+```
+mkdir -p .claude/refactoring-guru/findings
+```
+
+Then, for each entry of the returned `files` array, `Write(file_path=<entry.path>, content=<entry.content>)`
+verbatim. Each `content` is a fully-formed SoT document; do not reshape, re-sort, or re-slug it. Its
+shape, for reference:
 
 ```json
 {
