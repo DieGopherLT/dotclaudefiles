@@ -34,6 +34,15 @@ This exception is one-directional and does not generalize. It licenses pointing 
 internals from elsewhere — never any other plugin-to-plugin pair. For every pair that does not involve
 `dotclaudefiles`, the rule above holds unchanged.
 
+## Out of scope: built-in Claude Code skills
+
+This rule governs plugin-to-plugin coupling only. Built-in Claude Code skills — the ones that ship with
+the harness itself, not with any plugin (`artifact-design`, `dataviz`, `verify`, and the like) — are not
+plugins and fall entirely outside it. They are part of the runtime, present wherever Claude Code runs, so
+referencing them from inside a skill is a stable coupling, not a fragile one. Advocate invoking them for a
+practical use case (e.g. "invoke `artifact-design` to build an interactive diagram") exactly as you would
+any harness capability.
+
 ## Why
 
 A cross-plugin pointer to a specific field breaks in two ways: the target plugin may not be installed,

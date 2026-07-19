@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **mono-repo for Claude Code plugins** containing eleven specialized plugins:
 
-1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator, create-report)
+1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator, create-report, explain)
 2. **dotclaudehooks** - Standalone hooks plugin (LSP-first navigation nudges)
 3. **claude-management** - Claude Code memory file management and self-improvement harness (rulify, claudify, remember, end-session, stabilize, suggestion hooks)
 4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
@@ -42,7 +42,7 @@ Key directories:
 
 Skills plugin for structured task execution and team setup:
 
-- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review: simplify + clean-code + parallel domain auditors discovered from available agents), `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric), `create-report` (produces Markdown for context preservation or interactive HTML for comprehension/sharing; self-contained, navigable, zero external deps)
+- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review: simplify + clean-code + parallel domain auditors discovered from available agents), `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric), `create-report` (produces Markdown for context preservation or interactive HTML for comprehension/sharing; self-contained, navigable, zero external deps), `explain` (calibrated-altitude explanation framework: leads with business/contract-level understanding and descends to implementation on demand; adds association, mnemonics, and small ASCII/interactive-artifact visuals tuned to how the reader learns)
 
 ### dotclaudehooks
 
@@ -140,6 +140,7 @@ Turns passive Clean Code reference into a reactive analysis of real code: given 
 - Scaffolding a Claude Code sub-agent (`claude-code-agent-creator`)
 - Authoring a dynamic workflow / orchestrating subagents at scale with `ultracode` (`workflow-creator`)
 - Creating an on-demand report or shareable artifact mid-session — without git workflow involvement (`create-report`)
+- Answering a question or explaining a concept, code, architecture, or decision with the right level of detail — leading with the big picture and descending on demand (`explain`)
 
 **Use dotclaudehooks when:**
 
