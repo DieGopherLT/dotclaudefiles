@@ -17,7 +17,28 @@
   - **Behavioral**: Chain of Responsibility, Command, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor
   - **Not fully experienced in**: Mediator, Memento, State, Template Method, Visitor, Flyweight, Proxy, Composite — explain these when they come up rather than assuming familiarity.
 - When managing situations where multiple states are implied, go by default with a Finite State Machine approach, unless the problem clearly calls for a different pattern.
-- Diego values legibility over everything else. Even if it implies additional lines of code, the way he evaluates code as 'legible' is by how fluid it reads, Uncle Bob said it best: "The code you write should read like well-written prose." When proposing solutions, proactively frame them in terms of legibility and readability.
+
+## User coding style
+
+- Diego values legibility over everything else. Even if it implies additional lines of code and/or abstraction layers, the way he evaluates code as 'legible' is by how fluid it reads, Uncle Bob said it best: "The code you write should read like well-written prose."
+- Diego prefers to use Facades at flow entry points — the code that consumes a service or kicks off a flow, what refactoring.guru diagrams label as "client code" — to hide complexity, improve readability, and reduce cognitive load when reading main flow code.
+- Immutability is the default. The only exception is when it would break the language's idiomatic style (e.g. Go's pointer receivers, `append` on slices) — exceptions come from the language, never from convenience. It makes it easier to debug and trace data flow.
+- Diego's pragmatic when it comes to dependencies: instead of re-writing the wheel, he'll look for a dependency that already solves the problem. He dislikes frameworks unless the project will use one from the beginning. Instead, using small dependencies for specific problems is preferred — especially ones that trivialize a recurring problem or whose API reads like well-written prose, cutting the cognitive load of the calling code (see "Library API taxonomy" below for how that reads-like-prose quality is achieved). Reference examples of that bar: react-hook-form, zustand, samber/lo, chi. He'll avoid dependencies that are no longer maintained.
+- Manual solutions only apply when there is a requirement to have full control over the implementation, or when the problem is so specific that no dependency can solve it.
+- Diego tends to combine Object-Oriented and Functional programming paradigms, using the strengths of each in a pragmatic way. OOP holds structure and state: complex domains representable as objects, where design patterns live. FP handles data transformation: whenever a loop is a transformation, express it with map/filter/reduce or a pipeline of chained functions instead of an imperative loop. Extract pure helper functions when the logic recurs; a one-off transformation stays inline (YAGNI).
+- He dislikes camel case, especially for file names, but it'll be used if that is the language convention. If possible, use kebab case for file names.
+- Diego will use `Screaming architecture` whenever it's possible to make the organization easier to fit into the mind of humans and agents.
+- He mainly uses `logs` to debug, so, it's relevant to write proper logs of multiple events to trace the flow of data and understand the state of the system. He prefers to use structured logs, with a consistent format and relevant information, to make it easier to analyze and search for specific events.
+
+## Library API taxonomy
+
+The trait Diego values in a dependency is that call sites read like well-written prose. Three distinct mechanisms produce that quality — name the right one when discussing or designing an API:
+
+- **Facade**: hides a complex subsystem behind two or three orchestrating functions (GoF sense). Examples: react-hook-form over form state/validation, zustand over global state.
+- **Fluent Interface**: methods return `this` (or an equivalent object) enabling chained calls that read as a sentence. Example: chi's routing groups.
+- **Internal DSL**: the API as a whole feels like a mini-language embedded in the host language.
+
+Most prose-like libraries combine two or three of these. When evaluating a dependency or designing a public API, classify by mechanism: hides a subsystem → Facade; chains on the same object → Fluent Interface; reads as its own language → Internal DSL.
 
 ## Session Behavior
 
@@ -26,17 +47,6 @@
 - All code and comments generated must be in English, all the conversation output must be in Spanish.
 - Parse JSON via `jq`, never Python-based approaches.
 - Before installing a dependency, implementing a feature, or troubleshooting, query docs via the `context7-cli` skill. `ctx7` is installed; do not use `npx`.
-
-## Bash tool behavior
-
-Most of the time, the user runs Claude Code inside a tmux session. Generate shorter answers if the user can also see the output of the commands you execute, in cases like
-running apps, test runs, and debugging sessions.
-
-For information gathering, verification, and general commands, use your own Bash tool directly — do not target tmux panes for these. Reserve tmux pane targeting strictly for launching apps that must stay running independently of the Bash tool.
-
-If you detect being under a tmux session, for every window running Claude Code, the user has at most 3 panes: the Claude Code one takes the left half of the screen, and the other two occupy the right half, split vertically. When a task requires launching an app (or two apps simultaneously, e.g. frontend + backend), target those panes instead of the Bash tool: the top-right pane runs the primary app for the cwd; the bottom-right pane runs the secondary/complementary app.
-
-Respect the layout.
 
 ## Planning Behavior
 
