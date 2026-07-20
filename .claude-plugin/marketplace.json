@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "dotclaudefiles",
-      "description": "My personal Claude Code configuration packaged as a plugin. Includes commands, agents, skills, and configs I use daily.",
+      "description": "Skills for team setup and Claude Code authoring: scaffolding sub-agents with least-privilege tools and calibrated thinking load, writing and auditing dynamic Workflow scripts, and producing on-demand Markdown or interactive HTML reports.",
       "source": "./plugins/dotclaudefiles"
     },
     {
