@@ -3,10 +3,9 @@ name: smell-scan
 description: >
   This skill should be used when the user says "scan this for smells", "audit this code", "what code
   smells does X have", "review this for quality issues", "find code smells in", or asks about the code
-  quality of a specific file, function, or class. Also trigger when the task-planning quality pass runs
-  over modified files. Covers the full refactoring.guru taxonomy of 26 smells across 5 categories,
-  producing located, confidence-scored findings mapped to concrete refactoring techniques — not generic
-  Clean Code advice.
+  quality of a specific file, function, or class. Covers the full refactoring.guru taxonomy of 26
+  smells across 5 categories, producing located, confidence-scored findings mapped to concrete
+  refactoring techniques — not generic Clean Code advice.
 ---
 
 # Smell Scan

@@ -1,6 +1,6 @@
 {
   "name": "refactoring-guru",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Reactive code-smell analysis and guided refactoring over the refactoring.guru taxonomy: scans real code for 26 smells across 5 categories, maps each finding to concrete techniques from a catalog of 67, and applies the chosen transformation step by step with a safe test-refactor-test cycle.",
   "author": {
     "name": "Diego",

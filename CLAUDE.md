@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **mono-repo for Claude Code plugins** containing eleven specialized plugins:
+This is a **mono-repo for Claude Code plugins** containing twelve specialized plugins:
 
-1. **dotclaudefiles** - Skills plugin for structured task execution (task-planning, team-setup, claude-code-agent-creator, workflow-creator, create-report, explain)
+1. **dotclaudefiles** - Skills plugin for team setup and Claude Code authoring (team-setup, claude-code-agent-creator, workflow-creator, create-report)
 2. **dotclaudehooks** - Standalone hooks plugin (LSP-first navigation nudges)
 3. **claude-management** - Claude Code memory file management and self-improvement harness (rulify, claudify, remember, end-session, stabilize, suggestion hooks)
 4. **document-api** - API contract documentation (REST endpoints, socket.io events) for frontend handoff
@@ -17,6 +17,7 @@ This is a **mono-repo for Claude Code plugins** containing eleven specialized pl
 9. **domain-restructure** - Autonomous layer-first to feature-first restructurer (strategic-DDD domain discovery, subdomain classification, parallel per-domain moves, import consolidation with build gate)
 10. **spec-kit** - Spec-driven workflow toolkit (closed self-contained specs, design-closure loop via closed-design-enforcer, implement-spec dispatcher across direct/agent-waves/workflow strategies)
 11. **refactoring-guru** - Reactive code-smell analysis and guided refactoring over the refactoring.guru taxonomy (parallel per-category smell-scan, smell→technique mapping, step-by-step refactor applier)
+12. **task-lifecycle** - The full lifecycle of a substantial task as three chainable, independently invocable skills (task-planning, task-execution, task-quality-gate) plus the twelve read-only auditors the gate fans out through a dynamic Workflow
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -32,7 +33,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 11 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure, spec-kit, refactoring-guru)
+- **`plugins/`**: Contains the 12 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure, spec-kit, refactoring-guru, task-lifecycle)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 
@@ -40,9 +41,9 @@ Key directories:
 
 ### dotclaudefiles
 
-Skills plugin for structured task execution and team setup:
+Skills plugin for team setup and Claude Code authoring:
 
-- **Skills**: `task-planning` (letter-group breakdown, TaskCreate registration, LSP-first nav, group-boundary commits, Phase 3 quality review: simplify + clean-code + parallel domain auditors discovered from available agents), `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric), `create-report` (produces Markdown for context preservation or interactive HTML for comprehension/sharing; self-contained, navigable, zero external deps), `explain` (calibrated-altitude explanation framework: leads with business/contract-level understanding and descends to implementation on demand; adds association, mnemonics, and small ASCII/interactive-artifact visuals tuned to how the reader learns)
+- **Skills**: `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric), `create-report` (produces Markdown for context preservation or interactive HTML for comprehension/sharing; self-contained, navigable, zero external deps)
 
 ### dotclaudehooks
 
@@ -122,6 +123,15 @@ Turns passive Clean Code reference into a reactive analysis of real code: given 
 - **References**: `smell-catalog.md` (26 smells: detection criteria + mapped techniques), `refactoring-techniques.md` (67 techniques: when + mechanics), `technique-playbooks.md` (per-group execution steps), `workflow.md` (safe test → refactor → test → commit cycle)
 - **Taxonomy**: 26 smells in 5 categories (Bloaters, OO Abusers, Change Preventers, Dispensables, Couplers); 67 techniques in 6 groups. OOP-specific smells and techniques are kept marked, not suppressed — they apply in C# and TypeScript class code
 
+### task-lifecycle
+
+The lifecycle of a substantial task, split into three skills that chain into each other and each stand alone. The split exists because the three phases have different natures and only the first used to be reachable on its own — in particular, the quality gate is now runnable against any branch without going through planning:
+
+- **Skills**: `task-planning` (git state, base-ref choice, letter-group breakdown, `TaskCreate` registration; hands off to `task-execution`), `task-execution` (LSP-first navigation, a dispatch table deciding per group between the main context / a sub-agent / a fan-out `Workflow`, commits at group boundaries, immediate `TaskUpdate`; hands off to `task-quality-gate`), `task-quality-gate` (generates the patch once, derives an effort band from a base-band table plus ±1 modifiers, runs the review `Workflow`, arbitrates in-scope vs pre-existing findings, reports via `ReportFindings`, and dispatches fixes)
+- **Agents** (12, all read-only, all `sonnet` with effort as the only lever): five correctness angles — `diff-line-scanner` (changed lines against a failure catalog), `removed-behavior-auditor` (names the invariant each deletion enforced and proves where it is re-established), `cross-file-tracer` (contract changes traced outward to consumers), `language-pitfall-auditor` and `wrapper-contract-auditor` (deeper bands only); five quality angles — `reuse-auditor`, `simplification-auditor`, `efficiency-auditor`, `altitude-auditor`, `conventions-auditor`; plus `gap-sweeper` (receives the deduplicated set to know what NOT to report) and `finding-verifier` (adversarial refutation, one per candidate)
+- **Workflow**: `skills/task-quality-gate/scripts/workflow.js` — a `BANDS` table is the only source of variation between effort levels (which correctness angles run, precision vs recall bias, the confidence cut injected into every agent, whether the sweep runs, the report cap). Angles pipeline straight into verification with no barrier; the one barrier is before the sweep, which genuinely needs the complete deduplicated list. The script returns data and writes nothing
+- **Why the cut is injected, not fixed**: the agents carry the 0-100 confidence rubric verbatim, but the threshold comes from the band — a recall-biased sweep is only worth running if uncertain findings actually surface, and the adversarial verifier is what protects precision instead
+
 ## Choosing the Right Plugin
 
 **Use claude-management when:**
@@ -133,9 +143,16 @@ Turns passive Clean Code reference into a reactive analysis of real code: given 
 - Mining past session transcripts for recurring mechanical flows to crystallize as project skills or rules (`stabilize`)
 - Closing a work session with commits and a context document (`end-session` — user-invoked only)
 
+**Use task-lifecycle when:**
+
+- Starting a substantial request that touches 2+ files or involves 3+ sequential steps (`task-planning`)
+- Resuming work already registered with `TaskCreate`, or executing an approved plan (`task-execution`)
+- Reviewing a finished changeset — this is the main standalone case: `task-quality-gate` runs against any branch with commits and a base ref, with no plan or task list required
+- You want a review that fans out ten independent angles and adversarially verifies every finding, rather than one inline pass
+- Note: `/code-review` is no longer invocable by the model, which is why the gate reimplements that engine as a dynamic `Workflow`
+
 **Use dotclaudefiles when:**
 
-- Starting a substantial request that touches 2+ files or involves 3+ sequential steps
 - Setting up a team or project structure with shared conventions
 - Scaffolding a Claude Code sub-agent (`claude-code-agent-creator`)
 - Authoring a dynamic workflow / orchestrating subagents at scale with `ultracode` (`workflow-creator`)
@@ -201,7 +218,7 @@ Turns passive Clean Code reference into a reactive analysis of real code: given 
 - Scanning a specific file, directory, function, or class for code smells — `smell-scan` produces located, confidence-scored findings mapped to concrete techniques, not generic Clean Code advice
 - Auditing code quality reactively against the full refactoring.guru taxonomy (26 smells across 5 categories)
 - Applying a named refactoring technique to a specific location — `refactor` carries the finding into a safe test → refactor → test → commit cycle via the `refactoring-applier` agent
-- Running the `task-planning` Phase 3 quality pass over the files a task actually modified, instead of a passive Clean Code reading
+- Auditing the files a task actually modified for smells, instead of a passive Clean Code reading
 - Working in C# or TypeScript class hierarchies where OOP-specific smells and techniques (Refused Bequest, Replace Conditional with Polymorphism, the whole Generalization group) apply
 
 ## Installing Plugins
@@ -224,6 +241,7 @@ Each plugin can be installed independently:
 /plugin install domain-restructure@diegopher
 /plugin install spec-kit@diegopher
 /plugin install refactoring-guru@diegopher
+/plugin install task-lifecycle@diegopher
 ```
 
 ## Configuration Files
@@ -239,4 +257,3 @@ Each plugin has its own configuration:
 ## Skill Authoring
 
 For skill creation, modification, structure, frontmatter fields, and writing conventions, invoke `/skill-creator` — it is the single source of truth.
-

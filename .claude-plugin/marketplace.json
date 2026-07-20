@@ -11,6 +11,11 @@
       "source": "./plugins/dotclaudefiles"
     },
     {
+      "name": "task-lifecycle",
+      "description": "The lifecycle of a substantial task as three chainable, independently invocable skills: plan the work into letter groups and register it with TaskCreate, execute it with commits per group, and run a multi-agent quality gate over the resulting diff. The gate fans out twelve read-only auditors through a dynamic Workflow — five correctness angles, five quality angles, a gap sweeper, and an adversarial verifier per finding — and returns only the findings that survive refutation.",
+      "source": "./plugins/task-lifecycle"
+    },
+    {
       "name": "claude-management",
       "description": "Memory-file management and self-improvement harness for Claude Code: rulify, claudify, remember, end-session, transcript mining into project skills/rules (stabilize), and suggestion-only hooks with a practice-verifier quality gate.",
       "source": "./plugins/claude-management"

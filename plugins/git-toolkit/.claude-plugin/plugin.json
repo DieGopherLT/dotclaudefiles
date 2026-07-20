@@ -1,6 +1,6 @@
 {
   "name": "git-toolkit",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Diego's git workflow toolkit: commit standards enforcement, conflict resolution for rebases and merges, branch naming conventions, and squash planning for interactive rebases.",
   "author": {
     "name": "Diego",

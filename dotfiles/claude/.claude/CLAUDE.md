@@ -59,13 +59,15 @@ Enter `plan mode` when a prompt describes a non-trivial problem — trust your j
 - Always include a summary of files to create and modify, with paths and brief description of the changes.
 - When a plan involves connecting multiple modules, components, or services, include contract previews, interface definitions, and/or API endpoints to clarify how they integrate and communicate with each other.
 - Before presenting any plan to the user, go through this checklist:
-  - Does the plan start by invoking the `task-planning` skill?
+  - Does the plan start by invoking the `task-planning` skill, so the breakdown is registered before any code is written?
   - Is the plan detailed enough that an agent without this session's context could execute it without further clarification? If not, add more details; especially on how different modules and components integrate and/or communicate with each other.
   - Does the plan include a clear and concise summary of files to create and modify, with paths and a brief description of the changes? If not, add it.
 
 ## Task Execution Behavior
 
-When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan (or spec), or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code.
+When a request is substantial — it touches 2+ files, involves 3+ sequential steps, executes an approved plan (or spec), or comes right after exiting plan mode — invoke the `task-planning` skill before writing any code. It registers the breakdown and then chains into `task-execution`, which closes the cycle by invoking `task-quality-gate` over the finished changeset.
+
+Each of the three is invocable on its own: `task-execution` to resume an already-registered plan, and `task-quality-gate` to review any branch without going through the other two.
 
 ## Sub-agent behavior
 

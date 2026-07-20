@@ -24,10 +24,10 @@ This skill is a **Template Method**: a fixed algorithm skeleton where only one s
 
 | Step | Name | Role | Varies? |
 |------|------|------|---------|
-| 1 | Preconditions | Load spec, enable LSP, decompose with `task-planning` into blocks + dependency graph | No |
+| 1 | Preconditions | Load spec, enable LSP, decompose into letter-group blocks + dependency graph | No |
 | 2 | Select | Run the two-axis dispatch and log the chosen strategy + rationale | No |
 | 3 | Execute | Run the chosen strategy | YES (Strategy) |
-| 4 | Quality gate | Phase 3 quality suite | Location varies (see step 4) |
+| 4 | Quality gate | Post-implementation quality suite | Location varies (see step 4) |
 | 5 | Verify | Confirm the change actually works | No |
 | 6 | Cleanup | Clean tree, changes on a dedicated branch | No |
 
@@ -37,7 +37,7 @@ This skill is a **Template Method**: a fixed algorithm skeleton where only one s
 2. Read the full spec. Treat it as the single source of truth — it should be closed and self-contained by construction.
 3. **Verify closure.** Check the spec's `## Design Gaps` section. If it still contains entries (any `DG-NNN`), the design is NOT closed — implementing now risks exactly the wrong-guess failure this plugin exists to prevent. Stop and tell the user to run `spec-kit:close-design` first, rather than proceeding on an open spec.
 4. Load `LSP` if available; it makes navigating an existing codebase faster and more accurate than text search for code symbols.
-5. Use the `task-planning` skill to decompose the spec into letter-group task blocks and register them with TaskCreate. Then derive the **dependency graph** between blocks — do not trust the letter ordering, which groups by topic, not execution order.
+5. Decompose the spec into letter-group task blocks (A, B, C... with numbered subtasks) and register every one of them with `TaskCreate`. Then derive the **dependency graph** between blocks — do not trust the letter ordering, which groups by topic, not execution order.
 
 ## Step 2 — Select the strategy (the dispatch)
 
@@ -97,13 +97,13 @@ Full delegation. Author the orchestration with the `workflow-creator` skill (use
 Two rules that make this work under `/goal`:
 
 - **goal-uses-workflow-as-tool.** `/goal` is a main-loop construct; the Workflow tool runs its own background orchestration. They cannot nest. You do NOT apply `/goal` to the flow — the goal-driven agent (you) INVOKES Workflow as a tool and supervises it. Auto-launching the workflow under `/goal` is expected behavior; no separate authorization is required.
-- **Bake the gate into the script.** Because a workflow runs detached in the background, you cannot run a coherent post-hoc quality gate over work you did not directly supervise. Encode the Phase 3 quality suite (step 4) as **terminal phases of the workflow script** so quality is enforced inside the run. Behavior verification (step 5) still happens with you, after the workflow returns.
+- **Bake the gate into the script.** Because a workflow runs detached in the background, you cannot run a coherent post-hoc quality gate over work you did not directly supervise. Encode the quality suite (step 4) as **terminal phases of the workflow script** so quality is enforced inside the run. Behavior verification (step 5) still happens with you, after the workflow returns.
 
 ## Step 4 — Quality gate
 
-The Phase 3 quality suite from `task-planning` runs in every strategy; only its **location** differs:
+A post-implementation quality gate runs in every strategy; only its **location** differs:
 
-- `write-directly` and `agent-waves`: run it as a post-execution step, here, yourself, over `git diff main..HEAD` — `/code-review xhigh --fix`, `clean-code`, `/security-review` (focused on entry/exit points of every flow touched), plus any domain auditors that apply. Resolve all findings.
+- `write-directly` and `agent-waves`: run it as a post-execution step, here, yourself, over `git diff main..HEAD` — a multi-angle review of the changeset, `/security-review` (focused on entry/exit points of every flow touched), plus any domain auditors that apply. Resolve all findings.
 - `workflow`: the gate already ran as the script's terminal phases (per step 3). Confirm those phases passed and their findings were resolved inside the run.
 
 ## Step 5 — Verify the change actually works
