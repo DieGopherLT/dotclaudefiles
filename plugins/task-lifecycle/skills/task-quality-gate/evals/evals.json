@@ -1,0 +1,68 @@
+{
+  "skill_name": "task-quality-gate",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Revisa los cambios de esta rama antes de que abra el PR.",
+      "expected_output": "The agent confirms everything is committed, establishes the base ref, generates the patch once, derives an effort band and declares how, invokes the review Workflow with the four args, then arbitrates and reports the findings with ReportFindings.",
+      "files": [],
+      "expectations": [
+        "The agent confirms nothing is uncommitted before reviewing",
+        "The agent establishes the base ref the branch was cut from rather than assuming main blindly",
+        "The agent generates the diff as a patch file once and passes its path to the Workflow",
+        "The agent declares how it derived the effort band (base band plus modifiers)",
+        "The agent invokes the Workflow with effort, patchPath, baseBranch and repoRoot",
+        "The agent reports the findings with the ReportFindings tool"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Audita este branch. Toca el flujo de cobros y no tiene tests.",
+      "expected_output": "The agent sets the base band to xhigh for a critical payments domain, applies the +1 modifier for no tests, arrives at max, and declares the derivation explicitly.",
+      "files": [],
+      "expectations": [
+        "The agent sets the base band to xhigh because a miss in the payments domain is expensive",
+        "The agent applies a +1 modifier because there are no tests",
+        "The agent arrives at the max band",
+        "The agent declares the derivation explicitly, for example 'base xhigh, +1 no tests -> max'",
+        "The agent also invokes /security-review because a payments flow crosses a trust boundary"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Revisa el diff. Son 30 archivos pero es puro rename mecánico, nada de lógica nueva.",
+      "expected_output": "The agent sets the base band to medium for a mechanical change, notes that the -1 mechanical modifier cannot go below the medium floor, and does not let the file count drive the band upward.",
+      "files": [],
+      "expectations": [
+        "The agent sets the base band to medium because the change is mechanical with no new logic",
+        "The agent does not raise the band because of the 30-file count",
+        "The agent recognizes medium as the floor of the ladder rather than inventing a lower band",
+        "The agent skips /security-review because no trust boundary is crossed"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Ya corrió la revisión. Salieron ocho hallazgos, tres de ellos en código que ya existía antes de la rama.",
+      "expected_output": "The agent splits the findings into in-scope and pre-existing out-of-scope, dispatches the in-scope ones to parallel appliers grouped so no two touch the same file, and dispatches the out-of-scope ones as background worktree agents branched from the base ref. It does not apply the fixes itself.",
+      "files": [],
+      "expectations": [
+        "The agent splits the findings into in-scope and pre-existing out-of-scope",
+        "The agent groups the in-scope fixes so that no two write agents touch the same file",
+        "The agent dispatches the out-of-scope findings as background agents with worktree isolation, branched from the base ref rather than the current branch",
+        "The agent does not apply the fixes itself in the main context",
+        "The agent calibrates model and effort per finding rather than using one setting for all"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Revisa lo que acabo de cambiar: le arreglé un typo al README.",
+      "expected_output": "The agent judges the changeset as not warranting a quality pass and says so plainly, rather than running a ten-agent fan-out over a documentation typo.",
+      "files": [],
+      "expectations": [
+        "The agent judges the changeset as not warranting a quality pass",
+        "The agent does not invoke the review Workflow",
+        "The agent states the reasoning plainly instead of running the gate to check a box"
+      ]
+    }
+  ]
+}

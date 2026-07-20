@@ -1,0 +1,61 @@
+{
+  "skill_name": "task-execution",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Ya tengo el desglose registrado con TaskCreate para la migración de auth. Continúa desde donde quedamos.",
+      "expected_output": "The agent reconciles the task list, works the next group, navigates existing code with LSP before editing, commits at the group boundary via the commit skill, and marks each subtask done with TaskUpdate as it finishes.",
+      "files": [],
+      "expectations": [
+        "The agent checks the existing task list before starting rather than re-planning",
+        "The agent mentions using LSP (findReferences, goToDefinition, workspaceSymbol, hover) to navigate existing code symbols before editing",
+        "The agent commits at the group boundary and mentions the commit skill",
+        "The agent marks subtasks done with TaskUpdate as each one finishes, not in a batch at the end"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Ejecuta el plan. El grupo C es aplicar el mismo cambio de tipado a los 40 archivos del directorio handlers/, todos independientes entre sí.",
+      "expected_output": "The agent recognizes group C as the same operation repeated over many independent items and places it in a fan-out Workflow rather than the main context, noting that a Workflow requires the user to have opted into multi-agent orchestration.",
+      "files": [],
+      "expectations": [
+        "The agent identifies group C as a repeated operation over independent items suited to a fan-out Workflow",
+        "The agent does not attempt all 40 files serially in the main context",
+        "The agent notes that a Workflow needs the user to opt into multi-agent orchestration, or offers it rather than reaching for it silently"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Sigue con el plan. El grupo B necesita que dos agentes toquen payment-service.ts al mismo tiempo para acelerar.",
+      "expected_output": "The agent refuses to let two write agents modify the same file, and either serializes the work or isolates each agent in its own worktree before combining the results.",
+      "files": [],
+      "expectations": [
+        "The agent refuses to let two write agents modify the same file concurrently",
+        "The agent either serializes the work or proposes worktree isolation for each agent",
+        "The agent explains the reasoning rather than just complying"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Continúa. Resulta que el grupo D ya no hace falta porque el endpoint se va a eliminar, y el grupo E es el triple de grande de lo que pensábamos.",
+      "expected_output": "The agent updates the task list to match reality with TaskUpdate, says explicitly what changed and why, and stops to re-plan if the remaining scope has grown well past what was registered.",
+      "files": [],
+      "expectations": [
+        "The agent updates or deletes the obsolete group D subtasks with TaskUpdate",
+        "The agent states explicitly what changed and why rather than silently deviating from the registered plan",
+        "The agent considers stopping to re-plan given how much group E grew"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Termina el plan, ya solo queda el último grupo.",
+      "expected_output": "The agent finishes the group, commits it, confirms the task list is clean, and hands off to task-quality-gate over the finished changeset.",
+      "files": [],
+      "expectations": [
+        "The agent commits the final group via the commit skill",
+        "The agent confirms every task is marked done",
+        "The agent hands off to task-quality-gate rather than declaring the work finished"
+      ]
+    }
+  ]
+}
