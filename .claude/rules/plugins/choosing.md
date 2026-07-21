@@ -23,6 +23,7 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 - Resuming work already registered with `TaskCreate`, or executing an approved plan (`task-execution`)
 - Reviewing a finished changeset — this is the main standalone case: `task-quality-gate` runs against any branch with commits and a base ref, with no plan or task list required
 - You want a review that fans out ten independent angles and adversarially verifies every finding, rather than one inline pass
+- The user invokes `/mastermind-role` for a long-running, large-scale flow: the main context becomes an orchestrator that dispatches the four-tier worker fleet instead of writing code — never self-invoked by the model
 - Note: `/code-review` is no longer invocable by the model, which is why the gate reimplements that engine as a dynamic `Workflow`
 
 **Use dotclaudefiles when:**

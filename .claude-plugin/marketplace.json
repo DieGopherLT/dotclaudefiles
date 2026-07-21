@@ -12,7 +12,7 @@
     },
     {
       "name": "task-harness",
-      "description": "The lifecycle of a substantial task as three chainable, independently invocable skills: plan the work into letter groups and register it with TaskCreate, execute it with commits per group, and run a multi-agent quality gate over the resulting diff. The gate fans out twelve read-only auditors through a dynamic Workflow — five correctness angles, five quality angles, a gap sweeper, and an adversarial verifier per finding — and returns only the findings that survive refutation.",
+      "description": "The full harness for a substantial task: one lifecycle, two execution modes. Plan the work into letter groups and register it with TaskCreate, execute it in-session with commits per group or by delegation via the user-invoked mastermind-role orchestrator and its four-tier fleet of committing delegate workers, and run a multi-agent quality gate over the resulting diff. The gate fans out twelve read-only auditors through a dynamic Workflow — five correctness angles, five quality angles, a gap sweeper, and an adversarial verifier per finding — and returns only the findings that survive refutation.",
       "source": "./plugins/task-harness"
     },
     {

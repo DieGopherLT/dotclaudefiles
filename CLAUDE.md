@@ -17,7 +17,7 @@ This is a **mono-repo for Claude Code plugins** containing twelve specialized pl
 9. **domain-restructure** - Autonomous layer-first to feature-first restructurer (strategic-DDD domain discovery, subdomain classification, parallel per-domain moves, import consolidation with build gate)
 10. **spec-kit** - Spec-driven workflow toolkit (closed self-contained specs, design-closure loop via closed-design-enforcer, implement-spec dispatcher across direct/agent-waves/workflow strategies)
 11. **refactoring-guru** - Reactive code-smell analysis and guided refactoring over the refactoring.guru taxonomy (parallel per-category smell-scan, smell→technique mapping, step-by-step refactor applier)
-12. **task-harness** - The full lifecycle of a substantial task as three chainable, independently invocable skills (task-planning, task-execution, task-quality-gate) plus the twelve read-only auditors the gate fans out through a dynamic Workflow
+12. **task-harness** - The full harness for a substantial task: one lifecycle, two execution modes (task-planning, task-execution, the user-invoked mastermind-role orchestrator, task-quality-gate), a four-tier fleet of delegate workers, and the twelve read-only auditors the gate fans out through a dynamic Workflow
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 

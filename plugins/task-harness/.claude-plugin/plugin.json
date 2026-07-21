@@ -1,7 +1,7 @@
 {
   "name": "task-harness",
   "version": "2.0.0",
-  "description": "The full lifecycle of a substantial task as three chainable, independently invocable skills: plan the work into letter groups, execute it with commits per group, and run a multi-agent quality gate over the resulting diff. The gate fans out up to ten read-only review angles through a dynamic Workflow — backed by twelve agents including the adversarial verifier and gap sweeper — and returns adversarially verified findings.",
+  "description": "The full harness for a substantial task: chainable, independently invocable skills covering one lifecycle with two execution modes. Plan the work into letter groups, then execute it in-session (task-execution) or by delegation (mastermind-role, user-invoked: the main context reserves itself for reasoning and dispatches a four-tier fleet of committing delegate workers), and run a multi-agent quality gate over the resulting diff. The gate fans out up to ten read-only review angles through a dynamic Workflow — backed by twelve agents including the adversarial verifier and gap sweeper — and returns adversarially verified findings.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"
@@ -11,6 +11,8 @@
   "keywords": [
     "task-planning",
     "execution",
+    "orchestration",
+    "delegation",
     "code-review",
     "quality-gate",
     "audit",
