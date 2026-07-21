@@ -179,6 +179,8 @@ work turns out materially larger than the assignment describes.
 assignment carries design authority (smart-worker territory), the decisions taken with a one-line
 reason each. Lower tiers may collapse risks-and-needs into plain needs; contract deltas are never
 dropped by any tier. Macro-contextual, Dev Lead style — no code dumps, no implementation detail.
+When the contract injected in the dispatch prompt and the worker's own body disagree, the injected
+contract wins: the body is the default behavior, the injection is this run's actual assignment.
 
 The reports hide detail on purpose, and two mechanisms make that safe:
 

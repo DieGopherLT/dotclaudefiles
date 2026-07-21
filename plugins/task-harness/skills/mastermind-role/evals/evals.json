@@ -3,27 +3,54 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "/mastermind-role I need the whole notifications domain migrated from callbacks to async/await across api/, workers/ and the shared client in packages/notify-client. It is around 40 files. Tests exist for most of it. Keep the public API of notify-client intact.",
+      "prompt": "/mastermind-role Necesito migrar todo el dominio de notificaciones de callbacks a async/await en api/, workers/ y el cliente compartido en packages/notify-client. Son unos 40 archivos. Hay tests para la mayoría. Mantén intacta la API pública de notify-client.",
       "expected_output": "Enters a dedicated worktree after the .worktreeinclude preflight, registers the breakdown via task-planning, dispatches scout/standard workers (worktree-isolated if a parallel write wave), tracks every task through the ledger FSM, integrates via commits, and closes with task-quality-gate. No file contents of the migration read inline beyond integration needs.",
-      "files": []
+      "files": [],
+      "expectations": [
+        "The agent enters a dedicated worktree before dispatching any worker",
+        "The agent runs the .worktreeinclude preflight before creating the worktree",
+        "The agent registers the breakdown via task-planning",
+        "The agent does not read migration file contents inline in the orchestrator context beyond what integration needs",
+        "The agent closes the run by invoking task-quality-gate"
+      ]
     },
     {
       "id": 2,
-      "prompt": "/mastermind-role Build the reporting feature end to end: a Go service endpoint, the TS client hook, and the dashboard page. I'll be away, run it start to finish and have it reviewed by the time I'm back.",
+      "prompt": "/mastermind-role Construye la feature de reporting de punta a punta: un endpoint de servicio en Go, el hook cliente en TS, y la página del dashboard. Voy a estar fuera, corre todo de principio a fin y que esté revisado para cuando vuelva.",
       "expected_output": "Fixes the cross-module contracts inline first (endpoint shape, client interface), dispatches one worker per module honoring the write-concurrency rule, relays contract deltas between dispatches, runs the quality gate, and ends with a Dev Lead style report with commits and open items. Does not merge the branch itself.",
-      "files": []
+      "files": [],
+      "expectations": [
+        "The agent fixes the cross-module contracts (endpoint shape, client interface) inline before dispatching workers",
+        "The agent dispatches one worker per module (Go service, TS hook, dashboard page)",
+        "The agent honors the write-concurrency isolation rule across the dispatched workers",
+        "The agent relays contract deltas between dispatches instead of letting workers coordinate directly",
+        "The agent reports in Dev Lead style with commits and open items, and does not merge the branch itself"
+      ]
     },
     {
       "id": 3,
-      "prompt": "/mastermind-role Sweep the repo for every place we still read config from env vars directly instead of the config package, fix the trivial ones, and give me a report of the ones that need a real decision.",
+      "prompt": "/mastermind-role Recorre el repo buscando todos los lugares donde todavía leemos config directo de env vars en lugar del paquete de config, arregla los triviales, y dame un reporte de los que necesitan una decisión real.",
       "expected_output": "Dispatches scout-worker(s) for the sweep with a synthesis-shaped report contract, light-workers for the deterministic fixes (or keeps them in the sweep assignment), keeps ambiguous sites as blocked ledger entries surfaced to the user rather than improvised, and reports counts plus commit SHAs.",
-      "files": []
+      "files": [],
+      "expectations": [
+        "The agent dispatches scout-worker(s) for the sweep with a synthesis-shaped report contract",
+        "The agent dispatches light-workers for the deterministic trivial fixes, or keeps them within the sweep assignment",
+        "The agent keeps ambiguous sites as blocked ledger entries surfaced to the user rather than improvising a decision",
+        "The agent reports counts plus commit SHAs"
+      ]
     },
     {
       "id": 4,
-      "prompt": "/mastermind-role (invoked in a fresh session inside a worktree where .claude/binnacle.md exists from a previous interrupted run)",
+      "prompt": "/mastermind-role (invocado en una sesión nueva dentro de un worktree donde ya existe .claude/binnacle.md de una ejecución anterior interrumpida)",
       "expected_output": "Detects the binnacle before any setup, treats the invocation as a resumption: reconciles the ledger against git log base..HEAD trusting commits over the binnacle, re-registers non-integrated tasks with their group codes, states and owners, and continues dispatching from the first non-integrated task without redoing setup or planning.",
-      "files": []
+      "files": [],
+      "expectations": [
+        "The agent detects .claude/binnacle.md before running any setup",
+        "The agent treats the invocation as a resumption rather than a new run",
+        "The agent reconciles the ledger against git log base..HEAD, trusting commits over the binnacle when they disagree",
+        "The agent re-registers non-integrated tasks with their group codes, states and owners",
+        "The agent continues dispatching from the first non-integrated task without redoing setup or planning"
+      ]
     }
   ]
 }
