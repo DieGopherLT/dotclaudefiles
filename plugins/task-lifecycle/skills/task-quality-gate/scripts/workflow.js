@@ -26,7 +26,6 @@ export const meta = {
 // ---------------------------------------------------------------------------
 
 const input = normalizeArgs(args)
-const band = resolveBand(input?.effort)
 const patchPath = typeof input?.patchPath === 'string' ? input.patchPath : ''
 const baseBranch = typeof input?.baseBranch === 'string' ? input.baseBranch : 'main'
 const repoRoot = typeof input?.repoRoot === 'string' ? input.repoRoot : ''
@@ -82,6 +81,10 @@ function resolveBand(effort) {
   log(`Unknown or missing effort band "${effort}" — falling back to ${DEFAULT_BAND}.`)
   return { name: DEFAULT_BAND, ...BANDS[DEFAULT_BAND] }
 }
+
+// Resolved here, after BANDS exists: resolveBand reads the table at call time,
+// and const bindings are TDZ-locked until their declaration runs.
+const band = resolveBand(input?.effort)
 
 // ---------------------------------------------------------------------------
 // The angles. Order matters only for display; every angle is independent and

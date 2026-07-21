@@ -44,7 +44,7 @@ separate decisions:
 Do not judge "risk" — apply these checks in order; the first one that fires decides worktree, otherwise
 a plain branch:
 
-1. Run `scripts/detect-concurrent-claudes.sh` (bundled with this skill). Output `yes` means another
+1. Run `${CLAUDE_PLUGIN_ROOT}/skills/task-planning/scripts/detect-concurrent-claudes.sh`. Output `yes` means another
    Claude session is active in this repository right now — a worktree is mandatory so the two do not
    share a working tree.
 2. The breakdown you are about to write has **3 or more letter groups**.
