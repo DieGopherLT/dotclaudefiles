@@ -38,12 +38,12 @@
     {
       "id": 4,
       "prompt": "Continúa. Resulta que el grupo D ya no hace falta porque el endpoint se va a eliminar, y el grupo E es el triple de grande de lo que pensábamos.",
-      "expected_output": "The agent updates the task list to match reality with TaskUpdate, says explicitly what changed and why, and stops to re-plan if the remaining scope has grown well past what was registered.",
+      "expected_output": "The agent updates the task list to match reality with TaskUpdate, says explicitly what changed and why, and stops the turn to report because group E's unplanned growth outnumbers its registered subtasks.",
       "files": [],
       "expectations": [
         "The agent updates or deletes the obsolete group D subtasks with TaskUpdate",
         "The agent states explicitly what changed and why rather than silently deviating from the registered plan",
-        "The agent considers stopping to re-plan given how much group E grew"
+        "The agent stops the turn and reports the friction condition (unplanned subtasks outnumbering the registered ones) instead of pushing through group E"
       ]
     },
     {

@@ -81,8 +81,13 @@ Plans meet the code and lose. When a group turns out bigger, differently shaped,
   that describes a plan nobody is following is worse than no list.
 - Say what changed and why, once, when it happens. Do not silently do something other than what was
   registered.
-- If the remaining scope has grown well past what was planned, stop and re-plan rather than improvising
-  through it.
+- Unplanned friction is a planning failure, not something to improvise through. **Stop the turn and
+  report to the user** when either countable condition fires within a single group:
+  1. The same command or gate fails 3 consecutive times without progress.
+  2. The unplanned subtasks added to the group (via `TaskUpdate`) outnumber the subtasks it was
+     registered with.
+  Stopping means ending the turn with a summary of what fired and what the options are — not silently
+  re-planning, not pushing through. Smaller drift stays inside the `TaskUpdate` adjustments above.
 
 ## Hand off
 
