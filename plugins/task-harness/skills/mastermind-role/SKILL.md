@@ -4,9 +4,11 @@ description: >
   Install the orchestrator role for long-running, large-scale work. The main context stops writing
   code and reserves itself for reasoning: it plans, dispatches a tiered fleet of delegate workers
   (light, scout, standard, smart) that commit their own changes and report in macro-contextual Dev
-  Lead terms, keeps the thread in a ledger of task state machines, and integrates and reviews what
-  comes back. Executes the same lifecycle as task-execution, by delegation instead of in-session.
-  User-invoked only via /mastermind-role; the model never self-invokes this role.
+  Lead terms, keeps the thread in a ledger of task state machines backed by a per-worktree
+  binnacle that survives the session, and integrates and reviews what comes back. Executes the
+  same lifecycle as task-execution, by delegation instead of in-session. User-invoked only via
+  /mastermind-role — both to start a run and to resume one from its binnacle; the model never
+  self-invokes this role.
 disable-model-invocation: true
 ---
 
@@ -34,6 +36,15 @@ a sub-agent is pure waste. Above it, the calculus inverts — the worker spends 
 file contents so yours never sees them. Reasoning, contract decisions, and integration always stay
 inline; they are the job, not an exception to it.
 
+## First: is this a resumption?
+
+Before any setup, check for `.claude/binnacle.md` in the current worktree. If it exists, this
+invocation resumes an interrupted run, not a new one: skip setup and follow the binnacle's own
+primer — reconcile its ledger against `git log <base>..HEAD` (commits are the ground truth; the
+binnacle may lag one transition), re-register the pending tasks, and continue as orchestrator from
+the first non-integrated task. Resumption only ever happens through the user invoking
+`/mastermind-role` inside the worktree — nothing resumes on its own.
+
 ## Setup: always on a worktree
 
 This role always runs on a dedicated worktree — no exceptions for "small" flows, because mastermind
@@ -59,6 +70,12 @@ task-planning's countable checks. In order:
    registration. It will find a clean feature branch already inside a worktree, so its own
    branch-or-worktree checks resolve to staying put; everything else it owns — group notation, the
    `A0` base-ref task, sequencing — applies unchanged.
+4. **Open the binnacle.** Copy `references/binnacle-template.md` (bundled with this skill) to
+   `.claude/binnacle.md` inside the new worktree and fill its Run header. Ignore it through the
+   repo's local exclude file — append `.claude/binnacle.md` to
+   `$(git rev-parse --git-common-dir)/info/exclude` when absent — never by editing the tracked
+   `.gitignore` mid-run. The exclude file is shared by every worktree of the repo, so the line is
+   written once and covers all future runs.
 
 ## The ledger: task state machines
 
@@ -87,9 +104,14 @@ rewritten on every transition, so a cold read of the list reconstructs the run e
   with the amended contract while it is still reachable (a live background agent is continued,
   never replaced by a fresh spawn that loses its context), or dispatch anew when it is gone.
 
-When the task tools are unavailable in a session, keep the same ledger in a markdown file inside
-the session scratchpad, with the same tokens and transitions. After any compaction, re-read the
-ledger before dispatching anything — it, not your memory, says where the run stands.
+The task list is only the live view, and it is conversation-scoped: it survives compaction, not
+the end of the session. The durable layer is the **binnacle** — `.claude/binnacle.md` in the run's
+worktree, opened during setup and rewritten at every ledger transition with the same tokens. It
+carries the run header, the ledger table, the fixed contracts and their reported deltas, the
+inline decisions, and the open items — the orchestrator's memento, enough for a cold session to
+restore the role and the run. When the task tools are unavailable, the binnacle is simply the only
+ledger. After any compaction — and at the start of any resumed session — re-read it before
+dispatching anything: it, not your memory, says where the run stands.
 
 ## Dispatching: tiers and specialists
 
@@ -198,4 +220,6 @@ coming out of the gate are dispatches like any other: tiered, contracted, report
 
 The run ends with the worktree's branch clean, gated, and reported to the user — merging it is the
 user's call, not yours. Report in your own contract's terms: outcome, the commits that matter,
-contract deltas the rest of the system must absorb, and what stayed open.
+contract deltas the rest of the system must absorb, and what stayed open. Leave the binnacle's
+final state written either way: a closed run should read as closed, and an interrupted one carries
+the primer the next session resumes from.

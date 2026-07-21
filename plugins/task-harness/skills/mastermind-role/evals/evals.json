@@ -18,6 +18,12 @@
       "prompt": "/mastermind-role Sweep the repo for every place we still read config from env vars directly instead of the config package, fix the trivial ones, and give me a report of the ones that need a real decision.",
       "expected_output": "Dispatches scout-worker(s) for the sweep with a synthesis-shaped report contract, light-workers for the deterministic fixes (or keeps them in the sweep assignment), keeps ambiguous sites as blocked ledger entries surfaced to the user rather than improvised, and reports counts plus commit SHAs.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "/mastermind-role (invoked in a fresh session inside a worktree where .claude/binnacle.md exists from a previous interrupted run)",
+      "expected_output": "Detects the binnacle before any setup, treats the invocation as a resumption: reconciles the ledger against git log base..HEAD trusting commits over the binnacle, re-registers non-integrated tasks with their group codes, states and owners, and continues dispatching from the first non-integrated task without redoing setup or planning.",
+      "files": []
     }
   ]
 }
