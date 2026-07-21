@@ -8,7 +8,7 @@ description: >
   confidence score filtered by the threshold its prompt carries. Never modifies any file. Use when the
   quality gate needs the blast radius of a change checked outside the files the diff touched.
 tools: Read, Grep, Glob, LSP
-model: sonnet
+model: opus
 effort: high
 color: yellow
 ---

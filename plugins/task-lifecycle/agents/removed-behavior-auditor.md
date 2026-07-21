@@ -8,7 +8,7 @@ description: >
   a 0-100 confidence score filtered by the threshold its prompt carries. Never modifies any file. Use
   when the quality gate needs deletions audited as first-class changes rather than as absence.
 tools: Read, Grep, Glob, LSP
-model: sonnet
+model: opus
 effort: high
 color: red
 ---

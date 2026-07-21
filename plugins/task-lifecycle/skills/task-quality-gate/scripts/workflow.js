@@ -1,6 +1,6 @@
 export const meta = {
   name: 'task-quality-gate',
-  description: 'Review a changeset from up to ten independent angles in parallel, adversarially verify every candidate finding, optionally sweep for what the angles missed, and return the survivors ranked by confidence.',
+  description: 'Review a changeset from up to ten independent angles in parallel, adversarially verify every candidate finding, optionally sweep for what the angles missed, and return the survivors ranked correctness-first, then by verdict and confidence.',
   phases: [
     { title: 'Review', detail: 'one read-only auditor per angle, each sweeping the same patch for its own class of defect' },
     { title: 'Verify', detail: 'one adversarial verifier per candidate finding, streaming as each angle lands' },
@@ -54,6 +54,9 @@ function normalizeArgs(raw) {
 //                band needs a lower one and a fixed 80 would silence it.
 //   sweep        whether the gap-sweeper phase runs at all.
 //   cap          max findings in the returned report.
+//   effort       reasoning-effort override passed into every agent() call.
+//                null inherits each agent's frontmatter calibration; 'max'
+//                is the one lever that separates the max band from xhigh.
 //
 // The built-in reviewer's minimum-findings floor is deliberately NOT ported: it
 // is an antidote to one inline pass going lazy, and eight-to-ten independent
@@ -61,10 +64,10 @@ function normalizeArgs(raw) {
 // ---------------------------------------------------------------------------
 
 const BANDS = {
-  medium: { correctness: 3, candidates: 6, bias: 'precision', threshold: 80, sweep: false, cap: 8 },
-  high: { correctness: 3, candidates: 6, bias: 'recall', threshold: 50, sweep: false, cap: 10 },
-  xhigh: { correctness: 5, candidates: 8, bias: 'recall', threshold: 50, sweep: true, cap: 15 },
-  max: { correctness: 5, candidates: 8, bias: 'recall', threshold: 50, sweep: true, cap: 15 },
+  medium: { correctness: 3, candidates: 6, bias: 'precision', threshold: 80, sweep: false, cap: 8, effort: null },
+  high: { correctness: 3, candidates: 6, bias: 'recall', threshold: 50, sweep: false, cap: 10, effort: null },
+  xhigh: { correctness: 5, candidates: 8, bias: 'recall', threshold: 50, sweep: true, cap: 15, effort: null },
+  max: { correctness: 5, candidates: 8, bias: 'recall', threshold: 50, sweep: true, cap: 15, effort: 'max' },
 }
 
 const DEFAULT_BAND = 'high'
@@ -82,14 +85,14 @@ function resolveBand(effort) {
 // than any single deeper pass.
 //
 // `model` mirrors each agent's own frontmatter so the calibration is auditable
-// from one table. Effort cannot be set here: agent() has no effort option, so
-// each agent's frontmatter `effort` is the only place it lives.
+// from one table. Effort lives in each agent's frontmatter; the max band
+// overrides it per call through agent()'s `effort` option — see BANDS.
 // ---------------------------------------------------------------------------
 
 const CORRECTNESS_ANGLES = [
   { key: 'diff-lines', agent: 'diff-line-scanner', model: 'sonnet', focus: 'every changed line, tested against the catalog of common failure modes: boundaries, inverted conditions, absence handling, error paths, missing awaits, copy-paste residue' },
-  { key: 'removed-behavior', agent: 'removed-behavior-auditor', model: 'sonnet', focus: 'only what the changeset deleted or replaced: name the invariant each removal enforced, then prove where the new code re-establishes it or report it lost' },
-  { key: 'cross-file', agent: 'cross-file-tracer', model: 'sonnet', focus: 'every contract the diff changed, traced outward to its call sites and consumers, reporting the ones left stale or incompatible' },
+  { key: 'removed-behavior', agent: 'removed-behavior-auditor', model: 'opus', focus: 'only what the changeset deleted or replaced: name the invariant each removal enforced, then prove where the new code re-establishes it or report it lost' },
+  { key: 'cross-file', agent: 'cross-file-tracer', model: 'opus', focus: 'every contract the diff changed, traced outward to its call sites and consumers, reporting the ones left stale or incompatible' },
   { key: 'language-pitfalls', agent: 'language-pitfall-auditor', model: 'sonnet', focus: "the language's own footguns in the changed code: constructs that read correctly and behave otherwise" },
   { key: 'wrapper-contracts', agent: 'wrapper-contract-auditor', model: 'sonnet', focus: 'every wrapper, adapter, or middleware the diff added or altered, checked for fidelity to the contract it delegates to' },
 ]
@@ -98,7 +101,7 @@ const QUALITY_ANGLES = [
   { key: 'reuse', agent: 'reuse-auditor', model: 'sonnet', focus: 'new code that duplicates something the repository or an existing dependency already provides, cited as path::symbol' },
   { key: 'simplification', agent: 'simplification-auditor', model: 'sonnet', focus: 'added machinery the task did not require: unreachable branches, redundant state, indirection with one caller, conditionals that collapse' },
   { key: 'efficiency', agent: 'efficiency-auditor', model: 'sonnet', focus: 'work done more times or over more data than needed, judged at the scale the code will actually run' },
-  { key: 'altitude', agent: 'altitude-auditor', model: 'sonnet', focus: 'the shape of the change above the line: concerns landing at the wrong layer, coupling introduced, special cases that should be a mechanism' },
+  { key: 'altitude', agent: 'altitude-auditor', model: 'opus', focus: 'the shape of the change above the line: concerns landing at the wrong layer, coupling introduced, special cases that should be a mechanism' },
   { key: 'conventions', agent: 'conventions-auditor', model: 'sonnet', focus: "deviations from rules the project itself states, each quoted from the file that states it" },
 ]
 
@@ -143,8 +146,8 @@ const VERDICT_SCHEMA = {
   properties: {
     verdict: {
       type: 'string',
-      enum: ['CONFIRMED', 'PLAUSIBLE', 'REFUTED'],
-      description: 'REFUTED requires naming the blocker; CONFIRMED requires tracing the failure path',
+      enum: ['CONFIRMED', 'PLAUSIBLE', 'REFUTED', 'PRE_EXISTING'],
+      description: 'REFUTED requires naming the blocker; CONFIRMED requires tracing the failure path; PRE_EXISTING marks a real defect that predates the changeset',
     },
     reasoning: { type: 'string', description: 'two to four sentences naming the specific line that decided the verdict' },
     corrected_file: { type: 'string', description: 'only when the finding is real but anchored at the wrong file' },
@@ -159,7 +162,7 @@ const VERDICT_SCHEMA = {
 
 if (!patchPath) {
   log('No args.patchPath provided — the gate cannot review a changeset it cannot read.')
-  return { band: band.name, findings: [], counts: { raw: 0, deduped: 0, verified: 0, swept: 0 } }
+  return { band: band.name, findings: [], preExisting: [], counts: { raw: 0, deduped: 0, verified: 0, swept: 0, preExisting: 0 } }
 }
 
 log(`Band ${band.name}: ${angles.length} angles, bias ${band.bias}, confidence cut ${band.threshold}, sweep ${band.sweep ? 'on' : 'off'}.`)
@@ -179,25 +182,35 @@ const reviewed = await pipeline(angles, reviewAngle, verifyAngleFindings)
 // complete list to know what NOT to report.
 const verifiedFindings = reviewed.filter(Boolean).flat().filter(Boolean)
 
+// PRE_EXISTING survivors are real defects the verifier dated before the
+// branch. They never enter the report — the skill dispatches them to
+// base-branch worktrees — but silently dropping them would starve that
+// dispatch, which is why they ride a channel of their own.
 const rawCount = verifiedFindings.length
-const deduped = dedupe(verifiedFindings)
+const inScope = verifiedFindings.filter((finding) => finding.verdict !== 'PRE_EXISTING')
+const preExistingRaw = verifiedFindings.filter((finding) => finding.verdict === 'PRE_EXISTING')
+const deduped = dedupe(inScope)
 
-log(`${rawCount} verified findings across ${angles.length} angles, ${deduped.length} after dedup.`)
+log(`${rawCount} verified findings across ${angles.length} angles, ${deduped.length} in scope after dedup, ${preExistingRaw.length} pre-existing.`)
 
 const sweptFindings = band.sweep ? await runSweep(deduped) : []
+const sweptInScope = sweptFindings.filter((finding) => finding.verdict !== 'PRE_EXISTING')
 
-const merged = dedupe([...deduped, ...sweptFindings])
+const preExisting = rank(dedupe([...preExistingRaw, ...sweptFindings.filter((finding) => finding.verdict === 'PRE_EXISTING')]))
+const merged = dedupe([...deduped, ...sweptInScope])
 const ranked = rank(merged)
 const capped = applyCap(ranked)
 
 return {
   band: band.name,
   findings: capped,
+  preExisting,
   counts: {
     raw: rawCount,
     deduped: deduped.length,
     verified: merged.length,
-    swept: sweptFindings.length,
+    swept: sweptInScope.length,
+    preExisting: preExisting.length,
   },
 }
 
@@ -213,11 +226,19 @@ async function reviewAngle(angle) {
     label: `review:${angle.key}`,
     phase: 'Review',
     model: angle.model,
+    ...(band.effort ? { effort: band.effort } : {}),
     schema: FINDING_SCHEMA,
     agentType: `${AGENT_NAMESPACE}:${angle.agent}`,
   })
 
-  const found = (result?.findings ?? []).filter((finding) => isReportable(finding))
+  // The class drives the ranking rule downstream: a correctness bug always
+  // outranks a quality finding when the cap forces a cut. It is stamped from
+  // the angle's own list membership, never trusted from the agent's free-form
+  // category slug.
+  const angleClass = CORRECTNESS_ANGLES.includes(angle) ? 'correctness' : 'quality'
+  const found = (result?.findings ?? [])
+    .filter((finding) => isReportable(finding))
+    .map((finding) => ({ ...finding, class: angleClass }))
 
   if (found.length > band.candidates) {
     log(`Angle ${angle.key} returned ${found.length} findings; forwarding the ${band.candidates} highest-confidence and dropping ${found.length - band.candidates}.`)
@@ -267,7 +288,8 @@ async function verifyAngleFindings(reviewResult) {
       agent(buildVerifyPrompt(finding), {
         label: `verify:${reviewResult.angle.key}:${index + 1}`,
         phase: 'Verify',
-        model: 'sonnet',
+        model: 'opus',
+        ...(band.effort ? { effort: band.effort } : {}),
         schema: VERDICT_SCHEMA,
         agentType: `${AGENT_NAMESPACE}:finding-verifier`,
       }).then((verdict) => applyVerdict(finding, verdict)),
@@ -287,7 +309,7 @@ function buildVerifyPrompt(finding) {
     `Claim: ${finding.summary}`,
     `Failure scenario asserted: ${finding.failure_scenario}`,
     `The auditor scored this ${finding.confidence}. Treat that as context, never as evidence.`,
-    'Return REFUTED only if you found the specific blocker or the finding predates this changeset; CONFIRMED only if you traced the failure path end to end; PLAUSIBLE when it survives refutation but you could not close the trace. Cite the line that decided it.',
+    'Return REFUTED only if you found the specific blocker; PRE_EXISTING if the defect is real but predates this changeset; CONFIRMED only if you traced the failure path end to end; PLAUSIBLE when it survives refutation but you could not close the trace. Cite the line that decided it.',
   ]
     .filter(Boolean)
     .join(' ')
@@ -295,11 +317,14 @@ function buildVerifyPrompt(finding) {
 
 // A verifier that died or was skipped returns null. Treat that as "unverified"
 // rather than silently promoting or dropping the finding: keep it as PLAUSIBLE
-// so the arbiter still sees it, and say so in the log.
+// so the arbiter still sees it, and say so in the log. PRE_EXISTING survives
+// this function too — the main flow partitions it into its own channel. The
+// verifier's reasoning rides along because arbitration is exactly where it is
+// needed.
 function applyVerdict(finding, verdict) {
   if (!verdict) {
     log(`Verifier did not return for ${finding.file}:${finding.line} — carrying the finding as PLAUSIBLE.`)
-    return { ...finding, verdict: 'PLAUSIBLE' }
+    return { ...finding, verdict: 'PLAUSIBLE', verdict_reasoning: 'The verifier did not return; the finding is carried unverified.' }
   }
 
   if (verdict.verdict === 'REFUTED') return null
@@ -309,6 +334,7 @@ function applyVerdict(finding, verdict) {
     file: verdict.corrected_file ?? finding.file,
     line: Number.isFinite(verdict.corrected_line) ? verdict.corrected_line : finding.line,
     verdict: verdict.verdict,
+    verdict_reasoning: verdict.reasoning,
   }
 }
 
@@ -322,12 +348,18 @@ async function runSweep(knownFindings) {
   const result = await agent(buildSweepPrompt(knownFindings), {
     label: 'sweep:gaps',
     phase: 'Sweep',
-    model: 'sonnet',
+    model: 'opus',
+    ...(band.effort ? { effort: band.effort } : {}),
     schema: FINDING_SCHEMA,
     agentType: `${AGENT_NAMESPACE}:gap-sweeper`,
   })
 
-  const candidates = rank((result?.findings ?? []).filter((finding) => isReportable(finding))).slice(0, band.candidates)
+  // The sweeper hunts defects, not cleanup, so its findings rank as correctness.
+  const candidates = rank(
+    (result?.findings ?? [])
+      .filter((finding) => isReportable(finding))
+      .map((finding) => ({ ...finding, class: 'correctness' })),
+  ).slice(0, band.candidates)
 
   if (candidates.length === 0) {
     log('Sweep found no gaps — the angles covered the changeset.')
@@ -339,7 +371,8 @@ async function runSweep(knownFindings) {
       agent(buildVerifyPrompt(finding), {
         label: `verify:sweep:${index + 1}`,
         phase: 'Sweep',
-        model: 'sonnet',
+        model: 'opus',
+        ...(band.effort ? { effort: band.effort } : {}),
         schema: VERDICT_SCHEMA,
         agentType: `${AGENT_NAMESPACE}:finding-verifier`,
       }).then((verdict) => applyVerdict(finding, verdict)),
@@ -418,12 +451,19 @@ function outranks(candidate, incumbent) {
 
 // ---------------------------------------------------------------------------
 // Rank and cap. Most-severe first is what the host's findings UI expects, and
-// what the skill needs to dispatch fixes in a sensible order. Array sort is
-// stable in JS, so equal-ranked findings keep the order the angles produced.
+// what the skill needs to dispatch fixes in a sensible order. Class comes
+// first: a correctness bug always outranks a quality finding when the cap
+// forces a cut, so a high-confidence conventions nit can never evict a
+// plausible race. Array sort is stable in JS, so equal-ranked findings keep
+// the order the angles produced.
 // ---------------------------------------------------------------------------
+
+const CLASS_RANK = { correctness: 1, quality: 0 }
 
 function rank(findings) {
   return [...findings].sort((a, b) => {
+    const classDelta = (CLASS_RANK[b.class] ?? 0) - (CLASS_RANK[a.class] ?? 0)
+    if (classDelta !== 0) return classDelta
     const verdictDelta = (VERDICT_RANK[b.verdict] ?? 0) - (VERDICT_RANK[a.verdict] ?? 0)
     if (verdictDelta !== 0) return verdictDelta
     return (b.confidence ?? 0) - (a.confidence ?? 0)

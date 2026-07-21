@@ -9,7 +9,7 @@ description: >
   threshold its prompt carries. Never modifies any file. Use as the last pass, once the angle results
   have been collected.
 tools: Read, Grep, Glob, LSP
-model: sonnet
+model: opus
 effort: high
 color: red
 ---

@@ -8,7 +8,7 @@ description: >
   filtered by the threshold its prompt carries. Never modifies any file. Use when the quality gate needs
   the shape of a change reviewed, not its lines.
 tools: Read, Grep, Glob, LSP
-model: sonnet
+model: opus
 effort: high
 color: purple
 ---

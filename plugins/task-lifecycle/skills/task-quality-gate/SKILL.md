@@ -84,17 +84,19 @@ by itself.
 
 ### What the band actually changes
 
-| Band | Correctness angles | Bias | Confidence cut | Gap sweep | Report cap |
-|---|---|---|---|---|---|
-| `medium` | A-C | precision | 80 | no | 8 |
-| `high` | A-C | recall | 50 | no | 10 |
-| `xhigh` | A-E | recall | 50 | yes | 15 |
-| `max` | A-E | recall | 50 | yes | 15 |
+| Band | Correctness angles | Bias | Confidence cut | Gap sweep | Report cap | Agent effort |
+|---|---|---|---|---|---|---|
+| `medium` | A-C | precision | 80 | no | 8 | inherited |
+| `high` | A-C | recall | 50 | no | 10 | inherited |
+| `xhigh` | A-E | recall | 50 | yes | 15 | inherited |
+| `max` | A-E | recall | 50 | yes | 15 | `max` override |
 
 The five quality angles — reuse, simplification, efficiency, altitude, conventions — run at every band.
 Deeper bands lower the confidence cut rather than raising it, because a recall-biased sweep is only
 worth running if the uncertain findings actually surface; the adversarial verifier is what protects
-precision, not the threshold.
+precision, not the threshold. `max` differs from `xhigh` in exactly one lever: it overrides every
+agent's reasoning effort to `max`, where the other bands inherit each agent's own frontmatter
+calibration.
 
 ## Step 4 — Run the domain auditors first, if any apply
 
@@ -124,11 +126,15 @@ The script pipelines each angle straight into verification with no barrier betwe
 deduplicates the survivors, runs the gap sweep in the deeper bands, and returns:
 
 ```js
-{ band, findings: [ { file, line, category, short_summary, summary, failure_scenario, confidence, verdict } ], counts }
+{ band, findings: [ { file, line, category, class, short_summary, summary, failure_scenario, confidence, verdict, verdict_reasoning } ], preExisting, counts }
 ```
 
-`verdict` is `CONFIRMED` or `PLAUSIBLE`; refuted findings never reach you. It returns data and writes
-nothing — every decision about what to do with the findings is yours.
+`verdict` is `CONFIRMED` or `PLAUSIBLE`; refuted findings never reach you, and `verdict_reasoning`
+carries the verifier's argument so arbitration does not start from zero. `findings` come ranked
+correctness-first — a correctness bug always outranks a quality finding when the cap forces a cut.
+`preExisting` holds the real defects the verifier dated before the branch: they never enter the main
+report, and they are the input to the out-of-scope dispatch in Step 7. The Workflow returns data and
+writes nothing — every decision about what to do with the findings is yours.
 
 The Workflow tool requires the user to have opted into multi-agent orchestration. If they have not, say
 what the gate would run and its rough scale, and offer it — do not silently downgrade to a single
@@ -148,7 +154,10 @@ the changeset was written, and arbitration is where that pays.
 1. **Discard false positives** the verifier could not have caught — a finding that is technically right
    but rests on a constraint you know does not apply.
 2. **Split the rest** into **in-scope** (introduced by this changeset) and **pre-existing out-of-scope**
-   (surfaced by the review but present before the branch).
+   (surfaced by the review but present before the branch). The Workflow already did the first pass: its
+   `preExisting` field carries the defects the verifier dated before the branch. Start from that split —
+   demote any finding you know predates the branch, and promote any `preExisting` entry the verifier
+   misdated.
 3. **Report** the arbitrated set with the `ReportFindings` tool, most-severe first, so the host renders
    them natively. The Workflow's finding shape maps field for field — pass `file`, `line`, `summary`,
    `short_summary`, `failure_scenario`, `category`, and `verdict` through, and set `level` to the band
