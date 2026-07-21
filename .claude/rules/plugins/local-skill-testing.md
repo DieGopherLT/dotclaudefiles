@@ -1,6 +1,6 @@
 ---
 paths:
-  - "plugins/dotclaudefiles/**"
+  - "plugins/**"
 ---
 
 # Testing a Skill Before Committing
@@ -20,3 +20,14 @@ once the skill is promoted and installed through the plugin marketplace.
 
 This applies to globally-scoped skills. A skill that only makes sense inside a specific plugin's flow or a
 particular project context is not a good fit for a global symlink test.
+
+## Limit: Workflow scripts with namespaced agents need the plugin installed
+
+The symlink trick covers the skill's prose, but NOT a bundled Workflow script that spawns the plugin's
+own agents. `agentType: "<plugin>:<agent>"` (e.g. `task-lifecycle:diff-line-scanner`) resolves against
+the session's installed-plugin registry — running the script from the repo without the plugin installed
+leaves every namespaced agent unrecognized and the whole fan-out fails (agents show red in /workflows).
+
+To exercise such a Workflow end to end, install the plugin first (`/plugin install <plugin>@diegopher`,
+bumped to the version under test) and run it in a fresh session. Syntax-level checks (`node --check`,
+launching with a stub `extraAuditors`-style arg) are the most a non-installed run can validate.
