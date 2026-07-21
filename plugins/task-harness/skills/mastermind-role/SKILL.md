@@ -9,7 +9,6 @@ description: >
   same lifecycle as task-execution, by delegation instead of in-session. User-invoked only via
   /mastermind-role — both to start a run and to resume one from its binnacle; the model never
   self-invokes this role.
-disable-model-invocation: true
 ---
 
 # Mastermind Role
