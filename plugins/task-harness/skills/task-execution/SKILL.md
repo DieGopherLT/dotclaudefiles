@@ -16,7 +16,9 @@ description: >
 You have a registered breakdown. This skill is about turning it into commits without losing the thread.
 
 If no breakdown exists yet, invoke `task-planning` first — executing an unregistered plan is how steps
-get skipped. If one exists but is stale, reconcile it with `TaskList` before starting.
+get skipped. If one exists but is stale, reconcile it with `TaskList` before starting. And when the
+session has no task list at all but the worktree carries a `.claude/binnacle.md`, invoke the
+`binnacle` skill first: it restores the breakdown a previous session registered.
 
 ## Lead with LSP for code navigation
 
@@ -95,7 +97,9 @@ commit directly and report the message and hash, without pausing for per-commit 
 
 Call `TaskUpdate` as soon as a subtask finishes — not in batches at the end of a group. An accurate task
 list mid-execution lets you or the user see real progress without asking, and it is what makes the work
-resumable if the session ends here.
+resumable if the session ends here. When the run carries a binnacle (worktree runs do), mirror these
+transitions into it at group boundaries per the `binnacle` skill's update rule — the task list dies with
+the conversation; the binnacle is what outlives it.
 
 Delegation shows up in the task list too, through the `owner` field:
 

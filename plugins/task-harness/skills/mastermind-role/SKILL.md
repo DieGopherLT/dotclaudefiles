@@ -39,11 +39,10 @@ inline; they are the job, not an exception to it.
 ## First: is this a resumption?
 
 Before any setup, check for `.claude/binnacle.md` in the current worktree. If it exists, this
-invocation resumes an interrupted run, not a new one: skip setup and follow the binnacle's own
-primer — reconcile its ledger against `git log <base>..HEAD` (commits are the ground truth; the
-binnacle may lag one transition), re-register the pending tasks, and continue as orchestrator from
-the first non-integrated task. Resumption only ever happens through the user invoking
-`/mastermind-role` inside the worktree — nothing resumes on its own.
+invocation resumes an interrupted run, not a new one: skip setup, invoke the `binnacle` skill, and
+follow its resume procedure — reconcile against git, re-register the pending tasks, continue as
+orchestrator from the first non-integrated task. Resumption only ever happens through the user
+invoking `/mastermind-role` inside the worktree — nothing resumes on its own.
 
 ## Setup: always on a worktree
 
@@ -70,12 +69,9 @@ task-planning's countable checks. In order:
    registration. It will find a clean feature branch already inside a worktree, so its own
    branch-or-worktree checks resolve to staying put; everything else it owns — group notation, the
    `A0` base-ref task, sequencing — applies unchanged.
-4. **Open the binnacle.** Copy `references/binnacle-template.md` (bundled with this skill) to
-   `.claude/binnacle.md` inside the new worktree and fill its Run header. Ignore it through the
-   repo's local exclude file — append `.claude/binnacle.md` to
-   `$(git rev-parse --git-common-dir)/info/exclude` when absent — never by editing the tracked
-   `.gitignore` mid-run. The exclude file is shared by every worktree of the repo, so the line is
-   written once and covers all future runs.
+4. **Open the binnacle.** Invoke the `binnacle` skill — it owns the template, the
+   `.claude/binnacle.md` path, and the exclude mechanics, and it serves both execution modes.
+   Record `/mastermind-role` as the run's **Resume with** entry point.
 
 ## The ledger: task state machines
 
@@ -105,13 +101,13 @@ rewritten on every transition, so a cold read of the list reconstructs the run e
   never replaced by a fresh spawn that loses its context), or dispatch anew when it is gone.
 
 The task list is only the live view, and it is conversation-scoped: it survives compaction, not
-the end of the session. The durable layer is the **binnacle** — `.claude/binnacle.md` in the run's
-worktree, opened during setup and rewritten at every ledger transition with the same tokens. It
-carries the run header, the ledger table, the fixed contracts and their reported deltas, the
-inline decisions, and the open items — the orchestrator's memento, enough for a cold session to
-restore the role and the run. When the task tools are unavailable, the binnacle is simply the only
-ledger. After any compaction — and at the start of any resumed session — re-read it before
-dispatching anything: it, not your memory, says where the run stands.
+the end of the session. The durable layer is the **binnacle** — the per-worktree run log the
+`binnacle` skill owns, opened during setup and rewritten at every ledger transition with the same
+tokens. It carries the run header, the ledger table, the fixed contracts and their reported
+deltas, the inline decisions, and the open items — the orchestrator's memento, enough for a cold
+session to restore the role and the run. When the task tools are unavailable, the binnacle is
+simply the only ledger. After any compaction — and at the start of any resumed session — re-read
+it before dispatching anything: it, not your memory, says where the run stands.
 
 ## Dispatching: tiers and specialists
 

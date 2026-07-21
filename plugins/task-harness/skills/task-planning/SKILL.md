@@ -98,6 +98,10 @@ work, which is the one thing this skill exists to expose.
 
 ## Hand off
 
+When the run lives in a worktree, invoke the `binnacle` skill right after registration, recording
+`task-execution` as its **Resume with** entry point: the task list is conversation-scoped, and the
+binnacle is what a future session restores the breakdown from.
+
 Once the breakdown is registered, invoke `task-execution` to work through it. Planning does not need
 separate approval to proceed — the plan itself was the decision point.
 

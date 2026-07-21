@@ -1,0 +1,30 @@
+{
+  "skill_name": "binnacle",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Acabo de registrar el desglose de una tarea grande con task-planning y el run vive en un worktree dedicado. Abre la bitácora del run.",
+      "expected_output": "Copies the bundled template to .claude/binnacle.md in the worktree, fills the Run header including the Resume with entry point, seeds the Ledger with the registered breakdown, and ensures .claude/binnacle.md is listed in the repo's local exclude file without touching the tracked .gitignore.",
+      "files": [],
+      "expectations": [
+        "The agent copies references/binnacle-template.md to .claude/binnacle.md inside the worktree",
+        "The agent fills the Run header, including the Resume with entry point",
+        "The agent seeds the Ledger table with the registered breakdown",
+        "The agent appends .claude/binnacle.md to the git common dir's info/exclude only if absent",
+        "The agent does not edit the tracked .gitignore"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Sesión nueva dentro de un worktree que ya tiene .claude/binnacle.md de una corrida interrumpida. Retoma el run.",
+      "expected_output": "Reads the binnacle whole, reconciles its Ledger against git log base..HEAD trusting commits over the file, re-registers non-integrated tasks with TaskCreate preserving group codes, states and owners, and continues through the entry point named in Resume with.",
+      "files": [],
+      "expectations": [
+        "The agent reads the whole binnacle before acting",
+        "The agent reconciles the Ledger against git log base..HEAD, trusting commits when they disagree",
+        "The agent re-registers non-integrated tasks preserving group codes, states and owners",
+        "The agent continues through the entry point named in Resume with instead of choosing one itself"
+      ]
+    }
+  ]
+}
