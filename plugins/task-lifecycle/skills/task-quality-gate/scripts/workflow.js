@@ -16,6 +16,10 @@ export const meta = {
 //                            which is why none of them needs Bash.
 //   args.baseBranch: string  the ref the work diverged from
 //   args.repoRoot:   string  absolute repo root; findings come back repo-relative
+//   args.extraAuditors: string[]  optional agent names of EXTERNAL domain
+//                            auditors (never this plugin's own). Each runs as
+//                            one more review angle: same briefing, same output
+//                            schema, same adversarial verification.
 //
 // args may arrive as a JSON-encoded string depending on how the caller
 // serialized the Workflow input; normalize so nothing is lost.
@@ -107,7 +111,26 @@ const QUALITY_ANGLES = [
 
 const AGENT_NAMESPACE = 'task-lifecycle'
 
-const angles = [...CORRECTNESS_ANGLES.slice(0, band.correctness), ...QUALITY_ANGLES]
+// External domain auditors arrive by name and run as additional angles. Their
+// agentType is the name verbatim (no namespace prefix), their model and effort
+// come from their own frontmatter, and their focus defers to their own system
+// prompt. Anything from this plugin's namespace is dropped: the built-in
+// angles above already cover it, and doubling them would double the fan-out.
+const EXTRA_ANGLES = (Array.isArray(input?.extraAuditors) ? input.extraAuditors : [])
+  .filter((name) => typeof name === 'string' && name.length > 0)
+  .filter((name) => {
+    const isOwnNamespace = name.startsWith(`${AGENT_NAMESPACE}:`)
+    if (isOwnNamespace) log(`Ignoring extra auditor "${name}" — the built-in angles already run this plugin's agents.`)
+    return !isOwnNamespace
+  })
+  .map((name) => ({
+    key: `extra:${name}`,
+    agent: name,
+    external: true,
+    focus: 'the specialty defined in your own instructions, applied to this changeset only',
+  }))
+
+const angles = [...CORRECTNESS_ANGLES.slice(0, band.correctness), ...QUALITY_ANGLES, ...EXTRA_ANGLES]
 
 // ---------------------------------------------------------------------------
 // Schemas. FINDING_SCHEMA is deliberately shaped to the host's ReportFindings
@@ -225,17 +248,18 @@ async function reviewAngle(angle) {
   const result = await agent(buildAnglePrompt(angle), {
     label: `review:${angle.key}`,
     phase: 'Review',
-    model: angle.model,
+    ...(angle.model ? { model: angle.model } : {}),
     ...(band.effort ? { effort: band.effort } : {}),
     schema: FINDING_SCHEMA,
-    agentType: `${AGENT_NAMESPACE}:${angle.agent}`,
+    agentType: angle.external ? angle.agent : `${AGENT_NAMESPACE}:${angle.agent}`,
   })
 
   // The class drives the ranking rule downstream: a correctness bug always
   // outranks a quality finding when the cap forces a cut. It is stamped from
   // the angle's own list membership, never trusted from the agent's free-form
-  // category slug.
-  const angleClass = CORRECTNESS_ANGLES.includes(angle) ? 'correctness' : 'quality'
+  // category slug. External domain auditors hunt defects in their domain, not
+  // style, so they rank as correctness.
+  const angleClass = CORRECTNESS_ANGLES.includes(angle) || angle.external ? 'correctness' : 'quality'
   const found = (result?.findings ?? [])
     .filter((finding) => isReportable(finding))
     .map((finding) => ({ ...finding, class: angleClass }))
@@ -390,7 +414,7 @@ function buildSweepPrompt(knownFindings) {
     : '(none — the angles reported nothing)'
 
   return [
-    `Sweep the changeset in the patch at ${patchPath} — a unified diff of ${baseBranch}..HEAD — for what the ten review angles could NOT see.`,
+    `Sweep the changeset in the patch at ${patchPath} — a unified diff of ${baseBranch}..HEAD — for what the review angles could NOT see.`,
     repoRoot ? `The repository root is ${repoRoot}; emit every file path repo-relative to it.` : '',
     `Confidence threshold: ${band.threshold}. Bias: ${band.bias}.`,
     'The findings below are your EXCLUSION list. Never re-report one, not in a different category and not in different words. Hunt only the gaps between the angles: interactions between separately-correct changes, second-order consequences, assumptions nobody checked, and changes the diff should have made and did not.',

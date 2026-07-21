@@ -12,7 +12,7 @@ description: >
 
 # Task Quality Gate
 
-This skill reviews a changeset that already exists in git history. It fans out ten read-only auditors
+This skill reviews a changeset that already exists in git history. It fans out up to ten read-only auditors
 over the same patch, has every candidate finding attacked by an adversarial verifier, and hands you the
 survivors to arbitrate.
 
@@ -24,9 +24,16 @@ for `task-planning` to have run, or for a task list to exist.
 **Everything must be committed.** Run `git status`; if anything is uncommitted, commit it via the
 `commit` skill or stash it first. The gate reviews history, not the working tree.
 
-**Establish the base ref.** This is what the diff is taken against — usually `main`, but use whatever
-ref the branch was actually cut from. `git merge-base HEAD main` settles it when it is unclear. Every
-step below calls it the **base branch**.
+**Establish the base ref.** This is what the diff is taken against. Resolve it in this order:
+
+1. **From the task list**: if `task-planning` ran, `TaskList` contains an `A0: base ref = <branch> @
+   <SHA>` entry — use that branch. This is the branch the work was actually cut from (`main`,
+   `staging`, `dev`, whatever planning recorded).
+2. **Standalone fallback**: no task list → use the branch the user named, or `main` when they named
+   none. Step 2's script resolves it to a merge-base SHA either way, so a base branch that advanced
+   after the cut cannot pollute the patch.
+
+Every step below calls it the **base branch**.
 
 **Assess whether the changeset warrants a pass.** A judgment call, not a checkbox:
 
@@ -40,8 +47,13 @@ changes, and running it anyway trains everyone to ignore the output.
 ## Step 2 — Generate the patch once
 
 ```bash
-git diff <base-branch>..HEAD > /tmp/quality-gate-<branch-slug>.patch
+${CLAUDE_PLUGIN_ROOT}/skills/task-quality-gate/scripts/prepare-patch.sh <base-branch> /tmp/quality-gate-<branch-slug>.patch
 ```
+
+The script resolves the base branch to a **merge-base SHA** and diffs against that, so the patch holds
+only what this branch added — never reverse-deltas from a base that advanced after the cut. Its stdout
+is the resolved SHA: capture it and pass it as `baseBranch` to the Workflow. A non-zero exit means
+there is nothing to review over that base — stop and say so.
 
 Generate it **once**. Every agent in this phase reads that same file by path, which is why none of them
 needs `Bash` or its own git access. Note the absolute path — the Workflow needs it.
@@ -69,7 +81,10 @@ expensive.
 | No tests — the review is the only defense? | +1 |
 | Real coupling (many call sites of what changed)? | +1 |
 | Pure mechanical transformation (rename, move, config)? | −1 |
-| Domain auditors already covered this same patch? | −1 |
+| Will external domain auditors cover this same patch? | −1 |
+
+The last modifier needs Step 4's identification, so run that scan **before** finalizing the band: it is
+a lookup over the installed agents list, not an execution — nothing runs yet.
 
 `medium` is the floor: it is already the precision-optimized configuration, and there is nothing cheaper
 than it except not running the gate at all — which is Step 1's decision, not this one. A mitigator
@@ -98,15 +113,23 @@ precision, not the threshold. `max` differs from `xhigh` in exactly one lever: i
 agent's reasoning effort to `max`, where the other bands inherit each agent's own frontmatter
 calibration.
 
-## Step 4 — Run the domain auditors first, if any apply
+## Step 4 — Identify external domain auditors, if any apply
 
 Scan the available agents list for any with an auditing or review role — look for names or descriptions
-containing `audit`, `review`, `check`, `inspector`, `validator`. Identify every one whose domain the
-changeset actually touches, and invoke them all in parallel.
+containing `audit`, `review`, `check`, `inspector`, `validator`. **Exclude this plugin's own agents**
+(anything in the `task-lifecycle` namespace): those are the angles the Step 5 Workflow runs internally,
+and matching them here would run them twice. This scan is only for auditors from *other* domains — a
+project-specific security auditor, a migration checker, and the like.
+
+Identify every external auditor whose domain the changeset actually touches. Do **not** invoke them
+directly: pass their names as `extraAuditors` to the Step 5 Workflow, which pipelines them through the
+same briefing, output schema, and adversarial verification as its own angles. That is what makes their
+findings mergeable at arbitration, and running inside the Workflow they parallelize with the built-in
+angles without stepping on them — everything in that phase is read-only.
 
 This is discovery, not a fixed list: which auditors exist depends on what is installed. Skip this step
-entirely when none apply — that is the correct outcome, not an oversight. Their findings merge with the
-gate's at arbitration time, and their coverage is what the `−1` modifier above accounts for.
+entirely when none apply — that is the correct outcome, not an oversight. Their coverage is what the
+`−1` modifier above accounts for.
 
 ## Step 5 — Run the review Workflow
 
@@ -116,8 +139,9 @@ Workflow({
   args: {
     effort: "<band from Step 3>",
     patchPath: "<absolute path from Step 2>",
-    baseBranch: "<base branch>",
-    repoRoot: "<absolute repo root>"
+    baseBranch: "<resolved SHA from Step 2's script>",
+    repoRoot: "<absolute repo root>",
+    extraAuditors: ["<external auditor agent names from Step 4, omit when none>"]
   }
 })
 ```
@@ -146,6 +170,10 @@ Invoke `/security-review` only when the changeset touches an entry or exit barri
 authentication, authorization, API boundaries, or external service calls. Skip it for purely internal
 changes where no trust boundary is crossed — omitting it there is intentional.
 
+It runs in parallel with the Workflow (both are read-only over the same history) and **reports through
+its own surface**: never fold its findings into Step 7's arbitrated set — the two reports stay
+separate, each rendered once by its own tool.
+
 ## Step 7 — Arbitrate
 
 The Workflow verified each finding in isolation. You are the only participant with the context of why
@@ -158,10 +186,22 @@ the changeset was written, and arbitration is where that pays.
    `preExisting` field carries the defects the verifier dated before the branch. Start from that split —
    demote any finding you know predates the branch, and promote any `preExisting` entry the verifier
    misdated.
-3. **Report** the arbitrated set with the `ReportFindings` tool, most-severe first, so the host renders
-   them natively. The Workflow's finding shape maps field for field — pass `file`, `line`, `summary`,
-   `short_summary`, `failure_scenario`, `category`, and `verdict` through, and set `level` to the band
-   from Step 3. Report the findings once: `ReportFindings` or prose, never both.
+3. **Report** the arbitrated set with the `ReportFindings` tool so the host renders them natively. The
+   Workflow's finding shape maps field for field — pass `file`, `line`, `summary`, `short_summary`,
+   `failure_scenario`, `category`, and `verdict` through. Set the call's `level` to the band from
+   Step 3 (it records review effort, not severity). Ordering is severity, derived deterministically
+   from each finding's data — no judgment:
+
+   | `class` | `verdict` | Severity rank |
+   |---|---|---|
+   | correctness | `CONFIRMED` | 1 (first) |
+   | correctness | `PLAUSIBLE` | 2 |
+   | quality | `CONFIRMED` | 3 |
+   | quality | `PLAUSIBLE` | 4 (last) |
+
+   Ties break by `confidence`, descending. Report the findings once: `ReportFindings` or prose, never
+   both. Security findings from Step 6 never enter this set — they already rendered through their own
+   surface.
 4. **Dispatch** both groups as described below, then commit the applied in-scope fixes via the `commit`
    skill.
 
