@@ -114,6 +114,11 @@ const QUALITY_ANGLES = [
 
 const AGENT_NAMESPACE = 'task-harness'
 
+// Rank tables live above the main flow on purpose: rank() and outranks() are
+// called mid-pipeline, before the tail of this script has initialized.
+const VERDICT_RANK = { CONFIRMED: 2, PLAUSIBLE: 1 }
+const CLASS_RANK = { correctness: 1, quality: 0 }
+
 // External domain auditors arrive by name and run as additional angles. Their
 // agentType is the name verbatim (no namespace prefix), their model and effort
 // come from their own frontmatter, and their focus defers to their own system
@@ -467,7 +472,6 @@ function normalizeClaim(text) {
     .join(' ')
 }
 
-const VERDICT_RANK = { CONFIRMED: 2, PLAUSIBLE: 1 }
 
 function outranks(candidate, incumbent) {
   const candidateVerdict = VERDICT_RANK[candidate.verdict] ?? 0
@@ -485,7 +489,6 @@ function outranks(candidate, incumbent) {
 // the order the angles produced.
 // ---------------------------------------------------------------------------
 
-const CLASS_RANK = { correctness: 1, quality: 0 }
 
 function rank(findings) {
   return [...findings].sort((a, b) => {
