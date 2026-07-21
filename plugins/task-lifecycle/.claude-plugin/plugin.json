@@ -1,6 +1,6 @@
 {
   "name": "task-lifecycle",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "The full lifecycle of a substantial task as three chainable, independently invocable skills: plan the work into letter groups, execute it with commits per group, and run a multi-agent quality gate over the resulting diff. The gate fans out twelve read-only auditors through a dynamic Workflow and returns adversarially verified findings.",
   "author": {
     "name": "Diego",
