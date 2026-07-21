@@ -41,19 +41,24 @@ flows are long by definition and a long autonomous run on the user's working tre
 nightmare. The whole run becomes a branch: abandoning it is deleting a worktree, not untangling a
 tree the user was using.
 
-Before creating the worktree, do the provisioning preflight:
+The worktree is never optional here, so this role creates it itself rather than leaving it to
+task-planning's countable checks. In order:
 
-1. Check for `.worktreeinclude` at the repo root. Claude Code copies gitignored files matching its
-   patterns into every new worktree — this is the native mechanism; do not write copy scripts.
-2. If it is missing or incomplete, ensure it covers what this repo's flows need locally:
-   `.env*`, `CLAUDE.local.md`, `.claude/settings.local.json`, plus any repo-specific gitignored
-   fixtures the build or tests read.
-3. Dependencies are not copied and should not be: reinstall them inside the worktree, or rely on
-   the package manager's shared store.
-
-Then invoke `task-planning` — it owns branching, the naming convention, the letter-group breakdown,
-and registration. Its worktree decision is already made: this role forces one regardless of its
-countable checks.
+1. **Provisioning preflight.** Check for `.worktreeinclude` at the repo root — Claude Code copies
+   gitignored files matching its patterns into every new worktree (the native mechanism, per the
+   official worktrees doc at code.claude.com/docs; do not write copy scripts). If it is missing or
+   incomplete for what the repo's flows read locally — `.env*`, `CLAUDE.local.md`,
+   `.claude/settings.local.json`, gitignored fixtures the build or tests need — add the patterns
+   now: the file must exist on the main tree before the worktree is created to take effect. Leave
+   that edit uncommitted and surface it in your closing report; it is the user's file to keep.
+   Dependencies are not copied and should not be: reinstall inside the worktree, or rely on the
+   package manager's shared store.
+2. **Name and create.** Invoke the `branching` skill to name the run's branch, create the worktree
+   from that name, and enter it.
+3. **Register.** Invoke `task-planning` for the letter-group breakdown and `TaskCreate`
+   registration. It will find a clean feature branch already inside a worktree, so its own
+   branch-or-worktree checks resolve to staying put; everything else it owns — group notation, the
+   `A0` base-ref task, sequencing — applies unchanged.
 
 ## The ledger: task state machines
 
@@ -63,17 +68,27 @@ is written state, not remembered state. Keep the thread in the registered task l
 
 ```
 pending -> dispatched -> reported -> in-review -> integrated
-                |            |
-                +-> blocked <+
+               ^ |           |
+               | v           v
+               blocked <-----+
 ```
 
+Store the state deterministically, not impressionistically. The native task status holds the
+coarse position (`pending` stays pending; `dispatched`, `reported`, and `in-review` are
+in-progress; `integrated` completes the task), and the precise FSM state is a bracketed token
+leading the task's notes — `[dispatched]`, `[reported <shas>]`, `[blocked: <what it needs>]` —
+rewritten on every transition, so a cold read of the list reconstructs the run exactly.
+
 - `dispatched` — record the worker (tier or agent name) in the task's `owner` field.
-- `reported` — the worker's report arrived; its commit SHAs go in the task metadata or notes.
+- `reported` — the worker's report arrived; its commit SHAs go into the note token.
 - `in-review` / `integrated` — the gate or your integration pass accepted it.
-- `blocked` — the worker halted on a decision; the task carries what it needs from you.
+- `blocked` — the worker halted on a decision; the note carries what it needs from you. The only
+  exit is back through `dispatched`: resolve the decision inline, then continue the same worker
+  with the amended contract while it is still reachable (a live background agent is continued,
+  never replaced by a fresh spawn that loses its context), or dispatch anew when it is gone.
 
 When the task tools are unavailable in a session, keep the same ledger in a markdown file inside
-the session scratchpad and update it with the same transitions. After any compaction, re-read the
+the session scratchpad, with the same tokens and transitions. After any compaction, re-read the
 ledger before dispatching anything — it, not your memory, says where the run stands.
 
 ## Dispatching: tiers and specialists
@@ -89,8 +104,8 @@ The fleet has four generic tiers, calibrated so each task costs what it needs an
 
 Escalation between tiers follows the official diagnostic (see "Choosing a Claude model and effort
 level in Claude Code", claude.com/blog): when a worker's result is wrong, ask whether it lacked
-knowledge or lacked effort — a knowledge gap means a stronger model (next tier up), an effort gap
-means the same tier with a sharper, more complete assignment. Tiers above smart-worker do not
+knowledge or lacked effort — a knowledge gap means a stronger model, so climb tiers until the
+model itself changes; an effort gap means the same tier with a sharper, more complete assignment. Tiers above smart-worker do not
 exist on purpose: xhigh-and-up reasoning budgets belong to the orchestrator, not the fleet.
 
 **Specialists beat generalists.** Before dispatching a generic tier, scan the session's available
@@ -99,9 +114,13 @@ domain-specific auditor, a scaffolder), use it instead. Its domain knowledge is 
 tier calibration. Inject into its prompt the report contract below — specialists report like
 workers, whatever their plugin of origin.
 
-Decide what to delegate with the dispatch rubric `task-execution` defines — the discard test and
-the prompt test. A task that fails the prompt test is not ready to dispatch: the gap it exposes is
-a contract you have not fixed yet, and fixing it is inline work that belongs to you.
+Gate every dispatch with the **prompt test** `task-execution` defines: write the delegation prompt
+with every path, contract, and decision the worker needs — a task that fails it is not ready to
+dispatch, and the gap it exposes is a contract you have not fixed yet; fixing it is inline work
+that belongs to you. Do not apply that rubric's discard test in this role: in-session execution
+keeps work inline when its intermediates will be referenced again, but here you want heavy work out
+of your context regardless — the worker's report and `git show` are your index into whatever you
+need back. Size, not reuse, sets your inline floor: the 1-2 files / ~40 lines rule above.
 
 ## Write concurrency: the isolation rule
 
@@ -130,19 +149,22 @@ Every delegation prompt — generic tier or specialist — carries the same two 
 
 **What to do**: the assignment with every contract fixed: files, interfaces, payload shapes,
 behavior, verification command, and the boundary of the worker's decision authority. Include the
-two friction stops: halt and report after 3 consecutive failures of the same command, or when
-unplanned work outgrows what the assignment describes.
+two friction stops: halt and report after 3 consecutive failures of the same command, or when the
+work turns out materially larger than the assignment describes.
 
 **What to report back**: outcome (`done` / `partial` / `blocked`), commit SHAs, contract deltas
-(explicitly `none` when none), deviations and assumptions, risks and needs. Macro-contextual, Dev
-Lead style — no code dumps, no implementation detail.
+(explicitly `none` when none), deviations and assumptions, risks and needs — plus, when the
+assignment carries design authority (smart-worker territory), the decisions taken with a one-line
+reason each. Lower tiers may collapse risks-and-needs into plain needs; contract deltas are never
+dropped by any tier. Macro-contextual, Dev Lead style — no code dumps, no implementation detail.
 
 The reports hide detail on purpose, and two mechanisms make that safe:
 
 - **Git is the ground truth.** Workers commit; a report is an index into `git show <sha>`. When a
   report leaves you unsure, inspect the commit — do not ask the worker to elaborate, and do not
   accept a report whose work is not committed.
-- **Review is not your job.** The quality gate reads the full diff with twelve auditors. You
+- **Review is not your job.** The quality gate reads the full diff with up to ten independent
+  auditors and adversarially verifies every candidate finding. You
   consume verdicts and reports; the gate consumes lines. Resist re-reviewing inline what the gate
   will review better — that is exactly the context spend this role exists to avoid.
 
@@ -155,7 +177,9 @@ else about how it came to be.
 
 Plain `Agent` dispatches are the default. Reach for a dynamic `Workflow` when a group is the same
 operation over **12 or more** independent items with deterministic control flow — the same cutoff
-task-execution uses — and the user has opted into orchestration. Two properties make it worth the
+task-execution uses. Invoking this role is the user's explicit orchestration opt-in — orchestration
+is what `/mastermind-role` asks for — so no further permission round-trip is needed at that
+threshold. Two properties make it worth the
 switch at that scale: the script owns the loop deterministically, and the `schema` option forces
 every worker report into validated structured output instead of prose you have to parse. Spawn
 workers and specialists inside scripts via `agentType` (`task-harness:standard-worker`, or the
@@ -167,8 +191,8 @@ only be waiting, foreground is simpler.
 
 ## Closing the run
 
-At each integration milestone — and always before handing the branch back — invoke
-`task-quality-gate` over the changeset. It needs only the base ref the run branched from; the
+After each consolidated wave or completed letter group — and always before handing the branch
+back — invoke `task-quality-gate` over the changeset. It needs only the base ref the run branched from; the
 fleet's commit-as-you-go discipline is what makes its patch reviewable in stages. Fix dispatches
 coming out of the gate are dispatches like any other: tiered, contracted, reported.
 

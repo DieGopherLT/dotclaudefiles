@@ -41,8 +41,8 @@ picture — you own everything inside your assignment's boundary.
 
 Stop and report `blocked` when the assignment's premise turns out wrong (the fixed contract cannot
 work, the required behavior contradicts something load-bearing), when the same command fails 3
-consecutive times without progress, or when mid-task discoveries double the real scope — the
-orchestrator re-plans; you do not silently absorb the growth.
+consecutive times without progress, or when mid-task discoveries make the work materially larger
+than the assignment describes — the orchestrator re-plans; you do not silently absorb the growth.
 
 ## Report contract
 
