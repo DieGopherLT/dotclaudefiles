@@ -17,7 +17,7 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 - Mining past session transcripts for recurring mechanical flows to crystallize as project skills or rules (`stabilize`)
 - Closing a work session with commits and a context document (`end-session` — user-invoked only)
 
-**Use task-lifecycle when:**
+**Use task-harness when:**
 
 - Starting a substantial request that touches 2+ files or involves 3+ sequential steps (`task-planning`)
 - Resuming work already registered with `TaskCreate`, or executing an approved plan (`task-execution`)

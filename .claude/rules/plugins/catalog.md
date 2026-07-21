@@ -92,7 +92,7 @@ Turns passive Clean Code reference into a reactive analysis of real code: given 
 - **References**: `smell-catalog.md` (26 smells: detection criteria + mapped techniques), `refactoring-techniques.md` (67 techniques: when + mechanics), `technique-playbooks.md` (per-group execution steps), `workflow.md` (safe test → refactor → test → commit cycle)
 - **Taxonomy**: 26 smells in 5 categories (Bloaters, OO Abusers, Change Preventers, Dispensables, Couplers); 67 techniques in 6 groups. OOP-specific smells and techniques are kept marked, not suppressed — they apply in C# and TypeScript class code
 
-## task-lifecycle
+## task-harness
 
 The lifecycle of a substantial task, split into three skills that chain into each other and each stand alone. The split exists because the three phases have different natures and only the first used to be reachable on its own — in particular, the quality gate is now runnable against any branch without going through planning:
 
@@ -121,5 +121,5 @@ Each plugin installs independently:
 /plugin install domain-restructure@diegopher
 /plugin install spec-kit@diegopher
 /plugin install refactoring-guru@diegopher
-/plugin install task-lifecycle@diegopher
+/plugin install task-harness@diegopher
 ```

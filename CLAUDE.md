@@ -17,7 +17,7 @@ This is a **mono-repo for Claude Code plugins** containing twelve specialized pl
 9. **domain-restructure** - Autonomous layer-first to feature-first restructurer (strategic-DDD domain discovery, subdomain classification, parallel per-domain moves, import consolidation with build gate)
 10. **spec-kit** - Spec-driven workflow toolkit (closed self-contained specs, design-closure loop via closed-design-enforcer, implement-spec dispatcher across direct/agent-waves/workflow strategies)
 11. **refactoring-guru** - Reactive code-smell analysis and guided refactoring over the refactoring.guru taxonomy (parallel per-category smell-scan, smell→technique mapping, step-by-step refactor applier)
-12. **task-lifecycle** - The full lifecycle of a substantial task as three chainable, independently invocable skills (task-planning, task-execution, task-quality-gate) plus the twelve read-only auditors the gate fans out through a dynamic Workflow
+12. **task-harness** - The full lifecycle of a substantial task as three chainable, independently invocable skills (task-planning, task-execution, task-quality-gate) plus the twelve read-only auditors the gate fans out through a dynamic Workflow
 
 Each plugin is independently installable and can be distributed across devices. Development happens in `~/.claude/` before promotion to the repository.
 
@@ -33,7 +33,7 @@ tree -L 3 -I '.git|.claude' .
 
 Key directories:
 
-- **`plugins/`**: Contains the 12 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure, spec-kit, refactoring-guru, task-lifecycle)
+- **`plugins/`**: Contains the 12 plugins (dotclaudefiles, dotclaudehooks, claude-management, document-api, react-dev, testing, typescript-migration, git-toolkit, domain-restructure, spec-kit, refactoring-guru, task-harness)
 - **`dotfiles/claude/`**: Stow-managed configuration files
 - **`scripts/`**: Stow setup scripts for bash, fish, and PowerShell
 

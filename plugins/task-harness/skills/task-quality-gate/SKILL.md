@@ -117,7 +117,7 @@ calibration.
 
 Scan the available agents list for any with an auditing or review role — look for names or descriptions
 containing `audit`, `review`, `check`, `inspector`, `validator`. **Exclude this plugin's own agents**
-(anything in the `task-lifecycle` namespace): those are the angles the Step 5 Workflow runs internally,
+(anything in the `task-harness` namespace): those are the angles the Step 5 Workflow runs internally,
 and matching them here would run them twice. This scan is only for auditors from *other* domains — a
 project-specific security auditor, a migration checker, and the like.
 

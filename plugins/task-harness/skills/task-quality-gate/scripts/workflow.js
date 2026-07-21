@@ -112,7 +112,7 @@ const QUALITY_ANGLES = [
   { key: 'conventions', agent: 'conventions-auditor', model: 'sonnet', focus: "deviations from rules the project itself states, each quoted from the file that states it" },
 ]
 
-const AGENT_NAMESPACE = 'task-lifecycle'
+const AGENT_NAMESPACE = 'task-harness'
 
 // External domain auditors arrive by name and run as additional angles. Their
 // agentType is the name verbatim (no namespace prefix), their model and effort

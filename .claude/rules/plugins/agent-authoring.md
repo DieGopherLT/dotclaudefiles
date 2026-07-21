@@ -31,7 +31,7 @@ to "let the reviewer note something down".
 `claude-management`'s own `transcript-digester` and `practice-verifier`. What decides the tool list
 is what the agent must *read*, not a blanket prohibition.
 
-`task-lifecycle`'s diff auditors omit `Bash` for a specific reason worth understanding: the patch is
+`task-harness`'s diff auditors omit `Bash` for a specific reason worth understanding: the patch is
 generated once by the orchestrating skill and passed to them by path, so there is nothing left to
 shell out for. Absence of `Bash` there is a consequence of the design, not a rule about auditors.
 
@@ -66,7 +66,7 @@ opus does, so the combination buys a weaker model at a higher price. The moment 
 the model decision is already made: use `opus`. `sonnet` + `xhigh`/`max` is worse still and never
 correct.
 
-The repo already reflects this: `task-lifecycle`'s five `effort: high` roles — `removed-behavior-auditor`,
+The repo already reflects this: `task-harness`'s five `effort: high` roles — `removed-behavior-auditor`,
 `cross-file-tracer`, `altitude-auditor`, `gap-sweeper`, `finding-verifier` — run on `opus`, while
 the mechanical angles stay on `sonnet`.
 

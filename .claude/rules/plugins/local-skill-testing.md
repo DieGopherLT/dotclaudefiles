@@ -24,7 +24,7 @@ particular project context is not a good fit for a global symlink test.
 ## Limit: Workflow scripts with namespaced agents need the plugin installed
 
 The symlink trick covers the skill's prose, but NOT a bundled Workflow script that spawns the plugin's
-own agents. `agentType: "<plugin>:<agent>"` (e.g. `task-lifecycle:diff-line-scanner`) resolves against
+own agents. `agentType: "<plugin>:<agent>"` (e.g. `task-harness:diff-line-scanner`) resolves against
 the session's installed-plugin registry — running the script from the repo without the plugin installed
 leaves every namespaced agent unrecognized and the whole fan-out fails (agents show red in /workflows).
 
