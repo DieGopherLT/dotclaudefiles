@@ -28,9 +28,30 @@ Two skills follow it, and each is invocable on its own:
 
 ## Check git state before touching anything
 
-Run `git status`. If the working tree shows non-trivial business logic files — not just config, docs,
-or lockfiles — create a new branch or enter a worktree before doing anything else. Worktrees are
-preferred when the changes are risky or need to be reviewed in isolation.
+Run `git status` and note two things: the current branch, and whether the tree is dirty. They drive two
+separate decisions:
+
+- **On a protected or shared branch** (`main`, `master`, `develop`, or whatever the project treats as
+  shared) — always create a new branch or worktree for this work, clean tree or not. Never plan
+  substantial work directly on a shared branch.
+- **Tree already dirty with unrelated changes** — if the uncommitted files include non-trivial business
+  logic (not just config, docs, or lockfiles) that does not belong to this task, isolate: branch or
+  worktree so this work does not pile onto someone else's.
+- **Already on a task-specific feature branch with a clean tree** — stay on it.
+
+### Branch or worktree?
+
+Do not judge "risk" — apply these checks in order; the first one that fires decides worktree, otherwise
+a plain branch:
+
+1. Run `scripts/detect-concurrent-claudes.sh` (bundled with this skill). Output `yes` means another
+   Claude session is active in this repository right now — a worktree is mandatory so the two do not
+   share a working tree.
+2. The breakdown you are about to write has **3 or more letter groups**.
+3. The breakdown touches **more than 7 files**.
+
+Checks 2 and 3 are evaluated once the breakdown exists: if you started on a plain branch and the
+breakdown crosses either threshold, move to a worktree before any code is written.
 
 Decide what the work branches **from**, not just what it is called. The base ref matters later:
 `task-quality-gate` diffs against it, so a branch cut from the wrong place produces a review full of
@@ -63,7 +84,14 @@ Include the steps that are easy to skip:
 
 This is not optional for work at this scale. Call `TaskCreate` with every step from the breakdown. The
 goal is a list auditable enough that someone could pick it up mid-way and know exactly where things
-stand. The letter-group plan lives in your head; `TaskCreate` is what makes it visible and trackable.
+stand. The grouping is not a private note — it is the tracked artifact:
+
+- **Every entry carries its group code as the first token of the title** (`A1: add X to Y`, `B2: ...`).
+  The code is what lets `task-execution` find group boundaries for commits, and what lets a cold
+  resumer reconstruct the sequence from a flat `TaskList`.
+- **The first entry records the base ref**: register an `A0` task titled
+  `A0: base ref = <branch> @ <merge-base SHA>` and mark it completed immediately. `task-quality-gate`
+  reads it from `TaskList` to build the review patch; without it the gate has to guess the base.
 
 Register the whole breakdown up front rather than group by group. A partial list hides the shape of the
 work, which is the one thing this skill exists to expose.
