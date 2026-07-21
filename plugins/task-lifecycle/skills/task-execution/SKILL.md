@@ -32,13 +32,33 @@ stalling. Surface that fallback explicitly so the navigation strategy stays audi
 
 ## Decide where each group runs
 
-Not every group belongs in the main context. Before starting one, place it:
+Not every group belongs in the main context. Before starting one, place it — not by judging
+whether it "needs your context" (a vague call two agents will make differently), but by running
+two mechanical tests over each subtask in the group:
 
-| Run it | When | Cost of getting it wrong |
-|---|---|---|
-| **In the main context** | The work needs the context you have accumulated; decisions inside the group build on each other; the group touches few files and you will keep editing them afterwards | Delegating this loses the reasoning and produces code that does not fit what came before |
-| **In a sub-agent** | The group is self-contained and specifiable in a prompt; or it is exploration whose intermediate reading would bloat your context and whose only valuable output is the conclusion | Doing it inline burns context on work you will never need again |
-| **In a fan-out `Workflow`** | The group is the same operation repeated over many independent items — per file, per module, per endpoint — and the control flow is deterministic | Doing this serially wastes wall-clock; doing it with ad-hoc parallel agents loses the verification stage |
+1. **The discard test.** Will anything this subtask produces along the way — files read, search
+   results, logs — be referenced again by a later subtask or group? If no, its intermediate work
+   is pure context cost inline, and it is a delegation candidate. (Official criterion: delegate
+   "a side task [that] would flood your main conversation with search results, logs, or file
+   contents you won't reference again".)
+2. **The prompt test.** Try to write the delegation prompt right now, including every file path,
+   contract, and decision the agent would need — a sub-agent receives only that prompt string,
+   never your conversation. If you can write it with no gaps the agent would have to ask you
+   about, the subtask is cold-specifiable. If writing it surfaces decisions that will only be
+   made during execution, that is real context dependency — and an early warning of the same
+   open decisions that later trip the friction stops below.
+
+A subtask delegates only if it passes **both** tests. The group's mode then falls out mechanically:
+
+| Subtask results | Mode |
+|---|---|
+| None pass | **Main context** — the decisions build on each other; delegating loses the reasoning and produces code that does not fit what came before |
+| All pass | **Full delegation** — hand the whole group to one sub-agent, or split it across several per the splitting rules below; you verify the result and commit |
+| Mixed | **Partial delegation** — delegate the subtasks that pass (exploration, self-contained leaf edits), keep the integration and decision subtasks inline |
+| All pass, and the group is the same operation repeated over **12 or more** independent items with deterministic control flow | **Fan-out `Workflow`** — evaluate this before settling for plain sub-agents: it is the most specific match. Below 12 items, dispatch parallel sub-agents per the splitting rules instead — no orchestration opt-in needed at that scale |
+
+A well-planned group tends to pass the prompt test — `task-planning` already fixed its files and
+contracts. A group that fails it is telling you the plan left decisions open.
 
 Three rules govern splitting into multiple agents, and they are the same rules as any concurrent system:
 
@@ -48,6 +68,10 @@ Three rules govern splitting into multiple agents, and they are the same rules a
   each in its own worktree with `isolation: "worktree"` and consolidate afterwards.
 - **Sequential dependency**: if agent B needs agent A's output, do not split. Run them in sequence or
   keep them as one agent.
+
+These rules refine *how* a full or partial delegation dispatches — they do not add a mode. Full
+delegation defaults to a single agent; split into parallel agents only when the subtasks target
+non-overlapping files and carry no sequential dependency.
 
 Default to foreground. Use background only when you have something else to do while waiting; if you
 would just be waiting, foreground is simpler and the result arrives in the same place.
@@ -73,6 +97,17 @@ Call `TaskUpdate` as soon as a subtask finishes — not in batches at the end of
 list mid-execution lets you or the user see real progress without asking, and it is what makes the work
 resumable if the session ends here.
 
+Delegation shows up in the task list too, through the `owner` field:
+
+- **Full delegation**: when dispatching a group, instruct the agent to claim its tasks
+  (`TaskUpdate` with `owner`) and mark them completed itself. Progress then surfaces live
+  without you transcribing it.
+- **Partial delegation**: delegated subtasks carry the sub-agent's owner; integration subtasks
+  stay unowned — yours. The list becomes the visible record of which mode each group ran in.
+
+One caveat: an agent can only self-report if its tool list includes the task tools. When you
+delegate to a restricted agent (say, read-only), keep marking its tasks yourself.
+
 ## When the plan turns out to be wrong
 
 Plans meet the code and lose. When a group turns out bigger, differently shaped, or unnecessary:
@@ -88,6 +123,11 @@ Plans meet the code and lose. When a group turns out bigger, differently shaped,
      registered with.
   Stopping means ending the turn with a summary of what fired and what the options are — not silently
   re-planning, not pushing through. Smaller drift stays inside the `TaskUpdate` adjustments above.
+
+Delegation does not exempt a group from these stops. When a group runs under full or partial
+delegation, carry both countable conditions verbatim into the delegation prompt and instruct the
+agent to halt and return a structured report the moment either fires, instead of pushing through.
+On return, treat that report as if the condition had fired inline: end the turn and surface it.
 
 ## Hand off
 
