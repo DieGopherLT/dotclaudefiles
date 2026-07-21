@@ -1,0 +1,23 @@
+{
+  "skill_name": "mastermind-role",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/mastermind-role I need the whole notifications domain migrated from callbacks to async/await across api/, workers/ and the shared client in packages/notify-client. It is around 40 files. Tests exist for most of it. Keep the public API of notify-client intact.",
+      "expected_output": "Enters a dedicated worktree after the .worktreeinclude preflight, registers the breakdown via task-planning, dispatches scout/standard workers (worktree-isolated if a parallel write wave), tracks every task through the ledger FSM, integrates via commits, and closes with task-quality-gate. No file contents of the migration read inline beyond integration needs.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/mastermind-role Build the reporting feature end to end: a Go service endpoint, the TS client hook, and the dashboard page. I'll be away, run it start to finish and have it reviewed by the time I'm back.",
+      "expected_output": "Fixes the cross-module contracts inline first (endpoint shape, client interface), dispatches one worker per module honoring the write-concurrency rule, relays contract deltas between dispatches, runs the quality gate, and ends with a Dev Lead style report with commits and open items. Does not merge the branch itself.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/mastermind-role Sweep the repo for every place we still read config from env vars directly instead of the config package, fix the trivial ones, and give me a report of the ones that need a real decision.",
+      "expected_output": "Dispatches scout-worker(s) for the sweep with a synthesis-shaped report contract, light-workers for the deterministic fixes (or keeps them in the sweep assignment), keeps ambiguous sites as blocked ledger entries surfaced to the user rather than improvised, and reports counts plus commit SHAs.",
+      "files": []
+    }
+  ]
+}
