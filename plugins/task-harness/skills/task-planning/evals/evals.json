@@ -3,67 +3,54 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Hay que migrar el módulo de auth de JWT a session tokens. Toca el middleware, los handlers de login/logout, los tests de integración y el CLAUDE.md.",
-      "expected_output": "The agent checks git status, decides on a branch or worktree and its base ref, divides the work into lettered groups with numbered subtasks, registers every subtask with TaskCreate, includes the CLAUDE.md update and the quality gate as their own subtasks, and hands off to task-execution.",
+      "prompt": "Ejecuta el plan aprobado en ~/.claude/plans/session-tokens.md: migrar el módulo de auth de JWT a session tokens. Toca el middleware, los handlers de login/logout, los tests de integración y el CLAUDE.md.",
+      "expected_output": "The agent creates a dedicated worktree via the branching skill (no branch-vs-worktree deliberation), divides the work into lettered blocks grouped into sessions sized by friction, ends the session plan with a Sesión R executed manually by the user, opens the binnacle with plan_path pointing at the approved plan, and registers with TaskCreate only the current session's tasks with 'invoke log-binnacle' as the final one.",
       "files": [],
       "expectations": [
-        "The agent checks git status or mentions creating a branch or worktree before touching anything",
-        "The agent divides work into lettered groups (A, B, C...) with numbered subtasks (A1, A2...)",
-        "The agent uses or mentions TaskCreate to register every subtask",
-        "The agent registers the CLAUDE.md documentation update as its own subtask",
-        "The agent registers the quality gate as its own subtask",
-        "The agent hands off to task-execution rather than starting to write code itself"
+        "The agent always creates a dedicated worktree via the branching skill, without weighing a plain branch as an option",
+        "The agent divides work into lettered blocks (A, B, C...) with numbered subtasks and groups blocks into sessions",
+        "The agent justifies session boundaries by friction (call sites, nested dependencies) rather than block count alone",
+        "The session plan ends with a code-review session executed manually by the user, not by the run",
+        "The agent opens the binnacle recording plan_path",
+        "The agent registers with TaskCreate only the current session's tasks, not the whole run",
+        "The final registered task is invoking log-binnacle",
+        "The agent does not register an A0 base-ref task"
       ]
     },
     {
       "id": 2,
-      "prompt": "Refactoriza el servicio de pagos para separar la validación del procesamiento. Toca payment-service.ts, validators.ts, payment-handler.ts, types.ts y los tests.",
-      "expected_output": "The agent identifies this as a pure refactor, checks git state, divides into lettered groups sequenced so each leaves a committable state, registers them with TaskCreate, and hands off to task-execution without writing code.",
+      "prompt": "Refactoriza el servicio de pagos para separar la validación del procesamiento. Toca payment-service.ts, validators.ts, payment-handler.ts, types.ts y los tests. La firma exportada de processPayment cambia y tiene muchos call sites.",
+      "expected_output": "The agent creates a worktree, treats the exported-signature change as a high-friction block (friction proportional to call sites) that may deserve its own session, sizes Session 1 smaller because planning shares its window, opens the binnacle, and registers only the current session's tasks ending with invoke log-binnacle.",
       "files": [],
       "expectations": [
-        "The agent checks git status or mentions creating a branch or worktree",
-        "The agent divides work into lettered groups with numbered subtasks",
-        "The agent uses or mentions TaskCreate",
-        "The agent sequences the groups so each one leaves the tree in a committable state",
-        "The agent hands off to task-execution rather than writing code itself"
+        "The agent creates a dedicated worktree via the branching skill",
+        "The agent identifies the exported-signature change as high friction due to its call sites",
+        "The agent sizes Session 1 smaller because the planning conversation shares its context window",
+        "The agent opens the binnacle before executing",
+        "The agent registers only the current session's tasks, with invoke log-binnacle as the final task"
       ]
     },
     {
       "id": 3,
-      "prompt": "Implementa paginación cursor-based en los endpoints GET /users y GET /orders. Necesita los handlers, los DTOs de respuesta paginada, las queries en el repositorio, actualizar los tests y documentar los contratos en el CLAUDE.md.",
-      "expected_output": "The agent checks git state and the base ref, divides into lettered groups with concrete file-level subtasks, registers everything with TaskCreate including docs and the quality gate, and hands off to task-execution.",
+      "prompt": "Implementa paginación cursor-based en los endpoints GET /users y GET /orders. Necesita los handlers, los DTOs de respuesta paginada, las queries en el repositorio, actualizar los tests y documentar los contratos en el CLAUDE.md. No hay archivo de plan.",
+      "expected_output": "The agent creates a worktree, decomposes into blocks and sessions, records plan_path: none in the binnacle since no plan file exists, includes the CLAUDE.md contract documentation as its own subtask, and registers the current session's tasks with block codes as first title token.",
       "files": [],
       "expectations": [
-        "The agent checks git status or mentions creating a branch or worktree",
-        "The agent divides work into lettered groups with numbered subtasks",
+        "The agent creates a dedicated worktree via the branching skill",
         "Every subtask names a concrete observable action rather than research or investigation",
-        "The agent uses or mentions TaskCreate",
+        "The agent records plan_path as none when no plan file exists",
         "The agent registers the CLAUDE.md contract documentation as its own subtask",
-        "The agent hands off to task-execution"
+        "Every registered task carries its block code as the first token of the title"
       ]
     },
     {
       "id": 4,
-      "prompt": "Hay que manejar los webhooks de Stripe: payment_intent.succeeded, payment_intent.payment_failed y customer.subscription.deleted. Cada uno actualiza estado en la BD y dispara notificaciones.",
-      "expected_output": "The agent checks git state, divides the three webhook handlers plus persistence and notification into lettered groups, registers them with TaskCreate, and hands off to task-execution.",
-      "files": [],
-      "expectations": [
-        "The agent checks git status or mentions creating a branch or worktree",
-        "The agent divides work into lettered groups with numbered subtasks",
-        "The agent uses or mentions TaskCreate",
-        "The agent registers the quality gate as its own subtask",
-        "The agent hands off to task-execution"
-      ]
-    },
-    {
-      "id": 5,
       "prompt": "Solo quiero el plan por ahora: agregar soporte multi-tenancy al módulo de usuarios. Cada query tiene que filtrar por tenant_id, los tests deben cubrir el aislamiento entre tenants y el CLAUDE.md necesita documentar el pattern.",
-      "expected_output": "The agent produces the lettered breakdown and registers it, then stops and presents the groups instead of handing off to task-execution, because the user explicitly asked for a plan only.",
+      "expected_output": "The agent produces the sessions-and-blocks decomposition, then stops and presents it instead of opening a worktree and executing, because the user explicitly asked for a plan only.",
       "files": [],
       "expectations": [
-        "The agent divides work into lettered groups with numbered subtasks",
-        "The agent uses or mentions TaskCreate",
-        "The agent stops after presenting the breakdown instead of handing off to task-execution",
+        "The agent divides work into lettered blocks grouped into sessions",
+        "The agent stops after presenting the decomposition instead of starting execution",
         "The agent does not start writing code"
       ]
     }

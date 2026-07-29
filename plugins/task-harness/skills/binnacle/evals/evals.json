@@ -3,27 +3,39 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Acabo de registrar el desglose de una tarea grande con task-planning y el run vive en un worktree dedicado. Abre la bitácora del run.",
-      "expected_output": "Copies the bundled template to .claude/binnacle.md in the worktree, fills the Run header including the Resume with entry point, seeds the Ledger with the registered breakdown, and ensures .claude/binnacle.md is listed in the repo's local exclude file without touching the tracked .gitignore.",
+      "prompt": "Acabo de descomponer un plan aprobado en sesiones y bloques con task-planning; el run vive en un worktree dedicado y el plan está en ~/.claude/plans/mi-feature.md. Abre la bitácora del run.",
+      "expected_output": "Copies the bundled template to .claude/binnacle.md in the worktree root, fills the frontmatter (task, branch, worktree, base_ref, plan_path, status: in-progress, current_session, last_updated), writes the session plan ending with Sesión R and the block breakdown, sets read_until_line to the last line of the file, and ensures .claude/binnacle.md is in the repo's local exclude file without touching the tracked .gitignore.",
       "files": [],
       "expectations": [
-        "The agent copies references/binnacle-template.md to .claude/binnacle.md inside the worktree",
-        "The agent fills the Run header, including the Resume with entry point",
-        "The agent seeds the Ledger table with the registered breakdown",
-        "The agent appends .claude/binnacle.md to the git common dir's info/exclude only if absent",
-        "The agent does not edit the tracked .gitignore"
+        "The agent copies references/binnacle-template.md to .claude/binnacle.md at the worktree root",
+        "The agent fills the frontmatter including plan_path with the approved plan's path and base_ref as branch @ merge-base SHA",
+        "The agent writes the Plan de sesiones ending with a Sesión R — code review executed manually by the user",
+        "The agent sets read_until_line to the last line of the file since no entries exist yet",
+        "The agent appends .claude/binnacle.md to the git common dir's info/exclude only if absent, never editing the tracked .gitignore"
       ]
     },
     {
       "id": 2,
-      "prompt": "Sesión nueva dentro de un worktree que ya tiene .claude/binnacle.md de una corrida interrumpida. Retoma el run.",
-      "expected_output": "Reads the binnacle whole, reconciles its Ledger against git log base..HEAD trusting commits over the file, re-registers non-integrated tasks with TaskCreate preserving group codes, states and owners, and continues through the entry point named in Resume with.",
+      "prompt": "Sesión nueva tras un /clear, dentro de un worktree que ya tiene .claude/binnacle.md de un run en progreso. Retoma el run.",
+      "expected_output": "Reads the binnacle with limit: read_until_line instead of whole, reconciles against git log base_ref..HEAD trusting commits over the file, re-registers only the current session's tasks with TaskCreate from the Bloques section with block codes as first title token and 'invoke log-binnacle' as final task, and continues from the Siguiente section of the most recent entry.",
       "files": [],
       "expectations": [
-        "The agent reads the whole binnacle before acting",
-        "The agent reconciles the Ledger against git log base..HEAD, trusting commits when they disagree",
-        "The agent re-registers non-integrated tasks preserving group codes, states and owners",
-        "The agent continues through the entry point named in Resume with instead of choosing one itself"
+        "The agent reads the binnacle bounded by read_until_line rather than loading the full history",
+        "The agent reconciles against git log base_ref..HEAD, trusting commits when they disagree with the binnacle",
+        "The agent re-registers only the current session's tasks, with block codes as first title token",
+        "The agent registers 'invoke log-binnacle' as the session's final task",
+        "The agent continues from the Siguiente section of the latest entry, not from its own guess",
+        "The agent does not edit or summarize any existing entry"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Estoy retomando un run desde su bitácora y la última entrada dice que la sesión anterior desvió el diseño respecto al plan original. Necesito el detalle del plan para el bloque que sigue.",
+      "expected_output": "Re-reads the original plan from the plan_path recorded in the binnacle's frontmatter rather than reconstructing it from memory, and reads older entries below the cursor only because the latest entry points to them.",
+      "files": [],
+      "expectations": [
+        "The agent resolves the plan from the frontmatter's plan_path instead of reconstructing it",
+        "The agent reads entries below read_until_line only when the latest entry points to them"
       ]
     }
   ]

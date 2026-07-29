@@ -1,0 +1,43 @@
+{
+  "skill_name": "log-binnacle",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Llegué a la tarea 'invoke log-binnacle' — es la última de la Sesión 2 de 4 de este run. Cierra la sesión en la bitácora.",
+      "expected_output": "The agent composes the session entry in Spanish (Estado al cierre, Hecho with block codes and SHAs, Decisiones with full reasoning, Desviaciones, Siguiente, Referencias), inserts it directly below the ## Entradas marker above previous entries without touching them, marks the session checkbox, advances current_session to 3, keeps status in-progress, updates last_updated, and recalculates read_until_line as the line before the second entry header verified with grep -n and wc -l.",
+      "files": [],
+      "expectations": [
+        "The agent inserts the new entry directly below the ## Entradas marker, above previous entries",
+        "The agent does not edit, deprecate, or summarize any previous entry",
+        "The entry puts closing state, decisions with full reasoning, and deviations before the reference pointers",
+        "The entry includes a Siguiente section with the exact first action of the next session",
+        "The agent marks the closed session's checkbox and advances current_session",
+        "The agent keeps status as in-progress because working sessions remain",
+        "The agent recalculates read_until_line as the line before the second entry header, verifying with commands rather than counting by eye"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Acabo de terminar la última sesión de trabajo del run — solo queda la Sesión R de code review. Registra el cierre en la bitácora.",
+      "expected_output": "The agent writes the closing entry, sets status: ready-for-review (not done), updates the cursor and frontmatter, and tells the user the next step is theirs: run /code-review manually in a clean session.",
+      "files": [],
+      "expectations": [
+        "The agent sets status to ready-for-review, not done",
+        "The agent tells the user to run the code review manually in a clean session",
+        "The agent does not run the code review itself",
+        "The agent recalculates read_until_line so a bounded Read returns the new entry as the only entry in the hot prefix"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Cierra la sesión en la bitácora. Ojo: a mitad de la sesión descubrimos que el bloque D ya no tiene sentido y lo reemplazamos por dos bloques nuevos F y G que van en la próxima sesión.",
+      "expected_output": "The agent records the deviation in the entry's Desviaciones section with its reasoning, rewrites the remaining unchecked sessions and the Bloques of unfinished blocks to reflect F and G, and leaves all previous entries untouched.",
+      "files": [],
+      "expectations": [
+        "The agent records the deviation and its reasoning in the new entry",
+        "The agent rewrites only the remaining unchecked sessions and unfinished blocks in the session plan",
+        "The agent does not rewrite or annotate past entries to reflect the re-plan"
+      ]
+    }
+  ]
+}
