@@ -19,12 +19,10 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 
 **Use task-harness when:**
 
-- Starting a substantial request that touches 2+ files or involves 3+ sequential steps (`task-planning`)
-- Resuming work already registered with `TaskCreate`, or executing an approved plan (`task-execution`)
-- Reviewing a finished changeset — this is the main standalone case: `task-quality-gate` runs against any branch with commits and a base ref, with no plan or task list required
-- You want a review that fans out ten independent angles and adversarially verifies every finding, rather than one inline pass
-- The user invokes `/mastermind-role` for a long-running, large-scale flow: the main context becomes an orchestrator that dispatches the four-tier worker fleet instead of writing code — never self-invoked by the model
-- Note: `/code-review` is no longer invocable by the model, which is why the gate reimplements that engine as a dynamic `Workflow`
+- Starting a substantial request — 2+ files, 3+ sequential steps, or an approved plan to execute (`task-planning`): it creates the dedicated worktree, decomposes into sessions of blocks by friction, and opens the binnacle
+- A session starts cold in a worktree that carries a `.claude/binnacle.md` — resume the run through the `binnacle` skill: one bounded `Read` up to `read_until_line`, reconcile against git, re-register the current session's tasks
+- Closing a work session before `/clear` — `log-binnacle` writes the immutable session entry and updates the cursor; it is always the last registered task of a session
+- Note: execution happens in the main context with normal tools guided by the binnacle's conventions — there is no execution skill; and code review is manual: when the binnacle says `ready-for-review`, the user runs `/code-review` in a clean session
 
 **Use dotclaudefiles when:**
 

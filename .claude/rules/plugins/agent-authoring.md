@@ -31,9 +31,10 @@ to "let the reviewer note something down".
 `claude-management`'s own `transcript-digester` and `practice-verifier`. What decides the tool list
 is what the agent must *read*, not a blanket prohibition.
 
-`task-harness`'s diff auditors omit `Bash` for a specific reason worth understanding: the patch is
-generated once by the orchestrating skill and passed to them by path, so there is nothing left to
-shell out for. Absence of `Bash` there is a consequence of the design, not a rule about auditors.
+`spec-kit`'s `closed-design-enforcer` omits `Bash` for a specific reason worth understanding: the
+spec it audits is handed to it by path and everything else it needs is reachable with `Read`,
+`Grep`, `Glob`, and `LSP`, so there is nothing left to shell out for. Absence of `Bash` there is a
+consequence of the design, not a rule about auditors.
 
 A skill that runs forked and backgrounded (`context: fork`) and whose deliverable is a **written
 file** must be backed by an agent whose `tools` include `Write` and `Edit`. The forked sub-agent is
@@ -66,9 +67,9 @@ opus does, so the combination buys a weaker model at a higher price. The moment 
 the model decision is already made: use `opus`. `sonnet` + `xhigh`/`max` is worse still and never
 correct.
 
-The repo already reflects this: `task-harness`'s five `effort: high` roles — `removed-behavior-auditor`,
-`cross-file-tracer`, `altitude-auditor`, `gap-sweeper`, `finding-verifier` — run on `opus`, while
-the mechanical angles stay on `sonnet`.
+The repo already reflects this: `domain-restructure`'s judgment-heavy roles — `domain-scanner`,
+`reconciler`, `consolidator` — run on `opus` at `effort: high`, while its mechanical roles
+(`domain-grouper`, `domain-mover`) stay on `sonnet` at `medium`.
 
 The full per-model effort support matrix lives in the `claude-code-agent-creator` skill at
 `references/thinking-load.md` — read it there rather than restating it here.

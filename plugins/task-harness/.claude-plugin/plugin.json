@@ -1,7 +1,7 @@
 {
   "name": "task-harness",
-  "version": "2.0.1",
-  "description": "The full harness for a substantial task: chainable, independently invocable skills covering one lifecycle with two execution modes. Plan the work into letter groups, then execute it in-session (task-execution) or by delegation (mastermind-role, user-invoked: the main context reserves itself for reasoning and dispatches a four-tier fleet of committing delegate workers), and run a multi-agent quality gate over the resulting diff. The gate fans out up to ten read-only review angles through a dynamic Workflow — backed by twelve agents including the adversarial verifier and gap sweeper — and returns adversarially verified findings.",
+  "version": "3.0.0",
+  "description": "The harness for a substantial task that does not fit one context window: execution always in the main context, split into sessions separated by /clear. task-planning turns an approved plan into a dedicated worktree plus a session-by-blocks decomposition sized by friction; the binnacle — an immutable reverse-chronological changelog with a length-prefixed read cursor — is the durable state a cold session resumes from with a single bounded Read; log-binnacle writes each session's closing entry. Code review is manual: the run ends ready-for-review and the user runs it in a clean session.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"
@@ -10,13 +10,11 @@
   "license": "MIT",
   "keywords": [
     "task-planning",
-    "execution",
-    "orchestration",
-    "delegation",
-    "code-review",
-    "quality-gate",
-    "audit",
-    "workflow",
+    "sessions",
+    "binnacle",
+    "context-budget",
+    "resumable-runs",
+    "worktree",
     "development-workflow"
   ]
 }

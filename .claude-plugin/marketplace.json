@@ -12,7 +12,7 @@
     },
     {
       "name": "task-harness",
-      "description": "The full harness for a substantial task: one lifecycle, two execution modes. Plan the work into letter groups and register it with TaskCreate, execute it in-session with commits per group or by delegation via the user-invoked mastermind-role orchestrator and its four-tier fleet of committing delegate workers, and run a multi-agent quality gate over the resulting diff. The gate fans out twelve read-only auditors through a dynamic Workflow — five correctness angles, five quality angles, a gap sweeper, and an adversarial verifier per finding — and returns only the findings that survive refutation.",
+      "description": "The harness for a substantial task that does not fit one context window: execution always in the main context, split into sessions separated by /clear. task-planning turns an approved plan into a dedicated worktree plus a session-by-blocks decomposition sized by friction; the binnacle — an immutable changelog with a length-prefixed read cursor — is the durable state a cold session resumes from with one bounded Read; log-binnacle writes each session's closing entry. Code review is manual, run by the user in a clean session once the binnacle marks the run ready-for-review.",
       "source": "./plugins/task-harness"
     },
     {
