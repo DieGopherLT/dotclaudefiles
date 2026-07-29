@@ -31,7 +31,7 @@ Every run gets a dedicated worktree — no branch-vs-worktree decision. The binn
 worktree root; in the main working tree it would be inherited by whatever branch checks out there
 next, so if there is a binnacle, there is a worktree.
 
-Decide what the work branches **from**, not just what it is called: the `base_ref` recorded in the
+Decide what the work branches **from**, not just what it is called: the `base_sha` recorded in the
 binnacle is what the review session diffs against, and a branch cut from the wrong place produces
 a review full of someone else's changes. Invoke the `branching` skill to name and create the
 worktree, then enter it with `EnterWorktree`.
@@ -48,17 +48,20 @@ First divide the job into letter-group blocks, as always:
   for explicitly.
 
 Then group blocks into **sessions** — the unit that fits one context window. Size by **friction**,
-an estimate of how much context a block will burn beyond its own diff:
+an estimate of how much context a block will burn beyond its own diff. Score each block with this
+rubric (count call sites with LSP or Grep before planning, not by feel):
 
-- **New file, nothing depends on it yet** — friction zero. Group several such blocks per session.
-- **Changing an exported signature or contract** — friction proportional to its call sites: each
-  one must be read and possibly touched.
-- **Nested dependencies** (the change forces a change that forces another) — high friction; a
-  single such block can be a whole session.
+| Block shape | Points |
+|---|---|
+| New file, nothing imports it yet | 1 |
+| Edit confined to existing files, no exported signature change | 2 |
+| Exported signature or contract change | 2 + 1 per call site |
+| Nested dependency (the change forces a change that forces another) | 8 |
 
-Target well under the window (~60% is a healthy ceiling): a session that ends by running out of
-context cannot write its own closing entry. The planning session itself executes Session 1 in the
-same window, so size Session 1 smaller than the rest — planning already spent part of its budget.
+Cap a session at **12 points**; cap Session 1 at **7**, because the planning conversation already
+spent part of that window. A single block over 12 points is its own session; over 20, decompose it
+further before planning. The reason for the ceiling: a session that ends by running out of context
+cannot write its own closing entry.
 
 The session plan always ends with **Sesión R — code review**: executed by the user, manually, in a
 clean session. The run's last working session leaves `status: ready-for-review` in the binnacle;
@@ -80,7 +83,8 @@ conversation, and the binnacle is the durable copy of the full decomposition:
 - The final task of the session is always **`invoke log-binnacle`** — the explicit closing step
   that writes the session's entry and updates the binnacle's cursor.
 
-There is no `A0` base-ref task: `base_ref` lives in the binnacle's frontmatter.
+There is no `A0` base-ref task: the frozen merge-base SHA lives in the binnacle's frontmatter as
+`base_sha`.
 
 ## Hand off
 

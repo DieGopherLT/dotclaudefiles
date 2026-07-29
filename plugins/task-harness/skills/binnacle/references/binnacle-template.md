@@ -2,10 +2,11 @@
 task: <título>
 branch: <nombre>
 worktree: <ruta absoluta>
-base_ref: <rama> @ <SHA del merge-base>
+base_branch: <rama base — solo contexto humano, no usable como revisión>
+base_sha: <SHA del merge-base — congelado, nunca se reescribe>
 plan_path: <~/.claude/plans/<nombre>.md | none>
 status: in-progress | ready-for-review | done
-current_session: <n> of <total>
+current_session: <n> of <total>   # total = solo sesiones de trabajo; la Sesión R nunca cuenta
 read_until_line: <N>   # Read con limit: N → frontmatter + convenciones + plan de sesiones + última entrada
 last_updated: <timestamp ISO>
 ---
@@ -14,8 +15,9 @@ last_updated: <timestamp ISO>
 
 > Changelog de un run multi-sesión, la entrada más reciente primero. Las entradas son
 > inmutables — ninguna se depreca, edita ni resume. Una sesión fría retoma leyendo hasta
-> `read_until_line`, re-registrando las tareas de la sesión en curso con TaskCreate desde el
-> plan de sesiones de abajo, y continuando desde la sección **Siguiente** de la última entrada.
+> `read_until_line`, re-registrando las tareas de la sesión en curso con TaskCreate desde la
+> sección **Bloques** de abajo (una tarea por subtarea, con el código de bloque como primer
+> token del título), y continuando desde la sección **Siguiente** de la última entrada.
 > Lee entradas viejas solo cuando la última entrada apunte a ellas.
 
 ## Convenciones de ejecución
@@ -39,23 +41,5 @@ A: <título del bloque>
   A2: ...
 B: ...
 
-## Entradas (la más reciente primero — insertar entradas nuevas justo bajo esta línea)
-
-## [S1] <fecha ISO> — alcance: A, B
-
-**Estado al cierre:** <un párrafo: dónde quedó el run, lo primero que un lector frío debe saber>
-
-**Hecho:**
-- A1: <qué cambió y por qué importa> — <sha>
-- B1: ... — <sha>
-
-**Decisiones:**
-- <decisión> — <porqué; el razonamiento es la parte cara, escríbelo completo>
-
-**Desviaciones y sorpresas:**
-- <qué difirió del plan o se descubrió; 'ninguna' si fue limpio>
-
-**Siguiente:**
-- <la primera acción exacta de la siguiente sesión>
-
-**Referencias:** <path::Symbol, SHAs de commits, docs — punteros, no prosa>
+## Entradas
+<!-- la más reciente primero — insertar cada entrada nueva justo debajo de este comentario -->

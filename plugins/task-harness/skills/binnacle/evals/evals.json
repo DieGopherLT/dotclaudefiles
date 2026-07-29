@@ -4,11 +4,11 @@
     {
       "id": 1,
       "prompt": "Acabo de descomponer un plan aprobado en sesiones y bloques con task-planning; el run vive en un worktree dedicado y el plan está en ~/.claude/plans/mi-feature.md. Abre la bitácora del run.",
-      "expected_output": "Copies the bundled template to .claude/binnacle.md in the worktree root, fills the frontmatter (task, branch, worktree, base_ref, plan_path, status: in-progress, current_session, last_updated), writes the session plan ending with Sesión R and the block breakdown, sets read_until_line to the last line of the file, and ensures .claude/binnacle.md is in the repo's local exclude file without touching the tracked .gitignore.",
+      "expected_output": "Copies the bundled template to .claude/binnacle.md in the worktree root, fills the frontmatter (task, branch, worktree, base_branch, base_sha, plan_path, status: in-progress, current_session, last_updated), writes the session plan ending with Sesión R and the block breakdown, sets read_until_line to the last line of the file, and ensures .claude/binnacle.md is in the repo's local exclude file without touching the tracked .gitignore.",
       "files": [],
       "expectations": [
         "The agent copies references/binnacle-template.md to .claude/binnacle.md at the worktree root",
-        "The agent fills the frontmatter including plan_path with the approved plan's path and base_ref as branch @ merge-base SHA",
+        "The agent fills the frontmatter including plan_path with the approved plan's path and base_sha as the frozen merge-base SHA and base_branch as human context only",
         "The agent writes the Plan de sesiones ending with a Sesión R — code review executed manually by the user",
         "The agent sets read_until_line to the last line of the file since no entries exist yet",
         "The agent appends .claude/binnacle.md to the git common dir's info/exclude only if absent, never editing the tracked .gitignore"
@@ -17,11 +17,11 @@
     {
       "id": 2,
       "prompt": "Sesión nueva tras un /clear, dentro de un worktree que ya tiene .claude/binnacle.md de un run en progreso. Retoma el run.",
-      "expected_output": "Reads the binnacle with limit: read_until_line instead of whole, reconciles against git log base_ref..HEAD trusting commits over the file, re-registers only the current session's tasks with TaskCreate from the Bloques section with block codes as first title token and 'invoke log-binnacle' as final task, and continues from the Siguiente section of the most recent entry.",
+      "expected_output": "Reads the binnacle with limit: read_until_line instead of whole, reconciles against git log base_sha..HEAD trusting commits over the file, re-registers only the current session's tasks with TaskCreate from the Bloques section with block codes as first title token and 'invoke log-binnacle' as final task, and continues from the Siguiente section of the most recent entry.",
       "files": [],
       "expectations": [
         "The agent reads the binnacle bounded by read_until_line rather than loading the full history",
-        "The agent reconciles against git log base_ref..HEAD, trusting commits when they disagree with the binnacle",
+        "The agent reconciles against git log base_sha..HEAD, trusting commits when they disagree with the binnacle",
         "The agent re-registers only the current session's tasks, with block codes as first title token",
         "The agent registers 'invoke log-binnacle' as the session's final task",
         "The agent continues from the Siguiente section of the latest entry, not from its own guess",

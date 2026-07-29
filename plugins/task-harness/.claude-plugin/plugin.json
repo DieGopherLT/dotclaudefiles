@@ -1,7 +1,7 @@
 {
   "name": "task-harness",
   "version": "3.0.0",
-  "description": "The harness for a substantial task that does not fit one context window: execution always in the main context, split into sessions separated by /clear. task-planning turns an approved plan into a dedicated worktree plus a session-by-blocks decomposition sized by friction; the binnacle — an immutable reverse-chronological changelog with a length-prefixed read cursor — is the durable state a cold session resumes from with a single bounded Read; log-binnacle writes each session's closing entry. Code review is manual: the run ends ready-for-review and the user runs it in a clean session.",
+  "description": "The harness for a substantial task that does not fit one context window: execution always in the main context, split into sessions separated by /clear. task-planning turns an approved plan into a dedicated worktree plus a session-by-blocks decomposition sized by friction; the binnacle — an immutable reverse-chronological changelog with a line-count read cursor — is the durable state a cold session resumes from with a single bounded Read; log-binnacle writes each session's closing entry. Code review is manual: the run ends ready-for-review and the user runs it in a clean session.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"
