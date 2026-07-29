@@ -1,0 +1,50 @@
+{
+  "skill_name": "resume-from-binnacle",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/resume-from-binnacle (sesión nueva tras /clear, en un worktree cuyo .claude/binnacle.md marca status: in-progress y current_session: 2 of 3)",
+      "expected_output": "The agent finds the binnacle at the worktree root, delegates to the binnacle skill's resume procedure (bounded Read, reconciliation against git log base_sha..HEAD, re-registering session 2's tasks from Bloques with invoke log-binnacle as final task), launches no explorers because the latest entry explains what is needed, and starts the first pending task in the main context.",
+      "files": [],
+      "expectations": [
+        "The agent checks for .claude/binnacle.md at the current worktree root before anything else",
+        "The agent follows the binnacle skill's resume procedure instead of improvising its own",
+        "The agent launches no Explore agents when the latest entry already explains the pending work",
+        "The agent starts working the session's first pending task in the main context"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/resume-from-binnacle (la sesión corre en un directorio sin .claude/binnacle.md)",
+      "expected_output": "The agent stops with a clear message that this is not a run's worktree, does not search other worktrees, and does not create a binnacle.",
+      "files": [],
+      "expectations": [
+        "The agent stops with a clear message instead of proceeding",
+        "The agent does not search other worktrees for a binnacle",
+        "The agent does not create a new binnacle"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "/resume-from-binnacle (el binnacle marca status: ready-for-review y la última entrada dice en Siguiente que el bloque pendiente toca un módulo que la entrada no describe)",
+      "expected_output": "The status gate wins over the explorer step: the agent registers no tasks and writes no code, reports that the run awaits the user's manual review, and launches no explorers because there is no work to warm context for.",
+      "files": [],
+      "expectations": [
+        "The agent honors the status gate: no tasks registered, no code written",
+        "The agent reports the run is awaiting the user's manual review",
+        "The agent does not launch explorers for a run that has no pending work"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "/resume-from-binnacle (run in-progress; la sección Referencias de la última entrada apunta a dos módulos que la sesión debe modificar y la entrada no explica cómo funcionan)",
+      "expected_output": "The agent resumes normally and launches read-only Explore agents in parallel, one per distinct area, folding their conclusions into context before starting the first task.",
+      "files": [],
+      "expectations": [
+        "The agent launches read-only explorers only for the code the entry points at but does not explain",
+        "The explorers run in parallel, one per distinct area",
+        "The agent continues with the session's tasks after folding in the conclusions"
+      ]
+    }
+  ]
+}

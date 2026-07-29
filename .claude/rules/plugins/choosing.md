@@ -20,7 +20,7 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 **Use task-harness when:**
 
 - Starting a substantial request — 2+ files, 3+ sequential steps, or an approved plan to execute (`task-planning`): it creates the dedicated worktree, decomposes into sessions of blocks by friction, and opens the binnacle
-- A session starts cold in a worktree that carries a `.claude/binnacle.md` — resume the run through the `binnacle` skill: one bounded `Read` up to `read_until_line`, reconcile against git, re-register the current session's tasks
+- A session starts cold in a worktree that carries a `.claude/binnacle.md` — resume the run through the `binnacle` skill: one bounded `Read` up to `read_until_line`, reconcile against git, re-register the current session's tasks; the user's manual shortcut for this is `/resume-from-binnacle`
 - Closing a work session before `/clear` — `log-binnacle` writes the immutable session entry and updates the cursor; it is always the last registered task of a session
 - Note: execution happens in the main context with normal tools guided by the binnacle's conventions — there is no execution skill; and code review is manual: when the binnacle says `ready-for-review`, the user runs `/code-review` in a clean session
 
