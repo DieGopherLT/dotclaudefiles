@@ -1,54 +1,61 @@
-# Binnacle: <task title>
+---
+task: <título>
+branch: <nombre>
+worktree: <ruta absoluta>
+base_ref: <rama> @ <SHA del merge-base>
+plan_path: <~/.claude/plans/<nombre>.md | none>
+status: in-progress | ready-for-review | done
+current_session: <n> of <total>
+read_until_line: <N>   # Read con limit: N → frontmatter + convenciones + plan de sesiones + última entrada
+last_updated: <timestamp ISO>
+---
 
-> Durable log of a task-harness run — its memento. Lives at `.claude/binnacle.md` inside the
-> run's worktree, ignored via `.git/info/exclude`. Rewritten at every task transition, so a cold
-> read reconstructs the run exactly. To resume this run: open a session in this worktree and
-> invoke the entry point named in Resume with.
+# Bitácora: <título de la tarea>
 
-## Run
+> Changelog de un run multi-sesión, la entrada más reciente primero. Las entradas son
+> inmutables — ninguna se depreca, edita ni resume. Una sesión fría retoma leyendo hasta
+> `read_until_line`, re-registrando las tareas de la sesión en curso con TaskCreate desde el
+> plan de sesiones de abajo, y continuando desde la sección **Siguiente** de la última entrada.
+> Lee entradas viejas solo cuando la última entrada apunte a ellas.
 
-- Branch: <type/description>
-- Worktree: <absolute path>
-- Base ref: <branch> @ <merge-base SHA>
-- Resume with: </mastermind-role for orchestrated runs | task-execution for in-session runs>
-- Started: <ISO timestamp>
-- Last updated: <ISO timestamp of the latest rewrite>
+## Convenciones de ejecución
 
-## Ledger
+- Ejecuta en el contexto principal; commit en cada frontera de bloque vía la skill `commit`.
+- `TaskUpdate` en el momento en que cada tarea se completa.
+- La última tarea de cada sesión es: invocar `log-binnacle` y escribir la entrada de la sesión.
+- Al cerrar la última sesión de trabajo, poner `status: ready-for-review`; el usuario ejecuta el
+  code review manualmente en una sesión limpia.
 
-One row per task, mirroring the task list's FSM tokens. `Commits` carries the SHAs from the
-worker's report; `Notes` carries what a `blocked` task needs.
+## Plan de sesiones
 
-| Task | State | Owner | Commits | Notes |
-|---|---|---|---|---|
-| A1: <title> | [integrated] | standard-worker | <sha> | |
-| B1: <title> | [dispatched] | task-harness:smart-worker | | |
-| B2: <title> | [blocked: <decision needed>] | scout-worker | | <what it needs from the orchestrator> |
+- [ ] Sesión 1 — A, B: <alcance corto>
+- [ ] Sesión 2 — C, D, E: <alcance corto>
+- [ ] Sesión R — code review: la ejecuta el usuario, manualmente, en una sesión limpia
 
-## Contracts
+### Bloques
 
-The contracts this run dispatches against, and every delta workers reported back:
+A: <título del bloque>
+  A1: <acción concreta y observable>
+  A2: ...
+B: ...
 
-- <interface / payload shape / config key>: <current agreed state> — delta from <sha>, relayed to <affected tasks>
+## Entradas (la más reciente primero — insertar entradas nuevas justo bajo esta línea)
 
-## Decisions
+## [S1] <fecha ISO> — alcance: A, B
 
-Inline decisions taken by the orchestrator, one line each, with the reason:
+**Estado al cierre:** <un párrafo: dónde quedó el run, lo primero que un lector frío debe saber>
 
-- <decision> — <why>
+**Hecho:**
+- A1: <qué cambió y por qué importa> — <sha>
+- B1: ... — <sha>
 
-## Open items
+**Decisiones:**
+- <decisión> — <porqué; el razonamiento es la parte cara, escríbelo completo>
 
-- <blocked tasks, waves not yet consolidated, isolated worker worktrees pending merge, gate runs pending>
+**Desviaciones y sorpresas:**
+- <qué difirió del plan o se descubrió; 'ninguna' si fue limpio>
 
-## Next session primer
+**Siguiente:**
+- <la primera acción exacta de la siguiente sesión>
 
-You are resuming this run. Before doing anything else:
-
-1. Reconcile the Ledger above against `git log <base ref>..HEAD --oneline` — commits are the
-   ground truth and the binnacle may lag by one transition; trust git where they disagree.
-2. Re-register the non-integrated tasks with `TaskCreate`, preserving group codes, states, and
-   owners (the task list did not survive the previous session; this file did).
-3. Continue from the first non-integrated task through the entry point named in Resume with,
-   posture unchanged: for an orchestrated run, reasoning and integration inline, execution
-   delegated.
+**Referencias:** <path::Symbol, SHAs de commits, docs — punteros, no prosa>

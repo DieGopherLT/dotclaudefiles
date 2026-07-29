@@ -1,66 +1,96 @@
 ---
 name: binnacle
 description: >
-  Open, maintain, and resume the durable log of a run that lives in a dedicated worktree: a
-  .claude/binnacle.md file created from a bundled template, ignored through the repo's local
-  exclude file, and rewritten at every task transition so a future session can restore the run
-  after the conversation-scoped task list is gone. Invoke whenever a task-harness run enters a
-  worktree — from task-planning, task-execution, or mastermind-role — whenever task transitions
-  need mirroring into the durable log, and whenever a fresh session finds a binnacle in its
-  worktree and must resume the run it describes.
+  Open, structure, and resume the durable log of a multi-session run: a .claude/binnacle.md file
+  at the root of the run's worktree, created from a bundled template, ignored through the repo's
+  local exclude file, and written as an immutable reverse-chronological changelog with a
+  length-prefixed cursor so a cold session restores the run with a single bounded Read. Invoke
+  when task-planning opens a run, and whenever a fresh session finds a binnacle in its worktree
+  and must resume the run it describes. Session-closing entries are written by the log-binnacle
+  skill, not here.
 ---
 
 # Binnacle
 
-Task lists survive compaction but not the end of a session. For a run short enough to finish in
-one sitting that is fine; for a run that lives in its own worktree it is not — the worktree is the
-signal that the work is long or isolated enough to outlive a conversation. The binnacle is the
-missing durable layer: one markdown file per worktree that a cold session reads to restore the
-run. In pattern terms it is the run's memento — the externalized state snapshot that lets a later
-holder restore what it never lived.
+A substantial task does not fit one context window. The work is split into **sessions** separated
+by `/clear`, and everything the conversation-scoped task list knows dies at each cut. The binnacle
+is the durable layer between sessions: one markdown file per worktree that carries the session
+plan, the run's state, and an immutable changelog of what every closed session did and decided.
+In pattern terms it is the run's memento — the externalized snapshot a later session restores
+without having lived the original context.
 
-Both execution modes write it: an in-session task-planning + task-execution run and an
-orchestrated mastermind-role run keep the same file, with the same structure. Only the entry point
-a future session resumes through differs.
+Execution needs no skill of its own: each session works in the main context with its normal
+tools, guided by this file. The binnacle's *Convenciones de ejecución* section carries the few
+rules that must survive the cut (commit per block, immediate `TaskUpdate`, `log-binnacle` as the
+last task of every session).
 
 ## Where it lives, and why it is never committed
 
 - Path: `.claude/binnacle.md` at the root of the run's worktree. One worktree, one run, one file.
+- Every run lives in a dedicated worktree — task-planning enforces this. A binnacle in the main
+  working tree would be inherited by whatever branch checks out there next.
 - Ignore it through the repo's local exclude file: append `.claude/binnacle.md` to
   `$(git rev-parse --git-common-dir)/info/exclude` when the line is absent. Never edit the tracked
   `.gitignore` for this — the exclude file is unversioned, applies to every worktree of the repo,
   and the line is written once for all future runs.
-- Plain-branch runs (no dedicated worktree) do not get a binnacle: the path convention is
-  per-worktree, and a run cheap enough to skip the worktree is cheap enough to rebuild from git.
+
+## Structure: an immutable changelog with a cursor
+
+The file (see `references/binnacle-template.md`) has four zones, top to bottom:
+
+1. **Frontmatter** — run identity and state. Keys stay in English for parse stability; the body
+   is written in Spanish. Two keys carry the mechanics:
+   - `read_until_line: N` — the cursor. A `Read` with `limit: N` returns exactly the hot prefix:
+     frontmatter, execution conventions, session plan, and the most recent entry. History below
+     the cursor is never loaded unless an entry points to it.
+   - `plan_path` — the approved plan this run implements. Future sessions re-read the original
+     plan from disk instead of reconstructing it from a conversation that no longer exists.
+2. **Convenciones de ejecución** — the execution rules every session follows.
+3. **Plan de sesiones** — checkboxes per session plus the block breakdown (letter groups). This
+   zone is the only mutable one: checkboxes advance and re-planning rewrites it.
+4. **Entradas** — the changelog, most recent entry first, inserted directly under the
+   `## Entradas` marker line. Entries are **immutable**: never edited, deprecated, or summarized.
+   Inside each entry, the expensive-to-reconstruct content comes first (closing state, decisions
+   with their reasoning, deviations and surprises) and cheap pointers last
+   (`path::Symbol`, commit SHAs).
+
+Because new entries insert at the top of the entries zone, the hot prefix stays a stable size:
+`read_until_line` only ever spans one entry, no matter how long the run gets.
 
 ## Opening
 
-Copy `references/binnacle-template.md` (bundled with this skill) to `.claude/binnacle.md` and fill
-the Run header — including **Resume with**, the entry point a future session uses to pick the run
-up: `/mastermind-role` for orchestrated runs, `task-execution` for in-session runs. Seed the
-Ledger table with the registered breakdown as it stands.
+task-planning opens the binnacle when it registers a run:
 
-## Updating
+1. Copy `references/binnacle-template.md` to `.claude/binnacle.md` in the worktree root.
+2. Ensure the exclude line exists (command above).
+3. Fill the frontmatter: `task`, `branch`, `worktree`, `base_ref` (branch @ merge-base SHA),
+   `plan_path`, `status: in-progress`, `current_session: 1 of <total>`, `last_updated`.
+4. Write *Plan de sesiones* and *Bloques* from the breakdown. The plan always ends with a
+   `Sesión R — code review` executed manually by the user in a clean session — never by the run.
+5. Set `read_until_line` to the last line of the file (there are no entries yet, so the whole
+   file is the hot prefix).
 
-Rewrite the affected rows on every task transition — at minimum at every group-boundary commit,
-and on every dispatch, report, and block transition in orchestrated runs. Keep Contracts,
-Decisions, and Open items current as they change, and stamp Last updated on every rewrite. The
-rule is absolute because the file only works if it can be trusted cold: a binnacle that lags more
-than one transition is a binnacle no future session can restore from.
+There is no `A0` task recording the base ref: `base_ref` lives in the frontmatter.
 
 ## Resuming
 
-When a session starts in a worktree that carries a binnacle:
+When a session starts cold in a worktree that carries a binnacle:
 
-1. Read it whole; trust its structure over any memory of the run.
-2. Reconcile the Ledger against `git log <base ref>..HEAD --oneline` — commits are the ground
-   truth, and the binnacle may lag one transition behind them.
-3. Re-register the non-integrated tasks with `TaskCreate`, preserving group codes, states, and
-   owners.
-4. Continue through the entry point the Run header names in **Resume with**.
+1. Read the frontmatter (first ~15 lines), then `Read` the file with `limit: read_until_line`.
+   That yields state, conventions, session plan, and the last entry — the full resume context.
+2. Reconcile against `git log <base_ref>..HEAD --oneline`. Commits are the ground truth; where
+   the binnacle and git disagree, trust git.
+3. Re-register the current session's tasks with `TaskCreate` from the *Bloques* section: block
+   code as the first token of each title (`A1: ...`), and the final task always
+   `invoke log-binnacle`.
+4. Continue from the **Siguiente** section of the most recent entry.
+5. Re-read the plan at `plan_path` only when the session's scope needs detail the binnacle does
+   not carry. Read entries below the cursor only when the last entry points to them.
 
-## Closing
+## Closing a session
 
-A finished run leaves the binnacle in its final state: ledger fully integrated, open items empty
-or explicitly handed back to the user. A closed run should read as closed; an interrupted one
-carries the primer the next session resumes from.
+The last task of every session is invoking the `log-binnacle` skill — it writes the session's
+entry, advances the checkbox and `current_session`, updates `status` and `last_updated`, and
+recalculates `read_until_line`. When the final working session closes, `status` becomes
+`ready-for-review`: the user runs the code review manually (`/code-review`) in a clean session,
+and flips `status` to `done` when the run is truly finished.
