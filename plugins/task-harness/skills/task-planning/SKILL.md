@@ -1,117 +1,101 @@
 ---
 name: task-planning
 description: >
-  Prepare substantial implementation work before any code is written: check git state, branch or enter
-  a worktree, divide the job into letter groups with concrete subtasks, and register the whole breakdown
-  with TaskCreate. Invoke this skill immediately when the user gives a substantial request — one that
-  touches 2+ files, involves 3+ sequential steps, requires executing an approved plan, or comes right
-  after exiting plan mode with ExitPlanMode. Trigger on signals like "let's do it", "go ahead and
-  implement", "execute the plan", "make it so", "start working", "implement this", or any multi-part
-  request where the user is clearly kicking off real implementation work. When in doubt about whether
-  the scope is large enough, invoke it — the overhead is small and the structure it provides prevents
-  skipped steps and messy commit history. This is the first of three chained skills: it hands off to
-  task-execution, which hands off to task-quality-gate.
+  Turn an approved plan into a multi-session run: create a dedicated worktree, decompose the work
+  into sessions of letter-group blocks sized by friction, open the binnacle that carries the run's
+  state across /clear boundaries, and register only the current session's tasks with TaskCreate.
+  Invoke this skill immediately when the user gives a substantial request — one that touches 2+
+  files, involves 3+ sequential steps, requires executing an approved plan, or comes right after
+  exiting plan mode with ExitPlanMode. Trigger on signals like "let's do it", "go ahead and
+  implement", "execute the plan", "make it so", "start working", "implement this", or any
+  multi-part request where the user is clearly kicking off real implementation work. When in doubt
+  about whether the scope is large enough, invoke it — the overhead is small and the structure it
+  provides prevents skipped steps and messy commit history.
 ---
 
 # Task Planning
 
-You are about to begin substantial implementation work. This skill covers the preparation only. Leave
-it with a clean place to work and a task list someone else could pick up cold.
+You are about to begin substantial implementation work — usually executing a plan the user just
+approved. This skill covers the preparation only: a dedicated worktree, a session plan the run can
+survive `/clear` with, and the current session's task list.
 
-Two skills follow it, and each is invocable on its own:
+Execution then happens **in the main context** with your normal tools, guided by the binnacle's
+execution conventions. There is no execution skill: a substantial task does not fit one context
+window, so the work is split into sessions, and the binnacle (a sibling skill in this plugin) is
+the durable state between them. Code review is not automatic either — the session plan always ends
+with a review session the user runs manually.
 
-| Skill | Owns |
-|---|---|
-| **task-planning** (here) | Git state, branching, the letter-group breakdown, `TaskCreate` |
-| `task-execution` | Working the groups, LSP-first navigation, commits per group |
-| `task-quality-gate` | The multi-angle review of the finished changeset |
+## Always a worktree
 
-## Check git state before touching anything
+Every run gets a dedicated worktree — no branch-vs-worktree decision. The binnacle lives at the
+worktree root; in the main working tree it would be inherited by whatever branch checks out there
+next, so if there is a binnacle, there is a worktree.
 
-Run `git status` and note two things: the current branch, and whether the tree is dirty. They drive two
-separate decisions:
+Decide what the work branches **from**, not just what it is called: the `base_ref` recorded in the
+binnacle is what the review session diffs against, and a branch cut from the wrong place produces
+a review full of someone else's changes. Invoke the `branching` skill to name and create the
+worktree, then enter it with `EnterWorktree`.
 
-- **On a protected or shared branch** (`main`, `master`, `develop`, or whatever the project treats as
-  shared) — always create a new branch or worktree for this work, clean tree or not. Never plan
-  substantial work directly on a shared branch.
-- **Tree already dirty with unrelated changes** — if the uncommitted files include non-trivial business
-  logic (not just config, docs, or lockfiles) that does not belong to this task, isolate: branch or
-  worktree so this work does not pile onto someone else's.
-- **Already on a task-specific feature branch with a clean tree** — stay on it.
+## Decompose: blocks, then sessions
 
-### Branch or worktree?
+First divide the job into letter-group blocks, as always:
 
-Do not judge "risk" — apply these checks in order; the first one that fires decides worktree, otherwise
-a plain branch:
+- Top-level blocks: A, B, C, ... — a block is a unit that makes sense to commit together.
+- Subtasks: A1, A2, B1, ... — a concrete, observable action. If you cannot name the file a
+  subtask touches, it is research, not a task: do the research now, then write the subtask.
+- Include the steps that are easy to skip: documentation that reflects the change, version bumps,
+  registering new components where the project's conventions require it, skills the user asked
+  for explicitly.
 
-1. Run `${CLAUDE_PLUGIN_ROOT}/skills/task-planning/scripts/detect-concurrent-claudes.sh`. Output `yes` means another
-   Claude session is active in this repository right now — a worktree is mandatory so the two do not
-   share a working tree.
-2. The breakdown you are about to write has **3 or more letter groups**.
-3. The breakdown touches **more than 7 files**.
+Then group blocks into **sessions** — the unit that fits one context window. Size by **friction**,
+an estimate of how much context a block will burn beyond its own diff:
 
-Checks 2 and 3 are evaluated once the breakdown exists: if you started on a plain branch and the
-breakdown crosses either threshold, move to a worktree before any code is written.
+- **New file, nothing depends on it yet** — friction zero. Group several such blocks per session.
+- **Changing an exported signature or contract** — friction proportional to its call sites: each
+  one must be read and possibly touched.
+- **Nested dependencies** (the change forces a change that forces another) — high friction; a
+  single such block can be a whole session.
 
-Decide what the work branches **from**, not just what it is called. The base ref matters later:
-`task-quality-gate` diffs against it, so a branch cut from the wrong place produces a review full of
-someone else's changes.
+Target well under the window (~60% is a healthy ceiling): a session that ends by running out of
+context cannot write its own closing entry. The planning session itself executes Session 1 in the
+same window, so size Session 1 smaller than the rest — planning already spent part of its budget.
 
-Invoke the `branching` skill when a new branch or worktree is about to be created — it owns the naming
-convention and proposes the name before any git command runs.
+The session plan always ends with **Sesión R — code review**: executed by the user, manually, in a
+clean session. The run's last working session leaves `status: ready-for-review` in the binnacle;
+it never runs the review itself.
 
-## Divide the work using letter-group notation
+## Open the binnacle
 
-Top-level groups: A, B, C, D, ...
-Subtasks within a group: A1, A2, A3, B1, B2, ...
+Invoke the `binnacle` skill (opening) with the full decomposition. It records the frontmatter —
+including `plan_path`, the path of the approved plan (`~/.claude/plans/<name>.md`, or `none` when
+no plan file exists), so future sessions re-read the original plan instead of reconstructing it —
+plus the session plan, the blocks, and the execution conventions every session follows.
 
-A group is a unit that makes sense to commit together. A subtask is a concrete, observable action — not
-"investigate X" but "add X to Y file". If you cannot name the file a subtask touches, it is research,
-not a task: do the research now, then write the subtask.
+## Register the current session with TaskCreate
 
-Sequence the groups so each one leaves the tree in a state worth committing. When two groups could run
-in either order, put first the one that unblocks the most of the rest.
+Register **only the current session's tasks**, not the whole run — the task list dies with the
+conversation, and the binnacle is the durable copy of the full decomposition:
 
-Include the steps that are easy to skip:
+- Every entry carries its block code as the first token of the title (`A1: add X to Y`, `B2: ...`).
+- The final task of the session is always **`invoke log-binnacle`** — the explicit closing step
+  that writes the session's entry and updates the binnacle's cursor.
 
-- Updating `CLAUDE.md` or documentation that reflects the change
-- Version bumps (`package.json`, `plugin.json`, and the like) when applicable
-- Registering a new component wherever the project's conventions require it
-- Invoking skills the user requested explicitly
-- The quality gate itself — register it as its own subtask so it stays visible in the list
-
-## Register the breakdown with TaskCreate
-
-This is not optional for work at this scale. Call `TaskCreate` with every step from the breakdown. The
-goal is a list auditable enough that someone could pick it up mid-way and know exactly where things
-stand. The grouping is not a private note — it is the tracked artifact:
-
-- **Every entry carries its group code as the first token of the title** (`A1: add X to Y`, `B2: ...`).
-  The code is what lets `task-execution` find group boundaries for commits, and what lets a cold
-  resumer reconstruct the sequence from a flat `TaskList`.
-- **The first entry records the base ref**: register an `A0` task titled
-  `A0: base ref = <branch> @ <merge-base SHA>` and mark it completed immediately. `task-quality-gate`
-  reads it from `TaskList` to build the review patch; without it the gate has to guess the base.
-
-Register the whole breakdown up front rather than group by group. A partial list hides the shape of the
-work, which is the one thing this skill exists to expose.
+There is no `A0` base-ref task: `base_ref` lives in the binnacle's frontmatter.
 
 ## Hand off
 
-When the run lives in a worktree, invoke the `binnacle` skill right after registration, recording
-`task-execution` as its **Resume with** entry point: the task list is conversation-scoped, and the
-binnacle is what a future session restores the breakdown from.
+Once the binnacle is open and the session's tasks are registered, start executing the first block
+in the main context. Planning does not need separate approval to proceed — the plan itself was the
+decision point.
 
-Once the breakdown is registered, invoke `task-execution` to work through it. Planning does not need
-separate approval to proceed — the plan itself was the decision point.
-
-Stop here instead when the user asked only for a plan, or when the breakdown surfaced a question worth
-answering before any code is written. In that case, present the groups and wait.
+Stop here instead when the user asked only for a plan, or when the breakdown surfaced a question
+worth answering before any code is written. In that case, present the sessions and blocks and wait.
 
 ## What this skill does NOT do
 
-- Does not create tasks for single-file, single-step changes — just do them
-- Does not create tasks for research or exploration; tasks track actions with observable output, not
-  thinking
-- Does not duplicate task information in memory — tasks are conversation-scoped and disposable
-- Does not write code. Everything after the breakdown belongs to `task-execution`
+- Does not create tasks for single-file, single-step changes — just do them, no worktree, no
+  binnacle
+- Does not create tasks for research or exploration; tasks track actions with observable output
+- Does not register future sessions' tasks — those are re-registered by the session that runs
+  them, from the binnacle
+- Does not write code; execution starts after registration, in the main context
