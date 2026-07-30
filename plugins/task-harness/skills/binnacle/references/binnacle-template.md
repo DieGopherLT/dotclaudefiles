@@ -4,7 +4,7 @@ branch: <nombre>
 worktree: <ruta absoluta>
 base_branch: <rama base — solo contexto humano, no usable como revisión>
 base_sha: <SHA del merge-base — congelado, nunca se reescribe>
-plan_path: <~/.claude/plans/<nombre>.md | none>
+plan_path: </ruta/absoluta/al/plan.md | none>   # absoluta y expandida, nunca con ~
 status: in-progress | ready-for-review | done
 current_session: <n> of <total>   # total = solo sesiones de trabajo; la Sesión R nunca cuenta
 read_until_line: <N>   # Read con limit: N → frontmatter + convenciones + plan de sesiones + última entrada
@@ -14,11 +14,10 @@ last_updated: <timestamp ISO>
 # Bitácora: <título de la tarea>
 
 > Changelog de un run multi-sesión, la entrada más reciente primero. Las entradas son
-> inmutables — ninguna se depreca, edita ni resume. Una sesión fría retoma leyendo hasta
-> `read_until_line`, re-registrando las tareas de la sesión en curso con TaskCreate desde la
-> sección **Bloques** de abajo (una tarea por subtarea, con el código de bloque como primer
-> token del título), y continuando desde la sección **Siguiente** de la última entrada.
-> Lee entradas viejas solo cuando la última entrada apunte a ellas.
+> inmutables — ninguna se depreca, edita ni resume. Para retomar este run: invoca la skill
+> `binnacle` y ejecuta su sección *Resuming* completa, en orden y sin resumirla — status gate,
+> Read acotado por `read_until_line`, reconciliación contra git, recuperación, lectura del plan
+> en `plan_path`, re-registro de tareas. No improvises el procedimiento desde este texto.
 
 ## Convenciones de ejecución
 

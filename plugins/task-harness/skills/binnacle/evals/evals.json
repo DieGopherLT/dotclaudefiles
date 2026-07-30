@@ -17,11 +17,13 @@
     {
       "id": 2,
       "prompt": "Sesión nueva tras un /clear, dentro de un worktree que ya tiene .claude/binnacle.md de un run en progreso. Retoma el run.",
-      "expected_output": "Reads the binnacle with limit: read_until_line instead of whole, reconciles against git log base_sha..HEAD trusting commits over the file, re-registers only the current session's tasks with TaskCreate from the Bloques section with block codes as first title token and 'invoke log-binnacle' as final task, and continues from the Siguiente section of the most recent entry.",
+      "expected_output": "Checks the status gate first, reads the binnacle with limit: read_until_line instead of whole, reconciles against git log base_sha..HEAD trusting commits over the file, reads the plan at plan_path in full before registering tasks, re-registers only the current session's tasks with TaskCreate from the Bloques section with block codes as first title token and 'invoke log-binnacle' as final task, and continues from the Siguiente section of the most recent entry.",
       "files": [],
       "expectations": [
+        "The agent reads the frontmatter first and branches on status before anything else",
         "The agent reads the binnacle bounded by read_until_line rather than loading the full history",
         "The agent reconciles against git log base_sha..HEAD, trusting commits when they disagree with the binnacle",
+        "The agent reads the plan at plan_path in full before registering the session's tasks",
         "The agent re-registers only the current session's tasks, with block codes as first title token",
         "The agent registers 'invoke log-binnacle' as the session's final task",
         "The agent continues from the Siguiente section of the latest entry, not from its own guess",
@@ -30,12 +32,26 @@
     },
     {
       "id": 3,
-      "prompt": "Estoy retomando un run desde su bitácora y la última entrada dice que la sesión anterior desvió el diseño respecto al plan original. Necesito el detalle del plan para el bloque que sigue.",
-      "expected_output": "Re-reads the original plan from the plan_path recorded in the binnacle's frontmatter rather than reconstructing it from memory, and reads older entries below the cursor only because the latest entry points to them.",
+      "prompt": "Sesión nueva tras un /clear en un worktree con bitácora en progreso. Al intentar leer el plan, el archivo apuntado por plan_path ya no existe en ~/.claude/plans/ — parece que se limpió el directorio. Retoma el run.",
+      "expected_output": "The agent stops before registering any task, reports the missing plan path and asks the user for its current location — it does not glob ~/.claude/plans/ for a lookalike, does not proceed planless, and does not rewrite plan_path on its own. Once the user confirms the new path, it verifies with ls, updates plan_path and last_updated, and notes the repair for the next entry's Desviaciones.",
       "files": [],
       "expectations": [
-        "The agent resolves the plan from the frontmatter's plan_path instead of reconstructing it",
-        "The agent reads entries below read_until_line only when the latest entry points to them"
+        "The agent stops before registering tasks when the Read of plan_path fails",
+        "The agent asks the user for the plan's current location instead of picking a lookalike file",
+        "The agent does not proceed without the plan",
+        "After user confirmation, the agent verifies the new path with ls and updates plan_path and last_updated",
+        "The agent plans to note the repair in the next session entry's Desviaciones"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Sesión nueva tras un /clear en un worktree con bitácora en progreso cuyo frontmatter dice plan_path: none. Retoma el run.",
+      "expected_output": "The agent runs the full resume procedure and skips only the plan-read step because plan_path is none — it does not ask for a plan, does not materialize one, and continues with task re-registration from Bloques.",
+      "files": [],
+      "expectations": [
+        "The agent skips the plan read because plan_path is none",
+        "The agent does not ask the user for a plan or create one during resume",
+        "The agent still re-registers the current session's tasks and continues normally"
       ]
     }
   ]

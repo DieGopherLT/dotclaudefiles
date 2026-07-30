@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Llegué a la tarea 'invoke log-binnacle' — es la última de la Sesión 2 de 4 de este run. Cierra la sesión en la bitácora.",
-      "expected_output": "The agent composes the session entry in Spanish (Estado al cierre, Hecho with block codes and SHAs, Decisiones with full reasoning, Desviaciones, Siguiente, Referencias), inserts it directly below the ## Entradas marker above previous entries without touching them, marks the session checkbox, advances current_session to 3, keeps status in-progress, updates last_updated, and recalculates read_until_line as the line before the second entry header verified with grep -n and wc -l.",
+      "expected_output": "The agent composes the session entry in Spanish (Estado al cierre, Hecho with block codes and SHAs, Decisiones with full reasoning, Desviaciones, Siguiente, Referencias), inserts it directly below the ## Entradas marker above previous entries without touching them, marks the session checkbox, advances current_session to 3, keeps status in-progress, updates last_updated, and recalculates read_until_line as the line before the second entry header verified with grep -n and awk 'END{print NR}'.",
       "files": [],
       "expectations": [
         "The agent inserts the new entry directly below the ## Entradas marker, above previous entries",

@@ -32,13 +32,13 @@
     },
     {
       "id": 3,
-      "prompt": "Implementa paginación cursor-based en los endpoints GET /users y GET /orders. Necesita los handlers, los DTOs de respuesta paginada, las queries en el repositorio, actualizar los tests y documentar los contratos en el CLAUDE.md. No hay archivo de plan.",
-      "expected_output": "The agent creates a worktree, decomposes into blocks and sessions, records plan_path: none in the binnacle since no plan file exists, includes the CLAUDE.md contract documentation as its own subtask, and registers the current session's tasks with block codes as first title token.",
+      "prompt": "Implementa paginación cursor-based en los endpoints GET /users y GET /orders. Necesita los handlers, los DTOs de respuesta paginada, las queries en el repositorio, actualizar los tests y documentar los contratos en el CLAUDE.md. No hubo plan mode ni documento de diseño; el requerimiento es este mensaje.",
+      "expected_output": "The agent creates a worktree, decomposes into blocks and sessions, records plan_path: none because the run has no approved plan artifact and none was approved in conversation, includes the CLAUDE.md contract documentation as its own subtask, and registers the current session's tasks with block codes as first title token.",
       "files": [],
       "expectations": [
         "The agent creates a dedicated worktree via the branching skill",
         "Every subtask names a concrete observable action rather than research or investigation",
-        "The agent records plan_path as none when no plan file exists",
+        "The agent records plan_path as none because no plan artifact exists and no plan text was approved in conversation",
         "The agent registers the CLAUDE.md contract documentation as its own subtask",
         "Every registered task carries its block code as the first token of the title"
       ]
@@ -52,6 +52,18 @@
         "The agent divides work into lettered blocks grouped into sessions",
         "The agent stops after presenting the decomposition instead of starting execution",
         "The agent does not start writing code"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Aprobaste el plan que acabamos de discutir en este chat (salimos de plan mode con ExitPlanMode): extraer el cliente HTTP a su propio paquete, migrar los tres consumidores y actualizar los tests. Ejecútalo. No existe archivo del plan en disco.",
+      "expected_output": "The agent detects that the approved plan exists only in conversation, writes it in full to ~/.claude/plans/<branch-slug>.md before opening the binnacle, verifies the file with ls, and records the expanded absolute path as plan_path — never none, never a summary inside the binnacle.",
+      "files": [],
+      "expectations": [
+        "The agent writes the full approved plan to a file under ~/.claude/plans/ before opening the binnacle",
+        "The agent verifies the written file exists with ls before recording plan_path",
+        "plan_path is recorded as an expanded absolute path, not a tilde path and not none",
+        "The agent does not paste a summary of the plan into the binnacle body"
       ]
     }
   ]

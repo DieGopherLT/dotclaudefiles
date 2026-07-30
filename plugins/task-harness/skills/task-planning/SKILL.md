@@ -25,6 +25,13 @@ window, so the work is split into sessions, and the binnacle (a sibling skill in
 the durable state between them. Code review is not automatic either — the session plan always ends
 with a review session the user runs manually.
 
+## Before anything: is this a run, or just a plan?
+
+Create nothing until this is settled. If the user asked only for a plan, or the breakdown
+surfaces a question worth answering before any code is written, do the decomposition below and
+present it — no worktree, no binnacle, no plan file written to disk. Proceed to the worktree only
+once the user is executing.
+
 ## Always a worktree
 
 Every run gets a dedicated worktree — no branch-vs-worktree decision. The binnacle lives at the
@@ -69,10 +76,11 @@ it never runs the review itself.
 
 ## Open the binnacle
 
-Invoke the `binnacle` skill (opening) with the full decomposition. It records the frontmatter —
-including `plan_path`, the path of the approved plan (`~/.claude/plans/<name>.md`, or `none` when
-no plan file exists), so future sessions re-read the original plan instead of reconstructing it —
-plus the session plan, the blocks, and the execution conventions every session follows.
+Invoke the `binnacle` skill (opening) with the full decomposition and the approved plan's
+location. It records the frontmatter — including `plan_path`, the path of the approved plan —
+plus the session plan, the blocks, and the execution conventions every session follows. The
+binnacle skill's *Resolving `plan_path`* recipe owns how that path is located, verified, or
+materialized to disk — do not fill it from memory or restate that discipline here.
 
 ## Register the current session with TaskCreate
 
@@ -92,8 +100,8 @@ Once the binnacle is open and the session's tasks are registered, start executin
 in the main context. Planning does not need separate approval to proceed — the plan itself was the
 decision point.
 
-Stop here instead when the user asked only for a plan, or when the breakdown surfaced a question
-worth answering before any code is written. In that case, present the sessions and blocks and wait.
+If the plan-only gate at the top of this skill applied, none of the side effects above exist —
+present the sessions and blocks and wait.
 
 ## What this skill does NOT do
 
