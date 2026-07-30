@@ -15,3 +15,10 @@ Context-specific instructions are organized in `.claude/rules/` and loaded autom
 ## Skill Authoring
 
 For skill creation, modification, structure, frontmatter fields, and writing conventions, invoke `/skill-creator` — it is the single source of truth.
+
+## Writing Claude Code resources
+
+Before creating or modifying any skill, agent, or rule, invoke the
+`claude-five-prompting-guide` skill and match its recommended style.
+`/skill-creator` remains the authority on skill structure and frontmatter;
+the guide governs prose and prompting style.
