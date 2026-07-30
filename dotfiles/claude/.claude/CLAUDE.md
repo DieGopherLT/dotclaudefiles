@@ -18,12 +18,20 @@
   - **Not fully experienced in**: Mediator, Memento, State, Template Method, Visitor, Flyweight, Proxy, Composite — explain these when they come up rather than assuming familiarity.
 - When managing situations where multiple states are implied, go by default with a Finite State Machine approach, unless the problem clearly calls for a different pattern.
 
+## Session Behavior
+
+- No emojis in responses, nor code, nor commit messages.
+  - If you encounter an emoji in any file, delete it ASAP.
+- All code and comments generated must be in English.
+- Parse JSON via `jq`, never Python-based approaches.
+
 ## Planning Behavior
 
 - Enter `plan mode` when a prompt describes a non-trivial problem — trust your
   judgment to tell trivial from non-trivial.
 - In plan mode, invoke the `plan-constraints` skill before drafting any plan — it
   defines the research phase, the required structure, and the template.
+- If a UI is about to be planned, don't enter plan mode immediately. Instead, mock a design on `claude-design`, reach consensus with user, then include the mock url in the plan. If already in plan mode when UI work surfaces, stop and ask the user to exit plan mode so the mock can be made; re-enter plan mode afterwards.
 
 ## Task Execution Behavior
 
@@ -32,11 +40,12 @@ or comes right after exiting plan mode: invoke `task-planning` skill to start or
 
 ## Sub-agent behavior
 
+- Division of labor: the main agent writes all business logic and documentation — it holds the richest context and both demand it. Sub-agents are reserved for exploration/research and mechanical, well-specified work such as writing tests, where the task can be fully described upfront and correctness is easy to verify.
 - The golden rule for foreground vs background: if you'll just wait for the agent to finish, call it on foreground. If you'll do something else while waiting, call it on background.
 - By default, invoke sub-gents on foreground.
 - Before launching a sub-agent, decide whether to split into multiple focused agents. Apply the same rules as real concurrent systems:
   - **Read-only agents**: launch as many as needed in parallel — no coordination required. This includes multi-perspective investigation: if a problem benefits from distinct angles (e.g. security vs. performance vs. correctness), split one agent per angle.
-  - **Write agents**: ensure no two agents modify the same files. If overlap is unavoidable, isolate each agent in its own worktree (`isolation: "worktree"`) and combine the changes afterwards.
+  - **Write agents**: ensure no two agents modify the same files — if they would overlap, run them sequentially instead. Sub-agents never commit; the main agent owns git history.
   - **Sequential dependency**: if agent B needs the output of agent A, do not split — run them sequentially or keep them as one agent.
 
 ## Git Behavior
