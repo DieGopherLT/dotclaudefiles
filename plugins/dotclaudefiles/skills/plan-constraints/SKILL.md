@@ -70,6 +70,18 @@ Resource policy for this phase:
   pick silently: state the candidate method and mark it as ambiguous — written to
   be contradicted, same as the Problem section.
 
+## Advisor review
+
+Before presenting the plan, if the `advisor` tool is available, call it once
+with the draft plan in context and ask it to hunt for gaps you would only
+discover mid-execution: missing edge cases, unstated assumptions, phases that
+silently depend on an unverified decision, integration points glossed over.
+The goal is to shrink gaps found during execution by finding them now, while
+the plan is still cheap to change. Fold any gap the advisor surfaces into the
+relevant section (Key decisions, Integration contracts, Assumptions and open
+unknowns) before moving to the checklist below. If `advisor` is unavailable,
+skip this step — do not block the plan on it.
+
 ## Checklist before presenting
 
 - Does the plan open with the problem as understood, stated so the user can
@@ -83,6 +95,8 @@ Resource policy for this phase:
 - Does every phase declare its verification method — local-only, with any
   read-only remote access explicitly declared, and ambiguous methods marked for
   contradiction?
+- If `advisor` was available, was it consulted for gaps and were its findings
+  folded into the plan?
 
 If any answer is no, fix the plan before presenting it.
 
