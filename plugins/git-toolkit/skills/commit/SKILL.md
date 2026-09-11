@@ -11,14 +11,12 @@ description: >
 
 # Commit
 
-You are about to create a permanent entry in git history. Your job is to make it correct, specific, and
-auditable. Work through the steps below in order.
+Work through the steps below in order.
 
 ## Step 1 — Understand what's available
 
-Run `git status` and `git diff` to see all unstaged changes. Run `git diff --staged` to see what's
-already staged. Present this picture to the user if staging decisions are unclear — never assume what
-belongs in this commit.
+Inspect the working tree and the index before deciding anything. If the staging boundary is unclear,
+present the picture to the user — never assume what belongs in this commit.
 
 ## Step 2 — Stage deliberately
 
@@ -34,13 +32,8 @@ If the user says "add everything", still inspect the list before executing. Expl
 
 ## Step 3 — Lint and format modified files
 
-Run formatters and linters for the languages in scope before committing:
-- TypeScript / JavaScript: ESLint, Prettier (if configured)
-- Go: `gofmt` or `goimports`
-- Markdown: `markdownlint` (if configured)
-
-If a formatter produces changes, stage those changes too before proceeding. A commit with
-unformatted code is already behind.
+Run whatever formatters and linters the repo configures for the languages in scope. If a formatter
+produces changes, stage those too. A commit with unformatted code is already behind.
 
 ## Step 4 — Craft the commit message
 
@@ -54,29 +47,18 @@ Single line only. Maximum 96 characters. No body. No bullet points.
 
 ### Prefixes
 
-| Prefix | When to use |
-|--------|-------------|
-| `feat:` | New capability that didn't exist before |
-| `fix:` | Corrects a bug or broken behavior |
-| `docs:` | Documentation only — no production logic changed |
-| `style:` | Formatting, whitespace — no logic changed |
-| `refactor:` | Restructure without adding features or fixing bugs |
-| `test:` | Test files only |
-| `chore:` | Build tooling, dependencies, scripts |
-| `wip:` | Intentionally incomplete checkpoint — use sparingly |
+Conventional Commits: `feat` `fix` `docs` `style` `refactor` `test` `chore`. Plus `wip:` for an
+intentionally incomplete checkpoint — use sparingly.
 
 ### Good message anatomy
 
 Describe *what changed and why*, not *how*. Specificity is what makes `git log` useful six months later.
 
-Good:
-- `feat: add JWT expiry validation to auth middleware`
-- `fix: resolve N+1 query on user list endpoint`
-- `refactor: extract order validation into dedicated service`
-- `docs: document rate limiting behavior in API reference`
-
 Forbidden — these make the history useless:
 - Generic messages: `fix bug`, `update code`, `changes`, `misc`
+- Messages that name the trigger instead of the change: `fix: address code review findings`,
+  `apply PR feedback`, `implement step 3 of the plan`, `fix issues from QA`. Describe what the
+  diff does to the code; the review that prompted it is invisible to the reader
 - Emojis anywhere in the message
 - Co-author or attribution lines: `Co-authored-by: Claude <...>` or similar
 - Multi-line messages with a body or bullet points
@@ -90,7 +72,7 @@ committing. One logical change per commit is the rule — not one file, not one 
 ## Step 5 — Get explicit approval, then commit
 
 Present the staged files and the proposed message. Do not commit until the user explicitly approves.
-Phrases like "go ahead", "yes", "do it", "looks good" count as approval. Silence or ambiguity does not.
+Silence or ambiguity is not approval.
 
 **Exception — orchestrated context.** When this skill runs as part of executing an already-approved
 plan, or a user-approved multi-task orchestration that commits at task or group boundaries, that prior
@@ -98,17 +80,10 @@ approval counts as authorization for its commits. Do not pause to ask for confir
 and report the message and hash. The explicit approval gate above is reserved for standalone commits
 initiated by the user.
 
-Everything else in this step — the heredoc, the flag restrictions, the post-commit verification —
-applies in both modes.
+Everything else in this step — the flag restrictions, the post-commit verification — applies in both
+modes.
 
-Execute using a heredoc to avoid quoting issues:
-
-```bash
-git commit -m "$(cat <<'EOF'
-feat: your message here
-EOF
-)"
-```
+Execute with `git commit -m '<message>'` — single quotes; the message is one line, no heredoc needed.
 
 Never use `--no-verify`, `--no-gpg-sign`, or `--amend` unless the user explicitly requests it.
 

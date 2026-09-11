@@ -14,38 +14,16 @@ argument-hint: "[target-branch]"
 
 # Squash Suggester
 
-Analyze the current branch's commit history and produce a squash plan that preserves atomicity
-and bisectability. Delegates the analysis to `squash-planner` and writes the result as a
-markdown file the user can review before running the interactive rebase.
+Produce a squash plan for the current branch by delegating the analysis to `squash-planner`.
 
-## Step 1 — Determine branches and merge base
+## Step 1 — Determine target and merge base
 
-```bash
-git branch --show-current
-git log --oneline -1
-```
+Target: `$ARGUMENTS` if given; otherwise the configured upstream
+(`git rev-parse --abbrev-ref @{upstream}`, stripping the remote prefix); otherwise `main` or
+`master`, whichever exists.
 
-Identify:
-- **Current branch** — the branch being analyzed
-- **Target branch** — where this branch will eventually merge into
-
-If a target branch was passed as `$ARGUMENTS`, use it. Otherwise, check for a configured
-upstream (`git rev-parse --abbrev-ref @{upstream}` strips the remote prefix), then fall back
-to `main` or `master` (whichever exists):
-
-```bash
-git rev-parse --abbrev-ref @{upstream} 2>/dev/null   # may print "origin/main"
-git branch --list main master                         # fallback detection
-```
-
-Compute the merge base:
-
-```bash
-git merge-base <target-branch> <current-branch>
-```
-
-If the merge base equals the current branch tip, the branch has zero commits ahead of the
-target — report this and stop.
+Merge base: `git merge-base <target> HEAD`. If it equals `HEAD`, the branch has zero commits
+ahead of the target — report this and stop.
 
 ## Step 2 — Invoke squash-planner
 
@@ -55,34 +33,18 @@ Invoke the `squash-planner` agent with:
 - **Merge base**: the SHA from Step 1
 - **Target branch**: for display context in the report
 
-The agent reads every commit in the range, groups them by semantic intent, and returns a
-complete squash plan with pick/squash/fixup assignments and bisect safety notes.
-
 ## Step 3 — Write the squash plan file
 
-Save the agent's output as:
-
-```
-squash-plan-<current-branch>.md
-```
-
-Place it in the repository root. If the branch name contains `/` (e.g., `feat/auth-refactor`),
-replace `/` with `-` in the filename.
-
-The file must contain exactly what the agent produced:
-- A table with columns: **SHA**, **Message preview**, **Action**, **Reasoning**
-- A bisect safety section
-
-Do not paraphrase or summarize the agent's output — write it verbatim.
+Save the agent's output verbatim — no paraphrasing or summarizing — as
+`squash-plan-<current-branch>.md` in the repository root. If the branch name contains `/`
+(e.g., `feat/auth-refactor`), replace `/` with `-` in the filename.
 
 ## Step 4 — Report to the user
 
-Tell the user:
-- The file path where the plan was saved
-- The `git rebase -i` command to use:
-  ```bash
-  git rebase -i <merge-base-sha>
-  ```
-- A reminder: the rebase editor lists commits oldest-first; the plan table matches that order
+Tell the user the file path and the command to apply it:
+
+```bash
+git rebase -i <merge-base-sha>
+```
 
 Do not execute the rebase. This skill only produces the plan — the user applies it.

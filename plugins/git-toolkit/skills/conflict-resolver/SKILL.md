@@ -12,74 +12,30 @@ description: >
 
 # Conflict Resolver
 
-You are helping resolve git conflicts in progress — either a rebase or a merge. The goal is not
-to mechanically pick one side over the other: it is to produce a result that preserves the intent
-of changes from all branches while affecting none of them more than necessary.
+Goal: a result that preserves the intent of every branch's changes while affecting none of them
+more than necessary. Not "pick a side".
 
-Understanding *why* each change was made is mandatory before touching any conflict marker.
+## Step 1 — Read the operation state
 
-## Step 1 — Detect the operation type and conflicting state
+`git status` names the operation (rebase or merge), the branches, and the conflicting files.
+For a rebase, `git rebase --show-current-patch` gives the commit currently being applied.
 
-```bash
-git status
-```
+## Step 2 — Bound the range
 
-From the output, determine:
-- Which files have conflicts (`UU` status)
-- Whether a **rebase** or **merge** is active:
-  - Rebase: presence of `.git/rebase-merge/` or `.git/rebase-apply/`
-  - Merge: presence of `.git/MERGE_HEAD`
-- The branches involved:
-  - **Rebase**: `ORIG_HEAD` (branch being replayed) and `HEAD` (target)
-  - **Merge**: `HEAD` (current branch) and `MERGE_HEAD` (branch being merged in)
+`git merge-base <A> <B>`. Agents get `<merge-base>..<tip>` only — pre-divergence history is noise.
 
-For a rebase, also run:
+## Step 3 — Understand intent before resolving
 
-```bash
-git rebase --show-current-patch   # the commit currently being applied
-git log --oneline ORIG_HEAD..HEAD # commits already replayed successfully
-```
+Launch one `git-history-retriever` per branch involved, in parallel, and wait for all of them —
+the agent declares its own inputs. Skip the agents only when intent is already legible without
+history: lockfiles, generated files, or a conflict whose two sides are self-evidently independent
+additions.
 
-## Step 2 — Find the common ancestor and bound the analysis range
+## Step 4 — Propose the resolution
 
-```bash
-git merge-base <branch-A> <branch-B>
-```
-
-This gives the commit where the branches diverged. The relevant history for each branch is
-`<merge-base>..<branch-tip>` — only the commits that diverged, nothing before. Save this range;
-agents in Step 3 will use it to stay focused on what actually matters for the conflict.
-
-## Step 3 — Delegate history analysis to git-history-retriever agents
-
-Before touching any conflict marker, invoke one `git-history-retriever` agent **per branch
-involved**. Launch all agents in parallel. Each agent receives:
-- The branch it is analyzing
-- The commit range: `<merge-base>..<branch-tip>`
-- The list of conflicting files
-
-For a standard 2-branch conflict (rebase or merge), launch 2 agents in parallel.
-For an octopus merge (3+ branches), launch one agent per branch.
-
-Wait for all agents to complete before proceeding to Step 4.
-
-## Step 4 — Analyze each conflict with the history reports in hand
-
-For each conflicting file, read the conflict markers in the working tree:
-- `<<<<<<< HEAD` (or `<<<<<<< ours`) — current branch state
-- `=======` — separator
-- `>>>>>>> <sha>` — incoming change
-
-Cross-reference with the agents' reports:
-- Are both sides adding independent things that should coexist?
-- Is one side a refactor of structure that the other side's change now needs to respect?
-- Is one side already a superset of the other (one change subsumed)?
-- Are they genuinely contradictory — two different answers to the same problem?
-
-## Step 5 — Propose the resolution
-
-For each conflict, produce the resolved content explicitly. Do not say "keep the incoming side" —
-show the actual merged result. Explain reasoning in terms of intent, not code structure.
+Cross-reference each conflict with the agents' reports and produce the resolved content
+explicitly. Do not say "keep the incoming side" — show the actual merged result. Explain
+reasoning in terms of intent, not code structure.
 
 | Situation | Resolution |
 |-----------|------------|
@@ -88,41 +44,16 @@ show the actual merged result. Explain reasoning in terms of intent, not code st
 | One side is a subset of the other | Keep the superset; verify nothing was silently dropped |
 | Genuinely contradictory | Surface both intents clearly; let the user decide |
 
-## Step 6 — Execute the resolution
+## Step 5 — Execute
 
-After the user approves each resolution:
+After the user approves each resolution: resolve, stage, then `git rebase --continue` or
+`git merge --continue`.
 
-1. Write the resolved content to the file — remove all conflict markers
-2. Stage the file: `git add <file>`
-3. Move to the next conflicting file
-4. When all conflicts are resolved, continue the operation:
-
-**Rebase:**
-```bash
-git rebase --continue
-```
-If `--continue` reveals new conflicts in a subsequent commit:
-- If the conflicting files were already analyzed in this session → skip to Step 4; the history
-  reports are still valid for those files.
-- If new files appear that were not previously analyzed, or the context from the prior analysis
-  is no longer available → restart from Step 1 for the new conflict set.
-
-**Merge:**
-```bash
-git merge --continue
-# or: git commit  (if --continue is unavailable in the installed git version)
-```
+If a later commit conflicts on files already analyzed, the history reports still hold — reuse
+them. New files, or lost context → restart from Step 1 for the new conflict set.
 
 ## Aborting
 
-If the conflicts are deeply intertwined and a different approach would be safer:
-
-```bash
-git rebase --abort   # rebase
-git merge --abort    # merge
-```
-
-Both return to the exact state before the operation started. Mention this option when:
-- Conflict resolution would require wholesale rewrites
-- History analysis shows the branches diverged in fundamentally incompatible directions
-- A merge would preserve history better than the current rebase
+Offer `--abort` when resolution would need wholesale rewrites, when history shows the branches
+diverged in incompatible directions, or when a merge would preserve history better than the
+current rebase.
