@@ -53,7 +53,7 @@ Structure every finding for maximum actionability. The developer should finish r
 
 A well-formed auditor output looks like this:
 
-```
+````
 # Security Review: feature/payment-flow (3 files, +124/-18 lines)
 
 ## Critical
@@ -72,7 +72,7 @@ db.query('SELECT * FROM orders WHERE customer_name = $1', [name])
 **File**: src/routes/payments.ts:112
 **Issue**: The refund endpoint has no rate limiting and is reachable by any authenticated user. An abusive user could spam refund requests.
 **Fix**: Apply the existing `rateLimiter.standard` middleware (used on lines 67, 89) to this route.
-```
+````
 
 If nothing meets the threshold:
 

@@ -1,105 +1,72 @@
 # Tools Reference
 
-This is the full catalog of tools a Claude Code sub-agent may declare in its `tools` field. Each entry lists what the tool does, when it shines, and when to leave it out — applying the principle of least privilege.
+Catalog of what a sub-agent may declare in `tools`, with least-privilege guidance and the one fact that trips most agent authors: **background runs filter the list**.
 
-## Quick presets by archetype
+## Availability by run mode
 
-Start from these defaults, then add or remove based on actual need:
+Sub-agents inherit the parent's built-in and MCP tools, minus two filters.
 
-| Archetype     | Recommended tools                                              |
-| ------------- | -------------------------------------------------------------- |
-| Auditor       | `Read, Grep, Glob, Bash`                                       |
-| Researcher    | `Read, Grep, Glob, Bash, WebSearch, WebFetch, LSP`             |
-| Implementer   | `Read, Edit, Write, Bash, Grep, Glob, LSP`                     |
-| Orchestrator  | `Read, Grep, Glob, Agent(child-1, child-2)`                    |
+**Filter 1 — always removed from every sub-agent** (even if listed): `AskUserQuestion`, `EnterPlanMode`, `ExitPlanMode` (unless `permissionMode: plan`), `EndConversation`, `ScheduleWakeup`, `TaskOutput`, `WaitForMcpServers`, `Workflow`, and `Agent` once the nesting depth limit (default 3) is reached. A sub-agent cannot ask the user anything: on ambiguity it returns the question in its result.
 
-If you need deferred tool loading from a large MCP environment, add `ToolSearch` to any of the above.
+**Filter 2 — background runs keep only these built-ins** (plus every MCP tool):
+`Read, Grep, Glob, Bash, PowerShell, Edit, Write, NotebookEdit, WebFetch, WebSearch, TodoWrite, Skill, ToolSearch, EnterWorktree, ExitWorktree, Monitor, TaskStop, SendMessage, Artifact`
+
+Everything else — `LSP`, `TaskCreate/List/Get/Update`, `CronCreate/List/Delete`, `ListAgents`, `ListMcpResourcesTool`, `ReadMcpResourceTool` — is removed **without error**. Only if the whole list resolves to nothing does the launch fail.
+
+Background is the default in interactive sessions (fork mode on since v2.1.232) and Claude cannot request foreground there. Foreground happens when: the user @-mentions the agent and it is not forced background, `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`, `-p` / SDK sessions without fork mode when Claude needs the result now, or the file runs as the main thread via `claude --agent`. Forks (`/subtask`) skip both filters and get the parent's exact pool.
+
+Design consequence: **write the list as if it will run in background**, and treat foreground-only tools as a bonus.
 
 ## File operations
 
-| Tool           | What it does                                                            | Use when                                                                | Avoid when                                                                              |
-| -------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `Read`         | Reads file contents; supports `offset`/`limit` for partial reads.       | Always include — fundamental for any agent that touches the codebase.   | Never. Even pure shell agents benefit.                                                  |
-| `Write`        | Creates or fully overwrites a file.                                     | Implementers that produce new files (tests, configs, generated code).   | Read-only agents (auditors, researchers). Never give a reviewer the ability to write.   |
-| `Edit`         | Targeted in-place replacements inside an existing file.                 | Implementers, refactorers — surgical edits without rewriting the file.  | Read-only agents.                                                                       |
-| `Glob`         | File discovery by glob pattern (`src/**/*.ts`).                         | Finding all files of a type before processing them in batch.            | Single known path — read it directly.                                                   |
-| `Grep`         | Content search via regex.                                               | Pattern hunts, debugging, finding string occurrences.                   | Symbol-level lookups in code — `LSP` is more precise (no false matches in comments).    |
-| `NotebookEdit` | Jupyter notebook cell edits.                                            | Agents that operate on `.ipynb` files.                                  | Anything else.                                                                          |
+| Tool | Does | Grant when | Withhold when |
+| --- | --- | --- | --- |
+| `Read` | reads files, partial reads via offset/limit | always | never |
+| `Write` | creates / overwrites a file | implementers producing new files | any read-only agent (auditor, researcher, orchestrator) |
+| `Edit` | targeted in-place replacement | implementers, refactorers | read-only agents |
+| `Glob` | file discovery by pattern | batch processing of a file type | single known path |
+| `Grep` | regex content search | pattern hunts, and the background fallback for `LSP` | — |
+| `NotebookEdit` | Jupyter cell edits | `.ipynb` work | anything else |
 
 ## Execution
 
-| Tool         | What it does                                                                       | Use when                                                                  | Avoid when                                                                       |
-| ------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `Bash`       | Runs shell commands. Working dir resets to project root after each call.           | Running tests, builds, git, linters, anything CLI-based.                  | Agents that only need to read text — Bash adds attack surface unnecessarily.     |
-| `PowerShell` | Native PowerShell execution (opt-in on Linux/macOS).                               | Windows-specific tasks or PowerShell-only tooling.                        | If Bash works for the task, prefer it.                                           |
-| `Monitor`    | Streams a long-running command's stdout to the agent line by line.                 | Tailing logs, polling CI, watching file changes during dev runs.          | Short-lived commands (use Bash). High overhead. Not available on Bedrock/Vertex. |
+| Tool | Does | Grant when | Withhold when |
+| --- | --- | --- | --- |
+| `Bash` | shell; cwd resets to project root per call; inside `isolation: worktree` commands whose cwd escapes the worktree fail | git, tests, builds, linters | the agent only reads text |
+| `PowerShell` | native PowerShell (opt-in on Linux/macOS) | Windows-only tooling | Bash works |
+| `Monitor` | streams a long-running command's stdout | tailing logs, polling CI | short commands; not on Bedrock/Vertex |
 
 ## Code intelligence
 
-| Tool         | What it does                                                                                              | Use when                                                                                            | Avoid when                                                                  |
-| ------------ | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `LSP`        | Language Server Protocol bridge: jump-to-definition, find-references, hover types, diagnostics. Auto-reports errors after edits. | Symbol-level navigation, type checking, refactoring across files.                                   | Documentation-only or shell-only agents.                                    |
-| `ToolSearch` | Looks up and loads schemas of deferred tools so the agent can call them. Supports `select:Name1,Name2` for direct fetch or keyword search like `+slack send`. | Environments where MCP exposes too many tools to load eagerly. The agent searches for what it needs, then calls. | Small fixed tool sets — adds an unnecessary lookup step.                    |
-
-**Critical rule**: when the task involves identifying a symbol, function, or type, prefer `LSP` over `Grep`. Grep matches text in comments and strings; LSP returns only real symbol references.
+| Tool | Does | Grant when | Withhold when |
+| --- | --- | --- | --- |
+| `LSP` | jump-to-definition, references, hover types, diagnostics after edits | symbol-level navigation in **foreground** runs; always pair with `Grep` | background-only agents (it is stripped) |
+| `ToolSearch` | loads deferred tool schemas (`select:A,B` or keyword search) | many MCP tools deferred | small fixed tool sets |
 
 ## Agent control
 
-| Tool      | What it does                                                                                | Use when                                                                            | Avoid when                                                                                                       |
-| --------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `Agent`   | Spawns a sub-agent. Format `Agent(subtype-1, subtype-2)` to allowlist specific child types. | Orchestrators that delegate well-bounded sub-tasks to specialized workers.          | Most leaf agents. Sub-agents cannot themselves spawn sub-agents in standard config — granting `Agent` is a no-op. |
-| `Skill`   | Invokes a skill (a reusable prompt-based workflow) inside the agent's conversation.         | Agents that benefit from a documented workflow (e.g., "use the format-pr skill").   | When you can describe the workflow inline more cheaply.                                                          |
+| Tool | Does | Grant when | Withhold when |
+| --- | --- | --- | --- |
+| `Agent` | spawns sub-agents. Nesting allowed up to `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` (default 3). **Inside a sub-agent definition the `Agent(type-a, type-b)` allowlist is ignored** — bare `Agent` grants any type. The allowlist only works when the file runs as main thread with `claude --agent`. Restrict children with `permissions.deny: ["Agent(x)"]` in settings. | orchestrators | leaf agents (a reviewer that should stay read-only must omit `Agent`) |
+| `Skill` | invokes a skill inline | agents that benefit from a documented workflow | the workflow fits in the body |
+| `SendMessage` | messages another agent by ID/name; resumes a finished sub-agent | orchestrators steering children; agent-team teammates | leaf agents |
+| `TaskStop` | stops a running task | orchestrators | leaf agents |
 
-## Search and web
+## Web
 
-| Tool         | What it does                                  | Use when                                                              | Avoid when                                                                            |
-| ------------ | --------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `WebSearch`  | Issues web search queries.                    | Researchers that need current documentation or third-party info.      | Code-only agents. Adds latency and external surface.                                  |
-| `WebFetch`   | Fetches a specific URL and returns content.   | Pulling docs, API references, OpenAPI specs from public URLs.         | Authenticated APIs (no auth support). Internal-only researchers where Bash + curl works better. |
+| Tool | Grant when | Withhold when |
+| --- | --- | --- |
+| `WebSearch` | researchers needing current docs / advisories | code-only agents; security auditors unless they must fetch advisories |
+| `WebFetch` | pulling public docs, specs, READMEs | authenticated APIs (no auth support) |
 
-## Task management
+## Task and schedule tools
 
-| Tool                                                          | What it does                                                  | Use when                                                                  |
-| ------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `TaskCreate`, `TaskList`, `TaskGet`, `TaskUpdate`, `TaskStop` | In-session task list (a checklist Claude maintains).          | Multi-step workers that benefit from progress tracking inside their run.  |
-| `CronCreate`, `CronList`, `CronDelete`                        | Schedules recurring or one-shot prompts within the session.   | Session-scoped automation — does NOT persist across session resumes.      |
+`TaskCreate`, `TaskList`, `TaskGet`, `TaskUpdate`, `TaskStop`, `CronCreate`, `CronList`, `CronDelete` — in-session checklist and scheduling. **Removed from background sub-agents** (only `TaskStop` survives). Kept for agent-team teammates. Use `TodoWrite` (background-safe) for an in-run checklist. Cron entries do not persist across session resumes.
 
 ## Utility
 
-| Tool                              | What it does                                                                  | Use when                                                          | Avoid when                                                                   |
-| --------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `AskUserQuestion`                 | Presents a multiple-choice question to the user.                              | Foreground agents that need clarification before committing.      | **Background agents** — fails silently with no error.                        |
-| `EnterPlanMode` / `ExitPlanMode`  | Toggles plan mode (no edits, design only).                                    | Agents that should always design before executing.                | Most agents — plan mode is usually controlled at session level.              |
-| `EnterWorktree` / `ExitWorktree`  | Creates and switches to a temporary git worktree.                             | Implementers that need isolation from the main checkout.          | If the agent has `isolation: worktree` in frontmatter, it's already covered. |
+`EnterWorktree` / `ExitWorktree` are redundant if `isolation: worktree` is set. `Artifact` is available in background.
 
-## MCP-related
+## MCP
 
-| Tool                     | What it does                                                            | Use when                                                              |
-| ------------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `ListMcpResourcesTool`   | Lists resources exposed by connected MCP servers.                       | Discovering what an MCP server provides before reading.               |
-| `ReadMcpResourceTool`    | Reads a specific MCP resource by URI.                                   | Pulling structured data from an MCP integration.                      |
-
-## Tools NOT to grant unless you really mean it
-
-| Tool                  | Why caution                                                                                                              |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `Bash` to auditors    | A reviewer rarely needs shell access. If it only needs `git diff`, consider whether `Read` + a pre-collected diff works.  |
-| `Write` to anyone but implementers | Auditors, researchers, and orchestrators should not write files. They should report, and let the user (or another agent) act. |
-| `WebFetch` / `WebSearch` to security auditors | External calls broaden the threat model. Only grant if the audit explicitly needs upstream advisories.                  |
-| `Agent` without specific subtypes | `Agent` alone allows the orchestrator to spawn anything available. Always use `Agent(specific-child-1, specific-child-2)`. |
-
-## Selection workflow
-
-When picking the tool list for a new agent, work through this checklist:
-
-1. **Read** — yes, always.
-2. Does the agent **modify files**? → add `Edit` and/or `Write` (and only then).
-3. Does the agent **navigate by symbol**? → add `LSP`. (Add `Grep` for text-level fallback.)
-4. Does the agent **discover files by pattern**? → add `Glob`.
-5. Does the agent **run commands**? → add `Bash`. Otherwise leave it out.
-6. Does the agent **need external info**? → add `WebSearch` and/or `WebFetch`.
-7. Does the agent **delegate to other agents**? → add `Agent(specific-children)`.
-8. Does the agent **operate in a tool-heavy MCP environment**? → add `ToolSearch`.
-9. Default to NO for everything else.
-
-Each tool you add is a capability you'll have to trust. Each one you leave out is one less thing that can go wrong.
+`mcp__<server>` or `mcp__<server>__*` in `tools` grants every tool from that server. Server-scoped `mcpServers` in frontmatter keeps a server's tool descriptions out of the main conversation. `ListMcpResourcesTool` / `ReadMcpResourceTool` are foreground-only.

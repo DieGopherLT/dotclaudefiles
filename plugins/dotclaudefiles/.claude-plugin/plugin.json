@@ -1,6 +1,6 @@
 {
   "name": "dotclaudefiles",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "Diego's curated Claude Code skills for team setup and Claude Code authoring: scaffolding sub-agents, writing dynamic workflows, and producing on-demand reports.",
   "author": {
     "name": "Diego",
