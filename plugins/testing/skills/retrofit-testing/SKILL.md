@@ -5,45 +5,33 @@ description: Esta skill debe usarse cuando el usuario pide "agrega tests a esto"
 
 # Retrofit Testing Pipeline
 
-This skill puts existing production code under tests. It is a RETROFIT workflow, not test-first TDD: the code already exists, so the goal is to capture and lock in its behavior (characterization tests), assert its intended behavior, and drive coverage up — while keeping the suite honest (tests that actually fail when behavior breaks, not just inflate coverage) and DRY (extracting reusable test utilities — data builders, helpers, custom assertions — instead of duplicating setup, and recording them so future tests reuse them).
-
-The whole pipeline runs **autonomously inside a dedicated worktree**. There is exactly one human gate: the merge. If the worktree merges, the work is done and reviewed. You never stop mid-pipeline to ask the user — decisions like the coverage threshold are yours to make from the code's nature.
-
-## Why a worktree
-
-Phases 2 and 3 mutate production code (introducing seams) and add test files. Doing that on the user's working branch mixes unreviewed automated changes with their work. A dedicated worktree isolates everything; the diff at merge time is the review surface. This is why every sub-agent runs inside the worktree, not the parent checkout.
+Puts existing production code under tests, autonomously, inside a dedicated worktree. The only human gate is the merge: never stop mid-pipeline to ask the user. Decisions like the coverage threshold are yours to make from the code.
 
 ## The pipeline
 
-Run these steps in order. Steps 1-4 are yours (the orchestrator); step 5 hands off to the Workflow that drives the six specialized sub-agents.
+Steps 1-4 are yours (the orchestrator); step 5 hands off to the Workflow that drives the specialized sub-agents.
 
-### Step 1 — Detect and scope
+### Step 1: Detect and scope
 
-1. Determine the language (`go.mod`, `package.json`/`tsconfig.json`, `*.csproj`).
-2. Check whether tests already exist. If they do, read a couple to identify the established pattern (framework, file naming, table-driven vs describe/it vs Fact/Theory, where doubles come from) so new tests match it. If none exist, the pipeline will recommend and set up dependencies.
-3. Discover the concrete modules/files in scope. If the user named a target ("the payments package"), scope to it; otherwise scope to the directory they're working in. This list is the work-list you pass to the Workflow — do not pass the whole repo blindly.
+1. Determine the language (see the `language` enum below).
+2. Check whether tests already exist. If they do, read a couple to identify the established pattern (framework, file naming, table-driven vs describe/it vs Fact/Theory, where doubles come from) so new tests match it.
+3. Discover the concrete modules/files in scope. If the user named a target ("the payments package"), scope to it; otherwise scope to the directory they're working in. This list is the work-list you pass to the Workflow; do not pass the whole repo blindly.
 
-### Step 2 — Enter the worktree
+### Step 2: Enter the worktree
 
-Create and enter a dedicated worktree under `.claude/worktrees/` (this path is gitignored). Use the `EnterWorktree` tool — do not `cd`. Name it for the target, e.g. `retrofit-testing-<module>`. Everything after this point happens inside it.
+Create and enter a dedicated worktree under `.claude/worktrees/` (gitignored) with the `EnterWorktree` tool, named for the target, e.g. `retrofit-testing-<module>`. Everything after this point happens inside it, and every sub-agent runs there, not in the parent checkout: the diff at merge time is the review surface.
 
-### Step 3 — Decide the coverage threshold
+### Step 3: Decide the coverage threshold
 
-There is no universal number. Choose it from the code's risk and nature, and state your reasoning:
+Pick it from the code's risk and state your reasoning: money/auth/data-integrity 0.85-0.90, standard logic 0.80, thin wrappers and DTOs excluded. See `references/coverage.md` for exclusions. It is a Workflow parameter, never asked of the user.
 
-- Critical business logic (money, auth, data integrity): aim high (85-90%).
-- Standard application logic: ~80%.
-- Thin wrappers, glue, generated code, DTOs: lower or excluded entirely.
+### Step 4: Note whether dependencies are needed
 
-Read `references/coverage.md` for what to measure and what to exclude. The threshold is a parameter you pass to the Workflow; it is NOT asked of the user.
+If step 1 found no testing infrastructure, flag it so the Workflow's first job is to have `testing-deps-investigator` recommend the testing dependencies (it recommends only; nothing is installed).
 
-### Step 4 — Note whether dependencies are needed
+### Step 5: Launch the Workflow
 
-If step 1 found no testing infrastructure, flag that the Workflow's first job is to recommend and set up dependencies (via `testing-deps-investigator`). If infrastructure exists, skip that.
-
-### Step 5 — Launch the Workflow
-
-Call the **Workflow** tool with the bundled script. This skill's instruction to call Workflow is the explicit opt-in; the pipeline must run deterministically (fan-out, loops, conditional adaptation), which is exactly what a Workflow gives you over prose orchestration.
+Call the **Workflow** tool with the bundled script. This skill's instruction to call Workflow is the explicit opt-in.
 
 ```
 Workflow({
@@ -58,39 +46,23 @@ Workflow({
 })
 ```
 
-Do NOT set `isolation: 'worktree'` on anything — you are already inside the dedicated worktree and want every sub-agent to operate in it, not spawn its own. The Workflow's agents inherit this worktree as their working directory.
+Do not set `isolation: 'worktree'` on anything: you are already inside the dedicated worktree and every sub-agent inherits it as its working directory.
 
-The Workflow returns a structured summary whose FIRST fields are the merge verdict: `mergeable` (boolean), `buildPasses` and `suitePasses` (from the Build phase), `passedAll`, `modulesShort` (the modules that fell short on coverage/quality in their scoped run), and `residualErrors` (compile errors the Build phase could not fix without changing behavior). Then per-module coverage, test-quality score, rounds taken, any latent bugs the `test-implementer` surfaced, the shared test utilities scaffolded, and the path of the project testing rules it wrote.
+The Workflow returns the merge verdict first (`mergeable`, `buildPasses`, `suitePasses`, `modulesShort`, `residualErrors`), then per-module detail. Field semantics live in the return block of `workflow.js`.
 
-### Step 6 — Hand off for merge
+### Step 6: Hand off for merge
 
-**Lead with the merge verdict, not the coverage number.** A green coverage figure is not the same as mergeable work: the result is only mergeable when every module met coverage AND test-quality in its scoped run, AND the whole-project build and full suite are green at the Build barrier. Read `mergeable` from the Workflow result and report it first:
+**Lead with `mergeable`, not coverage.** If false: list `modulesShort` with what fell short and, when the build or suite failed, the `residualErrors`. If true: report coverage and quality per module, the shared utilities, the bugs found with their expected-failure tests, and the new rule at `.claude/rules/testing.md` (path-scoped to this language's test files, so it loads on demand).
 
-- If `mergeable` is false, say so up front. List the `modulesShort` modules with what fell short (coverage below target, quality below 80), and — if `buildPasses`/`suitePasses` is false — the `residualErrors` from the Build phase. Do NOT present the worktree as "ready to merge"; present it as needing the listed fixes. Never let a buried `passedAll: false` or a broken build read as success.
-- If `mergeable` is true, then report what was covered: final coverage and quality per module, the shared utilities created, any bugs found (with the expected-failure tests that document them), and the new testing rule.
-
-The rule lives at `.claude/rules/testing.md` and is a **path-scoped** Claude Code rule — its frontmatter `paths` are scoped to this language's test files, so it loads on-demand whenever someone works on tests later (the convention this repo uses for `.claude/rules/`). Then present the worktree for review and merge. The merge is the user's sign-off — do not merge automatically.
+Then present the worktree for review and merge. The merge is the user's sign-off; do not merge automatically.
 
 ## What the Workflow orchestrates
 
-For reference, the six sub-agents and their phases (full logic in `workflow.js`):
-
-| Phase | Agent | Role |
-|-------|-------|------|
-| Measure | `testability-auditor` | Score each module 1-10; flag those needing seams (< 7) |
-| Prepare | `testing-deps-investigator` | Recommend/set up testing deps (once, if needed) |
-| Prepare | `testing-code-adapter` | Introduce seams / break dependencies for flagged modules |
-| Scaffold | `testing-scaffolder` | Build shared test utilities once across all modules (DRY cross-file) |
-| Test | `test-implementer` | Write characterization + behavior tests per module, validate with a scoped run, report coverage |
-| Test | `test-input-auditor` | Score test quality (mutation-thinking + smells + type-validity); request re-gen below threshold |
-| Build | `test-implementer` (reconcile) | One pass at the quiescent barrier: whole-project build + full suite, fix cross-module compile errors — authoritative `buildPasses`/`suitePasses` |
-| Document | `testing-rules-writer` | Write path-scoped `.claude/rules/testing.md` from the pipeline summary |
-
-Why the phases are barriered: Measure and Prepare complete fully (all modules measured, then all seams introduced) so Scaffold can build shared utilities against the complete set of seam contracts. The Test phase runs implementers **concurrently**, each mutating only its own module — so a whole-project build there would fail on siblings' half-written files. The build gate therefore lives in a single **Build** pass after the Test barrier, the one quiescent point where compiling the whole project is meaningful; that pass also reconciles cross-module type errors and dedupes any stubs that slipped past Scaffold.
+Phases, agents and barrier rationale live in `workflow.js` (`meta.phases` and the phase comments). Read it if you need to debug a run.
 
 ## References
 
-- `references/coverage.md` — coverage tooling per language, what to measure/exclude, threshold guidance
-- `references/anti-patterns.md` — the test anti-patterns the quality audit enforces
-- `references/frontend-component-testing.md` — React component/hook seam model (vi.mock/props/providers/MSW), RTL patterns, and the snapshot trap; the agents switch to this mode automatically when a target is `.tsx`/`.jsx`
-- `references/project-rules-template.md` — template for the testing rules written in the Document phase
+- `references/coverage.md`: threshold policy, what to exclude from the coverage denominator, prioritization
+- `references/anti-patterns.md`: retrofit-specific test policy (bug pinning, coverage gaps)
+- `references/frontend-component-testing.md`: React component/hook seam model (vi.mock/props/providers/MSW) and RTL conventions; the agents switch to this mode automatically when a target is `.tsx`/`.jsx`
+- `references/project-rules-template.md`: template for the testing rule written in the Document phase

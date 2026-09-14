@@ -76,7 +76,18 @@ const TESTABILITY_SCHEMA = {
     module: { type: 'string' },
     score: { type: 'number', description: 'testability 1-10' },
     needsAdaptation: { type: 'boolean' },
-    obstacles: { type: 'array', items: { type: 'string' } },
+    obstacles: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['description', 'confidence'],
+        properties: {
+          description: { type: 'string' },
+          confidence: { type: 'number', description: '0-100; only obstacles at >= 80 are reported' },
+          severity: { type: 'string', enum: ['critical', 'important'] },
+        },
+      },
+    },
   },
 }
 
@@ -129,7 +140,18 @@ const QUALITY_SCHEMA = {
   properties: {
     module: { type: 'string' },
     quality: { type: 'number', description: 'test-quality 0-100' },
-    weakTests: { type: 'array', items: { type: 'string' } },
+    weakTests: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['test', 'smell', 'confidence'],
+        properties: {
+          test: { type: 'string', description: 'file:line or test name' },
+          smell: { type: 'string', description: 'SMELL_TOKEN from the catalog' },
+          confidence: { type: 'number', description: '0-100; only smells at >= 80 are reported' },
+        },
+      },
+    },
   },
 }
 
@@ -181,10 +203,9 @@ const patternLine = existingPattern
   ? `Match the established test pattern in this project: ${existingPattern}.`
   : 'No tests exist yet; follow idiomatic conventions for the language.'
 
-// Activates the agents' frontend mode (knowledge lives in their bodies); kept short here
-// so the prompt only flips the switch, not re-teaches the patterns.
+// Flips the agents' frontend mode; the patterns live in their bodies.
 const frontendLine = isFrontend
-  ? ' Some targets are React components or custom hooks (.tsx/.jsx): apply your frontend testing mode — substitute dependencies with vi.mock / props / provider wrapping / MSW (NOT backend constructor DI) and assert through React Testing Library + user-event, as described in your instructions.'
+  ? ' Some targets are React components or custom hooks (.tsx/.jsx): apply your frontend testing mode.'
   : ''
 
 function measurePrompt(m) {
@@ -192,7 +213,7 @@ function measurePrompt(m) {
 }
 
 function depsPrompt() {
-  return `This ${language} project has no testing infrastructure. Detect the stack and recommend the testing dependencies to install (framework, assertions, mocking, coverage). Return the exact run command and coverage command. Do not install anything.${frontendLine}`
+  return `This ${language} project has no testing infrastructure. Detect the stack and recommend the testing dependencies to install (framework, assertions, mocking, coverage). Return the exact run command and coverage command.${frontendLine}`
 }
 
 function adaptPrompt(m, measure) {
@@ -209,7 +230,7 @@ function scaffoldPrompt(prepared) {
     `Scaffold the SHARED test utilities for these ${language} modules BEFORE any per-module tests are written, so every module imports one canonical, type-correct helper instead of re-creating divergent stubs.`,
     `${patternLine}`,
     `Survey of modules, their testability obstacles, and the seams already introduced by the adapter: ${JSON.stringify(survey)}.`,
-    'Identify the infrastructure dependencies that recur across modules (DB clients, transaction wrappers, HTTP clients, clock, filesystem) and build ONE reusable utility for each: test data builders, mocks/fakes that match the seam contracts exactly, helpers, and custom assertions.',
+    'Identify the infrastructure dependencies that recur across modules and build ONE reusable utility for each: test data builders, mocks/fakes that match the seam contracts exactly, helpers, and custom assertions.',
     'Reuse before you create: if the project already has test utilities, extend them rather than duplicating.',
     `Place everything in a single conventional location for the language. The utilities MUST compile under the project typecheck/build. Do not write any tests here — only the shared utilities. Return each utility with its path, kind, and usage.${frontendLine}`,
   ].join(' ')
@@ -225,24 +246,22 @@ function implementPrompt(m, round, adapt, scaffold) {
   const utilsLine = scaffold?.utilities?.length
     ? ` Shared test utilities already exist at "${scaffold.location}" — import and reuse them, do NOT re-create your own variants of mocks/builders that already exist there: ${JSON.stringify(scaffold.utilities.map((u) => ({ name: u.name, path: u.path, usage: u.usage })))}.`
     : ''
-  return `Write characterization + behavior tests for the ${language} code at "${m}". ${patternLine}${seamLine}${utilsLine}${frontendLine} Cover degenerate/simple/general/edge/error input categories. IMPORTANT — you run concurrently with other implementers mutating sibling modules in this same worktree, so do NOT run the whole-project build (it would see their half-finished files): touch ONLY your module's own files, do NOT edit the shared utilities directory (if you find a genuinely missing shared helper, create it local to your module and note it for the Build phase to hoist), and validate by running ONLY your own test files in a scoped run (e.g. vitest run <your files> / go test ./<pkg>/... / dotnet test --filter). Set scopedTestsPass=true only if your files compile and pass in that scoped run. Report line coverage as a fraction measured from the final state of your module. Target coverage >= ${threshold}. If current behavior contradicts the documented contract, pin current behavior and add a labeled expected-failure test for the intended behavior, and report it in bugsFound.${retry}`
+  return `Write characterization + behavior tests for the ${language} code at "${m}". ${patternLine}${seamLine}${utilsLine}${frontendLine} Cover degenerate/simple/general/edge/error input categories. Mode 1 (per-module writing): you run concurrently with other implementers mutating sibling modules in this same worktree, so validate only your own test files in a scoped run and never the whole-project build. Report line coverage as a fraction measured from the final state of your module. Target coverage >= ${threshold}.${retry}`
 }
 
 function buildReconcilePrompt(summary) {
   const testFiles = summary.flatMap((r) => r.testFiles ?? [])
+  const tsconfigLine = language === 'typescript'
+    ? ` Test globs to exclude from the production build if a tsconfig.build.json is needed: ${JSON.stringify(TEST_GLOBS.typescript)}.`
+    : ''
   return [
-    `All per-module test implementers have finished — the worktree is now quiescent, so this is the ONE point where a whole-project build is meaningful.`,
-    `Run the full ${language} typecheck/build (tsc --noEmit or pnpm typecheck/pnpm build, go build ./... && go vet ./..., dotnet build) and then the FULL test suite together.`,
-    'Fix every cross-module compile/type error the parallel phase could not see in isolation: divergent or duplicated test stubs (hoist them to the shared utilities and dedupe), type mismatches against seam contracts, and imports of helpers that were created locally and should be shared.',
-    `For TypeScript: if tests are co-located under src/ and the project's tsconfig compiles "src/**/*", the production build will wrongly emit test files — add a tsconfig.build.json that extends the base and excludes test globs (${JSON.stringify(TEST_GLOBS[language] ?? ['**/*test*'])}), and point the build script at it, so the production build stays clean.`,
-    'Only fix TEST code, tsconfig, and shared test utilities — never change production behavior to make a test pass. If an error cannot be resolved without altering behavior, leave it and report it in residualErrors.',
+    `Mode 2 (build reconciliation): all per-module implementers have finished and the worktree is quiescent. Run the whole-project ${language} typecheck/build and the full suite, and reconcile the cross-module errors the parallel phase could not see.${tsconfigLine}`,
     `Test files written this run: ${JSON.stringify(testFiles)}.`,
-    'Set buildPasses=true only when the whole-project build is green, and suitePasses=true only when the full suite passes together.',
   ].join(' ')
 }
 
 function auditPrompt(m) {
-  return `Audit the quality of the tests just written for "${m}". Apply mutation-thinking (would each test fail if the production code were broken?) plus the test-smell catalog weighted by severity. Return a 0-100 quality score and set needsRegeneration=true if quality < ${QUALITY_BAR}.`
+  return `Audit the quality of the tests just written for "${m}". Apply mutation-thinking (would each test fail if the production code were broken?) plus the test-smell catalog weighted by severity. Return a 0-100 quality score and the weak tests.`
 }
 
 function documentPrompt(summary, deps, scaffold) {
@@ -254,16 +273,8 @@ function documentPrompt(summary, deps, scaffold) {
     : 'none scaffolded'
   const globs = TEST_GLOBS[language] ?? ['**/*test*']
   return [
-    'Write a path-scoped Claude Code rule at .claude/rules/testing.md (create the directory if needed) and return its path.',
-    `Begin the file with YAML frontmatter holding a paths: list, so the rule loads on-demand only when working on tests: ${JSON.stringify(globs)}.`,
-    'After the frontmatter, use exactly these sections, filled from the run. Keep it token-efficient and specific to what was actually done — leave no placeholder unfilled:',
-    '# Testing',
-    '## How to Run Tests — run command, coverage command, watch mode if any.',
-    '## Test Organization — location (co-located vs separate dir), file naming convention, structure (table-driven / describe-it / Fact+Theory).',
-    '## Test Utilities — where shared builders/helpers/custom assertions live, what was created, and the reuse-before-create convention.',
-    '## Coverage — target threshold, coverage report command, exclusions (generated code, DTOs, bootstrapping).',
-    '## Patterns Established — the patterns implemented during this pipeline.',
-    '## What to Test and ## What NOT to Test — priorities and exclusions.',
+    'Write a path-scoped Claude Code rule at .claude/rules/testing.md from the bundled template and return its path.',
+    `Frontmatter paths for this language: ${JSON.stringify(globs)}.`,
     '',
     `Run facts: language=${language}, commands=(${cmds}), threshold=${threshold}.`,
     `Shared test utilities: ${utils}.`,

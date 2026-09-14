@@ -1,9 +1,5 @@
 ---
-# Path-scoped rule: loads on-demand only when working on test files.
-# Fill `paths` with this language's test globs:
-#   Go         -> "**/*_test.go"
-#   TypeScript -> "**/*.test.ts", "**/*.spec.ts", "**/*.test.tsx"
-#   C#         -> "**/*Tests.cs", "**/*Test.cs", "**/*Spec.cs"
+# Path-scoped rule: loads only when working on test files.
 paths:
   - "[test file glob for the language]"
 ---
@@ -25,7 +21,7 @@ paths:
 ## Test Utilities
 
 - **Location**: `[where shared builders/helpers/fixtures live]`
-- **Available**: `[reusable utilities created, e.g. UserBuilder, validOrder(), assertOrderPaid]`
+- **Available**: `[one bullet per utility: name, kind, usage]`
 - **Convention**: reuse these before writing new setup; extract a new builder/helper/custom assertion as soon as two tests share arrangement. Avoid one-size-fits-all fixtures and external-resource dependencies.
 
 ## Coverage
@@ -36,7 +32,7 @@ paths:
 
 ## Patterns Established
 
-[Brief description of patterns implemented during the testing pipeline]
+[One bullet per pattern actually used: characterization tests, table-driven Go, describe+it TS, Fact+Theory C#, MSW for frontend network, etc.]
 
 ## What to Test
 
@@ -48,3 +44,7 @@ paths:
 - [e.g. framework-generated code]
 - [e.g. data models without logic]
 - [e.g. entry points and bootstrapping]
+
+## Known Bugs (Expected-Failure Tests)
+
+[Only when bugs were found. One bullet per bug: module, description, name of the expected-failure test that documents it.]
