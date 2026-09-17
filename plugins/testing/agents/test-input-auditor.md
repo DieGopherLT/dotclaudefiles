@@ -19,9 +19,21 @@ Coverage percentage is not a quality signal: a suite can hit 90% line coverage w
    - Go: `**/*_test.go`
    - TypeScript/JavaScript: `**/*.test.ts`, `**/*.spec.ts`, `**/*.test.js`, `**/*.spec.js`
    - C#: `**/*Tests.cs`, `**/*Test.cs`, `**/*Spec.cs`
-2. For each test, locate the production code it exercises (LSP `goToDefinition` or Grep on the function name). This is required for the mutation-thinking axis.
-3. Run the type-validity pass (below) with LSP before scoring.
-4. Score each file. Emit the report and the machine-readable re-generation list.
+2. For each test, locate the production code it exercises (LSP `goToDefinition` or Grep on the function name). This is required for the mutation-thinking axis and for case derivation.
+3. Derive the case space of each production function under test (below) and map every derived case to a test.
+4. Run the type-validity pass (below) with LSP before scoring.
+5. Score each file. Emit the report and the machine-readable re-generation list.
+
+## Case derivation (the function decides what must be tested)
+
+The suite is judged against the production function, not against itself. Read the function and enumerate the cases its code demands:
+
+- one per branch: each `if`/`else`, `switch` arm, early return, loop with zero and many iterations
+- one per boundary: each comparison operator, both sides of the threshold (`<` vs `<=` is a real difference)
+- one per error exit: each thrown/returned error, each guard clause
+- the degenerate values its parameter types admit: nil/null, empty collection, zero, negative, empty string
+
+Map each derived case to the test that exercises it. A derived case with no test is `UNCOVERED_CASE`: report it with the production line of the branch or boundary it comes from, so the implementer knows exactly what to write. Do not derive cases from the tests' own labels; a test named "edge" that hits no boundary of the function covers nothing.
 
 ## Type-validity pass (compile-honest, via LSP)
 
@@ -68,7 +80,7 @@ Apply the canonical test smells (tsDetect / testsmells.org). Low-quality tests c
 
 ## Input category coverage
 
-Per production function under test, verify a case exists per input category, the same five `test-implementer` writes against: Degenerate, Simple, General, Edge, Error. Missing categories deduct per the table. Do not penalize a missing Error case when the contract genuinely cannot fail.
+Per production function under test, group the derived cases into the same five categories `test-implementer` writes against: Degenerate, Simple, General, Edge, Error. A category counts as covered only when its derived cases have tests, never because a test carries the category's name. A category with none of its derived cases tested is missing and deducts per the table; a category partially covered deducts per `UNCOVERED_CASE`. Do not penalize a missing Error case when the contract genuinely cannot fail.
 
 ## Scoring each file
 
@@ -90,6 +102,7 @@ Start at 100, apply weighted deductions, floor at 0:
 | MULTIPLE_BEHAVIORAL_ASSERTIONS | -8 per test |
 | Missing Degenerate / Error category | -8 / -7 per function |
 | Missing Simple / General / Edge category | -5 / -5 / -6 per function |
+| UNCOVERED_CASE (derived case without a test, category otherwise present) | -4 per case |
 | Minor smells | -3 each |
 
 A file with no test functions scores 0 (FAIL, "No test functions found").
@@ -111,7 +124,7 @@ Files requiring re-generation (quality < 80):
   - path/to/test_file (N/100)
 ```
 
-The re-generation list is the machine-readable signal for the pipeline: always emit it, even if empty. Line numbers point to the first line of the offending test function or assertion.
+The re-generation list is the machine-readable signal for the pipeline: always emit it, even if empty. Line numbers point to the first line of the offending test function or assertion; an `UNCOVERED_CASE` line points instead to the production branch or boundary that has no test, since there is no test line to cite.
 
 ## Constraints
 

@@ -146,8 +146,8 @@ const QUALITY_SCHEMA = {
         type: 'object',
         required: ['test', 'smell', 'confidence'],
         properties: {
-          test: { type: 'string', description: 'file:line or test name' },
-          smell: { type: 'string', description: 'SMELL_TOKEN from the catalog' },
+          test: { type: 'string', description: 'file:line or test name; for UNCOVERED_CASE, the production file:line of the untested branch or boundary' },
+          smell: { type: 'string', description: 'SMELL_TOKEN from the catalog, or UNCOVERED_CASE' },
           confidence: { type: 'number', description: '0-100; only smells at >= 80 are reported' },
         },
       },
@@ -236,9 +236,12 @@ function scaffoldPrompt(prepared) {
   ].join(' ')
 }
 
-function implementPrompt(m, round, adapt, scaffold) {
+function implementPrompt(m, round, adapt, scaffold, previousAudit) {
+  const weakTests = previousAudit?.weakTests?.length
+    ? ` The auditor's findings from the previous round, each with a smell token and a location (UNCOVERED_CASE points at the production branch or boundary that has no test yet): ${JSON.stringify(previousAudit.weakTests)}.`
+    : ''
   const retry = round > 0
-    ? ` This is retry #${round}: previous tests fell below coverage ${threshold} or quality ${QUALITY_BAR}, or your own test files did not run green; strengthen assertions, cover the missing input categories and branches, and fix any type/compile errors in YOUR files.`
+    ? ` This is retry #${round}: previous tests fell below coverage ${threshold} or quality ${QUALITY_BAR}, or your own test files did not run green; strengthen assertions, cover the missing input categories and branches, and fix any type/compile errors in YOUR files.${weakTests}`
     : ''
   const seamLine = adapt?.seams?.length
     ? ` The code was already adapted for testing — consume these seams exactly as the adapter built them; do NOT reassign read-only exports or re-create your own variant: ${JSON.stringify(adapt.seams)}.`
@@ -261,7 +264,7 @@ function buildReconcilePrompt(summary) {
 }
 
 function auditPrompt(m) {
-  return `Audit the quality of the tests just written for "${m}". Apply mutation-thinking (would each test fail if the production code were broken?) plus the test-smell catalog weighted by severity. Return a 0-100 quality score and the weak tests.`
+  return `Audit the quality of the tests just written for "${m}". Read each production function under test and derive its case space (branches, boundaries, error exits, degenerate inputs); report every derived case with no test as UNCOVERED_CASE, located at the production line it comes from. Apply mutation-thinking (would each test fail if the production code were broken?) plus the test-smell catalog weighted by severity. Return a 0-100 quality score and the weak tests.`
 }
 
 function documentPrompt(summary, deps, scaffold) {
@@ -361,15 +364,16 @@ async function testModule(entry) {
   let scopedTestsPass = false
   let testFiles = []
   let bugsFound = []
+  let audit = null
 
   while (round < MAX_ROUNDS) {
-    const impl = await agent(implementPrompt(m, round, adapt, scaffold), {
+    const impl = await agent(implementPrompt(m, round, adapt, scaffold, audit), {
       agentType: 'testing:test-implementer',
       schema: COVERAGE_SCHEMA,
       label: `test:${m}#${round + 1}`,
       phase: 'Test',
     })
-    const audit = await agent(auditPrompt(m), {
+    audit = await agent(auditPrompt(m), {
       agentType: 'testing:test-input-auditor',
       schema: QUALITY_SCHEMA,
       label: `audit:${m}#${round + 1}`,
