@@ -16,13 +16,11 @@
 
 ## Session Behavior
 
-- No emojis in responses, code, or commit messages. Remove them from files you are already editing in Diego's own repos; leave third-party repos alone.
+- No emojis in responses, code, or commit messages. Remove them from files you are already editing in repos owned by DieGopherLT; leave other repos alone.
 - All code and comments generated must be in English.
 - Parse JSON via `jq`, never Python-based approaches.
-- Edit files only through the Edit and Write tools, never via Bash, Python, sed, heredocs, or any
-  script. The transcript is my audit trail: a scripted edit hides the old and new text inside a
-  command, while Edit shows exactly what changed. This holds even when a harness mode suggests
-  otherwise.
+- In repos owned by DieGopherLT, HansLove, or TaloonStudio, tighten the comments and docs you edit: same information in fewer words and plain language, never dropping a non-obvious fact to save words.
+- If that tightening changes more than a fifth of a CLAUDE.md's lines, rewrite the whole file in the same style so no inconsistencies remain, and commit it on its own with the `commit` skill.
 
 ## Planning Behavior
 
@@ -38,10 +36,12 @@ Substantial requests go through the `task-planning` skill.
 
 ## Sub-agent behavior
 
-- The main agent writes all business logic and documentation: it holds the richest context and both demand it. Sub-agents are for exploration/research and mechanical, well-specified work such as writing tests, where the task can be fully described upfront and correctness is easy to verify.
-- Foreground by default; background only if you will do something else while waiting.
-- When a problem benefits from distinct angles (security vs. performance vs. correctness), split one read-only agent per angle.
-- Write agents must not touch the same files; if they would overlap, run them sequentially. Sub-agents never commit.
+The main agent's context is the scarce resource: it keeps business logic, documentation, and decisions, and delegates the rest. Every dispatch goes through `subagent-dispatch`.
+
+- Mechanical work that can be fully specified and easily checked (tests, exploration, gathering references, bulk renames, checking a hypothesis) goes to a cheap model.
+- When several angles materially matter (correctness, security, performance, UX, migration cost...), run one read-only agent per angle on a reasoning model and synthesize their reports yourself.
+- Write agents never share files; sub-agents never commit.
+- Review every deliverable before it counts as done. If it falls short, resume the same agent once with corrections; after that, start a fresh one.
 
 ## Git Behavior
 
