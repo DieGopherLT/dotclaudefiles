@@ -32,3 +32,5 @@ node_modules/
 
 # SoT files transitorios de refactoring-guru (smell-scan / refactor)
 .claude/refactoring-guru/
+# Types the mod engine writes beside a loaded mod
+plugins/*/.claude-plugin/types/
