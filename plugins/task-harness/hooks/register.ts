@@ -3,6 +3,9 @@ import type { EngineInterface, Register, SessionContextUsage } from 'claude-code
 
 const lastCompactAt = atom({ plugin: 'task-harness', key: 'lastCompactAt' } as const, 0)
 
+// Past this share of the window, the next session starts after a /clear.
+const BUDGET_SHARE = 0.4
+
 export const register: Register = on => {
   // Precompute installs nothing and subagents compact their own transcripts:
   // only a compaction of the main conversation that stood counts.
@@ -40,12 +43,14 @@ async function stampCompaction($: EngineInterface): Promise<void> {
 async function describeContextBudget($: EngineInterface): Promise<string> {
   const { context, startedAt } = await $.session.usage()
   const hasCompacted = (await read($, lastCompactAt)) > startedAt
+  const isOverBudget = context.tokens === undefined || context.tokens > context.window * BUDGET_SHARE
 
   return [
     '## Context budget (measured by task-harness mod)',
     `- context_tokens: ${context.tokens ?? 'unknown'}`,
     `- context_window: ${describeWindow(context)}`,
     `- compacted_this_session: ${hasCompacted}`,
+    `- budget_verdict: ${isOverBudget || hasCompacted ? 'cut' : 'chain'}`,
   ].join('\n')
 }
 

@@ -74,16 +74,16 @@ In the same pass:
 ## Close the turn
 
 After writing, decide whether the next session starts after a `/clear` (cut) or continues in this
-window (chain). The decision is made here and only here: figures crossing the threshold
-mid-session are never a reason to close early. A recovery entry skips this section: the session
+window (chain). The decision is made here and only here: figures that look high mid-session are
+never a reason to close early. A recovery entry skips this section: the session
 that wrote it goes back to the binnacle skill's resume procedure.
 
-The task-harness mod appends a `## Context budget` block to this prompt with the live figures.
-Cut when any of these holds; otherwise chain:
+The task-harness mod appends a `## Context budget` block to this prompt with the live figures and
+a `budget_verdict` already computed from them (the mod owns the threshold). Cut when any of these
+holds; otherwise chain:
 
-- The block is absent (mod not loaded): no figures, so close as a cut.
-- `context_tokens` exceeds 40% of `context_window` (400000 on a 1M window), or is `unknown`.
-- `compacted_this_session` is `true`: the window already lost detail the next session would lean on.
+- The block is absent (mod not loaded): no verdict, so close as a cut.
+- `budget_verdict` is `cut`.
 - `status` became `ready-for-review`: Sesión R always runs in a clean session.
 - The user asked for this checkpoint ahead of a `/clear`: their request wins over the figures.
 

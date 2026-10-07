@@ -1,17 +1,26 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
-import type { On, SessionCompactInput, SessionCompactResult, SessionMessage } from 'claude-code'
+import type { On, SessionCompactInput, SessionCompactResult, SessionContextUsage, SessionMessage } from 'claude-code'
 
 const STARTED_AT = 500
 const SKILL_TEXT = 'Close the session.'
 const SUMMARY: SessionMessage[] = [{ role: 'user', text: 'summary', toolUses: [] }]
 
+interface Engine {
+  compaction?: SessionCompactResult
+  startedAt?: number
+  context?: SessionContextUsage
+}
+
 // Stands for the engine beneath the plugin: a session that began at STARTED_AT,
 // a clock past it, and a compaction that stands unless `skip` is given.
-function engineBeneath(on: On, compaction: SessionCompactResult = { messages: SUMMARY }, startedAt = STARTED_AT) {
+function engineBeneath(on: On, engine: Engine = {}) {
+  const {
+    compaction = { messages: SUMMARY },
+    startedAt = STARTED_AT,
+    context = { tokens: 312_450, window: 1_000_000, percent: 31 },
+  } = engine
   mock.clock(on, { now: 1_000 })
-  on('session.usage', () => ({
-    value: { startedAt, context: { tokens: 312_450, window: 1_000_000, percent: 31 }, rateLimits: [] },
-  }))
+  on('session.usage', () => ({ value: { startedAt, context, rateLimits: [] } }))
   on('session.compact', () => compaction)
   on('skill.prompt', ($, e) => ({ text: e.text }))
 }
@@ -30,7 +39,21 @@ describe('log-binnacle context budget', () => {
     expect(text).toContain('- context_tokens: 312450')
     expect(text).toContain('- context_window: 1000000 (31%)')
     expect(text).toContain('- compacted_this_session: false')
+    expect(text).toContain('- budget_verdict: chain')
   })
+
+  for (const [name, context] of [
+    ['over 40% of the window', { tokens: 400_001, window: 1_000_000 }],
+    ['unknown tokens', { window: 1_000_000 }],
+  ] as const) {
+    test(`${name} cuts`, async ($, on) => {
+      engineBeneath(on, { context })
+
+      const { text } = await $.skill.prompt({ skill: 'log-binnacle', text: SKILL_TEXT })
+
+      expect(text).toContain('- budget_verdict: cut')
+    })
+  }
 
   test('matches the namespaced skill name too', async ($, on) => {
     engineBeneath(on)
@@ -52,7 +75,7 @@ describe('log-binnacle context budget', () => {
 
   // /clear restarts startedAt past an earlier compaction's stamp.
   test('a compaction before the session began does not count', async ($, on) => {
-    engineBeneath(on, undefined, 2_000)
+    engineBeneath(on, { startedAt: 2_000 })
 
     await $.session.compact(compaction())
     const { text } = await $.skill.prompt({ skill: 'log-binnacle', text: SKILL_TEXT })
@@ -67,6 +90,7 @@ describe('log-binnacle context budget', () => {
     const { text } = await $.skill.prompt({ skill: 'log-binnacle', text: SKILL_TEXT })
 
     expect(text).toContain('- compacted_this_session: true')
+    expect(text).toContain('- budget_verdict: cut')
   })
 
   for (const [name, input] of [
@@ -84,7 +108,7 @@ describe('log-binnacle context budget', () => {
   }
 
   test('a skipped compaction does not count', async ($, on) => {
-    engineBeneath(on, { skip: 'vetoed' })
+    engineBeneath(on, { compaction: { skip: 'vetoed' } })
 
     await $.session.compact(compaction())
     const { text } = await $.skill.prompt({ skill: 'log-binnacle', text: SKILL_TEXT })
