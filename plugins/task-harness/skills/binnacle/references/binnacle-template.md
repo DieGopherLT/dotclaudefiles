@@ -21,7 +21,9 @@ last_updated: <timestamp ISO>
 
 ## Convenciones de ejecución
 
-- Ejecuta en el contexto principal; commit en cada frontera de bloque vía la skill `commit`.
+- Ejecuta en el contexto principal; solo los bloques marcados `delegable` van a sub-agentes, y
+  solo si su conjunto de archivos sigue sin intersectar el diff desde `base_sha`. Commit en cada
+  frontera de bloque vía la skill `commit`.
 - `TaskUpdate` en el momento en que cada tarea se completa.
 - La última tarea de cada sesión es: invocar `log-binnacle` y escribir la entrada de la sesión.
 - Al cerrar la última sesión de trabajo, poner `status: ready-for-review`; el usuario ejecuta el
@@ -35,10 +37,11 @@ last_updated: <timestamp ISO>
 
 ### Bloques
 
-A: <título del bloque>
+A: <título del bloque> — main
   A1: <acción concreta y observable>
   A2: ...
-B: ...
+B: <título del bloque> — delegable; archivos: <ruta>, <ruta>, ...
+  B1: ...
 
 ## Entradas
 <!-- la más reciente primero — insertar cada entrada nueva justo debajo de este comentario -->
