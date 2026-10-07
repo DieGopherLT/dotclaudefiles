@@ -25,12 +25,16 @@ it here.
 2. **Delegate.** Invoke the `binnacle` skill and execute every numbered step of its *Resuming*
    section in order, without summarizing, reordering, or skipping any. Do not restate those
    steps here — that section is their single source of truth.
-3. **Warm context, only if needed.** After the binnacle skill's plan read, check the latest entry's
+3. **Load LSP.** If a language server covers the project's languages, load the `LSP` tool with
+   `ToolSearch` (it is deferred) before touching code. The entry's **Referencias** are written as
+   `path::Symbol`, which LSP resolves directly with fewer tokens and faster than Grep or an
+   explorer.
+4. **Warm context, only if needed.** After the binnacle skill's plan read, check the latest entry's
    **Siguiente** and **Referencias**: if they point at code this session must understand and
    neither the entry nor the plan explains it, launch read-only Explore agents in parallel — one
    per distinct area — and fold their conclusions into your working context. The decision comes
    after the plan read on purpose: the plan often documents exactly what an explorer would go
    find. A well-written entry needs zero explorers; the default is none, and launching them for
    code already explained wastes the budget the binnacle exists to protect.
-4. **Continue.** Start working the first pending task of the session in the main context, under
+5. **Continue.** Start working the first pending task of the session in the main context, under
    the binnacle's *Convenciones de ejecución*.

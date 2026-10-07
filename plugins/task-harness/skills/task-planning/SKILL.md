@@ -52,9 +52,9 @@ First divide the job into letter-group blocks, as always:
   registering new components where the project's conventions require it, skills the user asked
   for explicitly.
 
-Then group blocks into **sessions** — the unit of work between two `log-binnacle` closes. Size by **friction**,
-an estimate of how much context a block will burn beyond its own diff. Score each block with this
-rubric (count call sites with LSP or Grep before planning, not by feel):
+Then group blocks into **sessions** — the unit of work between two `log-binnacle` closes. Size by
+**friction**, an estimate of how much context a block will burn beyond its own diff. Score each
+block with this rubric (count call sites before planning, not by feel):
 
 | Block shape | Points |
 |---|---|
@@ -62,6 +62,10 @@ rubric (count call sites with LSP or Grep before planning, not by feel):
 | Edit confined to existing files, no exported signature change | 2 |
 | Exported signature or contract change | 2 + 1 per call site |
 | Nested dependency (the change forces a change that forces another) | 8 |
+
+To count call sites, load the `LSP` tool with `ToolSearch` when a language server covers the
+project: `findReferences` costs fewer tokens and runs faster than Grep, and the tool stays loaded
+for execution.
 
 Cap a session at **12 points**; cap Session 1 at **7**, because the planning conversation already
 spent part of that window. A single block over 12 points is its own session; over 20, decompose it
