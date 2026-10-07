@@ -82,7 +82,7 @@ The task-harness mod appends a `## Context budget` block to this prompt with the
 Cut when any of these holds; otherwise chain:
 
 - The block is absent (mod not loaded): no figures, so close as a cut.
-- `context_tokens` exceeds 400000, or is `unknown`.
+- `context_tokens` exceeds 40% of `context_window` (400000 on a 1M window), or is `unknown`.
 - `compacted_this_session` is `true`: the window already lost detail the next session would lean on.
 - `status` became `ready-for-review`: Sesión R always runs in a clean session.
 - The user asked for this checkpoint ahead of a `/clear`: their request wins over the figures.

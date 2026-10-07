@@ -18,9 +18,9 @@ export const register: Register = on => {
     return compacted
   })
 
-  // endsWith: a plugin skill may arrive namespaced (task-harness:log-binnacle).
+  // A plugin skill may arrive namespaced (task-harness:log-binnacle).
   on('skill.prompt', async ($, e, next) => {
-    if (!e.skill.endsWith('log-binnacle')) {
+    if (e.skill !== 'log-binnacle' && !e.skill.endsWith(':log-binnacle')) {
       return next(e)
     }
 

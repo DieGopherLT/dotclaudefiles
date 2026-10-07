@@ -7,10 +7,10 @@ const SUMMARY: SessionMessage[] = [{ role: 'user', text: 'summary', toolUses: []
 
 // Stands for the engine beneath the plugin: a session that began at STARTED_AT,
 // a clock past it, and a compaction that stands unless `skip` is given.
-function engineBeneath(on: On, compaction: SessionCompactResult = { messages: SUMMARY }) {
+function engineBeneath(on: On, compaction: SessionCompactResult = { messages: SUMMARY }, startedAt = STARTED_AT) {
   mock.clock(on, { now: 1_000 })
   on('session.usage', () => ({
-    value: { startedAt: STARTED_AT, context: { tokens: 312_450, window: 1_000_000, percent: 31 }, rateLimits: [] },
+    value: { startedAt, context: { tokens: 312_450, window: 1_000_000, percent: 31 }, rateLimits: [] },
   }))
   on('session.compact', () => compaction)
   on('skill.prompt', ($, e) => ({ text: e.text }))
@@ -40,12 +40,24 @@ describe('log-binnacle context budget', () => {
     expect(text).toContain('## Context budget')
   })
 
-  test('leaves other skills untouched', async ($, on) => {
-    engineBeneath(on)
+  for (const skill of ['commit', 'changelog-binnacle']) {
+    test(`leaves ${skill} untouched`, async ($, on) => {
+      engineBeneath(on)
 
-    const { text } = await $.skill.prompt({ skill: 'commit', text: SKILL_TEXT })
+      const { text } = await $.skill.prompt({ skill, text: SKILL_TEXT })
 
-    expect(text).toBe(SKILL_TEXT)
+      expect(text).toBe(SKILL_TEXT)
+    })
+  }
+
+  // /clear restarts startedAt past an earlier compaction's stamp.
+  test('a compaction before the session began does not count', async ($, on) => {
+    engineBeneath(on, undefined, 2_000)
+
+    await $.session.compact(compaction())
+    const { text } = await $.skill.prompt({ skill: 'log-binnacle', text: SKILL_TEXT })
+
+    expect(text).toContain('- compacted_this_session: false')
   })
 
   test('a main-conversation compaction after the session began counts', async ($, on) => {
