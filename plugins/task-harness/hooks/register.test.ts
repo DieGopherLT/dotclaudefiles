@@ -43,7 +43,7 @@ describe('log-binnacle context budget', () => {
   })
 
   for (const [name, context] of [
-    ['over 40% of the window', { tokens: 400_001, window: 1_000_000 }],
+    ['over 400k tokens', { tokens: 400_001, window: 1_000_000 }],
     ['unknown tokens', { window: 1_000_000 }],
   ] as const) {
     test(`${name} cuts`, async ($, on) => {
