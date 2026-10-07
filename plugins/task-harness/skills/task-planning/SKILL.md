@@ -3,26 +3,24 @@ name: task-planning
 description: >
   Turn an approved plan into a multi-session run: create a dedicated worktree, decompose the work
   into sessions of letter-group blocks sized by friction, open the binnacle that carries the run's
-  state across /clear boundaries, and register only the current session's tasks with TaskCreate.
-  Invoke this skill immediately when the user gives a substantial request — one that touches 2+
-  files, involves 3+ sequential steps, requires executing an approved plan, or comes right after
-  exiting plan mode with ExitPlanMode. Trigger on signals like "let's do it", "go ahead and
-  implement", "execute the plan", "make it so", "start working", "implement this", or any
-  multi-part request where the user is clearly kicking off real implementation work. When in doubt
-  about whether the scope is large enough, invoke it — the overhead is small and the structure it
-  provides prevents skipped steps and messy commit history.
+  state between sessions, and register only the current session's tasks with TaskCreate.
+  Invoke it when the user, in any language, kicks off substantial implementation work — a request
+  that touches 2+ files, involves 3+ sequential steps, executes an approved plan, or comes right
+  after ExitPlanMode. When in doubt about whether the scope is large enough, invoke it — the
+  overhead is small and the structure prevents skipped steps and messy commit history.
 ---
 
 # Task Planning
 
 You are about to begin substantial implementation work — usually executing a plan the user just
-approved. This skill covers the preparation only: a dedicated worktree, a session plan the run can
-survive `/clear` with, and the current session's task list.
+approved. This skill covers the preparation only: a dedicated worktree, a session plan that survives
+context resets, and the current session's task list.
 
 Execution then happens **in the main context** with your normal tools, guided by the binnacle's
 execution conventions. There is no execution skill: a substantial task does not fit one context
-window, so the work is split into sessions, and the binnacle (a sibling skill in this plugin) is
-the durable state between them. Code review is not automatic either — the session plan always ends
+window, so the work is split into sessions — each one cut by `/clear` or chained in the same
+window, as `log-binnacle` decides when it closes — and the binnacle (a sibling skill in this
+plugin) is the durable state between them. Code review is not automatic either — the session plan always ends
 with a review session the user runs manually.
 
 ## Before anything: is this a run, or just a plan?
@@ -54,7 +52,7 @@ First divide the job into letter-group blocks, as always:
   registering new components where the project's conventions require it, skills the user asked
   for explicitly.
 
-Then group blocks into **sessions** — the unit that fits one context window. Size by **friction**,
+Then group blocks into **sessions** — the unit of work between two `log-binnacle` closes. Size by **friction**,
 an estimate of how much context a block will burn beyond its own diff. Score each block with this
 rubric (count call sites with LSP or Grep before planning, not by feel):
 
@@ -68,7 +66,8 @@ rubric (count call sites with LSP or Grep before planning, not by feel):
 Cap a session at **12 points**; cap Session 1 at **7**, because the planning conversation already
 spent part of that window. A single block over 12 points is its own session; over 20, decompose it
 further before planning. The reason for the ceiling: a session that ends by running out of context
-cannot write its own closing entry.
+cannot write its own closing entry. The caps hold even when sessions end up chained: chaining is
+decided at close from measured figures, never assumed while planning.
 
 The session plan always ends with **Sesión R — code review**: executed by the user, manually, in a
 clean session. The run's last working session leaves `status: ready-for-review` in the binnacle;
@@ -91,9 +90,6 @@ conversation, and the binnacle is the durable copy of the full decomposition:
 - The final task of the session is always **`invoke log-binnacle`** — the explicit closing step
   that writes the session's entry and updates the binnacle's cursor.
 
-There is no `A0` base-ref task: the frozen merge-base SHA lives in the binnacle's frontmatter as
-`base_sha`.
-
 ## Hand off
 
 Once the binnacle is open and the session's tasks are registered, start executing the first block
@@ -108,6 +104,6 @@ present the sessions and blocks and wait.
 - Does not create tasks for single-file, single-step changes — just do them, no worktree, no
   binnacle
 - Does not create tasks for research or exploration; tasks track actions with observable output
-- Does not register future sessions' tasks — those are re-registered by the session that runs
-  them, from the binnacle
+- Does not register future sessions' tasks — each session registers its own from the binnacle,
+  on a cold resume or a chained close
 - Does not write code; execution starts after registration, in the main context

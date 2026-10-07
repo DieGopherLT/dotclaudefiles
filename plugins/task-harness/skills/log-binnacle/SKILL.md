@@ -3,7 +3,8 @@ name: log-binnacle
 description: >
   Write the closing entry of a work session into the run's binnacle (.claude/binnacle.md): insert
   an immutable entry at the top of the changelog, advance the session checkbox and
-  current_session, update status and last_updated, and recalculate the read_until_line cursor.
+  current_session, update status and last_updated, recalculate the read_until_line cursor, and
+  decide from the measured context budget whether the next session chains or follows a /clear.
   Invoke when the task titled "invoke log-binnacle" is reached — the explicit last task of every
   session in a task-harness run — when a resume detects the previous session died without closing
   and needs a recovery entry, or whenever the user asks to close, log, or checkpoint the current
@@ -72,8 +73,28 @@ In the same pass:
 
 ## Close the turn
 
-After writing, tell the user the session is closed and what state the run is in, and hand them
-the exact resume prompt for the next session — for example: «tras el `/clear`, abre con: "retoma
-el run desde la bitácora de este worktree"» — so the cold session's first message contains the
+After writing, decide whether the next session starts after a `/clear` (cut) or continues in this
+window (chain). The decision is made here and only here: figures crossing the threshold
+mid-session are never a reason to close early. A recovery entry skips this section: the session
+that wrote it goes back to the binnacle skill's resume procedure.
+
+The task-harness mod appends a `## Context budget` block to this prompt with the live figures.
+Cut when any of these holds; otherwise chain:
+
+- The block is absent (mod not loaded): no figures, so close as a cut.
+- `context_tokens` exceeds 400000, or is `unknown`.
+- `compacted_this_session` is `true`: the window already lost detail the next session would lean on.
+- `status` became `ready-for-review`: Sesión R always runs in a clean session.
+- The user asked for this checkpoint ahead of a `/clear`: their request wins over the figures.
+
+**Cut.** Tell the user the session is closed and what state the run is in, and hand them the
+exact resume prompt for the next session — for example: «tras el `/clear`, abre con: "retoma el
+run desde la bitácora de este worktree"» — so the cold session's first message contains the
 trigger, instead of relying on it discovering the file. When `status` became `ready-for-review`,
 say the next step is theirs: run `/code-review` manually in a clean session.
+
+**Chain.** Report the decision in one line with the figures, so the user can audit it — for
+example: «312k/1M, sin compactación: encadeno S3». Skip the resume prompt. Register the next
+session's tasks from *Bloques* with `TaskCreate` (block code as the first token of each title,
+final task `invoke log-binnacle`) and continue from the *Siguiente* you just wrote. The binnacle
+and plan are already in this context; do not re-read them.

@@ -12,10 +12,11 @@ description: >
 
 # Binnacle
 
-A substantial task does not fit one context window. The work is split into **sessions** separated
-by `/clear`, and everything the conversation-scoped task list knows dies at each cut. The binnacle
-is the durable layer between sessions: one markdown file per worktree that carries the session
-plan, the run's state, and an immutable changelog of what every closed session did and decided.
+A substantial task does not fit one context window. The work is split into **sessions** that
+`log-binnacle` either cuts with `/clear` or chains in the same window, and everything the
+conversation-scoped task list knows dies at each cut. The binnacle is the durable layer between
+sessions: one markdown file per worktree that carries the session plan, the run's state, and an
+immutable changelog of what every closed session did and decided.
 In pattern terms it is the run's memento — the externalized snapshot a later session restores
 without having lived the original context.
 
@@ -79,8 +80,6 @@ task-planning opens the binnacle when it registers a run:
    `Sesión R — code review` executed manually by the user in a clean session — never by the run.
 5. Set `read_until_line` to the last line of the file, verified with a command
    (`awk 'END{print NR}' .claude/binnacle.md`), not by eye.
-
-There is no `A0` task recording the base ref: `base_sha` lives in the frontmatter.
 
 ### Resolving `plan_path`
 
@@ -161,6 +160,7 @@ When a session starts cold in a worktree that carries a binnacle:
 
 The last task of every session is invoking the `log-binnacle` skill — it writes the session's
 entry, advances the checkbox and `current_session`, updates `status` and `last_updated`, and
-recalculates `read_until_line`. When the final working session closes, `status` becomes
-`ready-for-review`: the user runs the code review manually (`/code-review`) in a clean session,
-and the run reaches `done` only through the status gate above.
+recalculates `read_until_line`, then decides from the measured context budget whether the next
+session follows a `/clear` or chains in the same window. When the final working session closes,
+`status` becomes `ready-for-review`: the user runs the code review manually (`/code-review`) in a
+clean session, and the run reaches `done` only through the status gate above.
