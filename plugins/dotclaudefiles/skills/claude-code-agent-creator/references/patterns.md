@@ -44,11 +44,11 @@ Per changed file, check:
 [INSERT references/confidence-system.md VERBATIM]
 ```
 
-For a general code reviewer (quality, not security) use `model: sonnet`, `effort: high`. For a lint-style checker against a written guideline, `sonnet` + `medium` is enough.
+For a general code reviewer (quality, not security) use `model: sonnet`, `effort: high`. For a lint-style checker against a written guideline, `sonnet` + `medium` is enough. The security template above runs `opus` + `high`; `opus` + `medium` already outscores Sonnet at `high` and is the cheaper first try.
 
 ## 2. Researcher
 
-Investigates, gathers, returns a structured summary. Runs often, so keep it light.
+Investigates, gathers, returns a structured summary. Runs often, so keep it light: Haiku at `high` covers synthesis; drop to `medium` for pure lookup.
 
 ```markdown
 ---
@@ -56,6 +56,7 @@ name: dependency-researcher
 description: Researches third-party dependencies — what they do, how this project uses them, maintenance status, advisories, alternatives. Use proactively when asked "should we use X", "is Y still maintained", "what does Z do in our code", or before adding, removing or upgrading a dependency.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: haiku
+effort: high
 maxTurns: 20
 color: blue
 ---
@@ -123,7 +124,7 @@ Per public function:
 3. Happy path first, then edge cases: empty, nil/None, boundaries, error branches.
 4. Do not introduce a new framework or assertion library.
 
-Run the suite after each file and confirm the new tests pass before finishing.
+Run the suite after each file and confirm the new tests pass before finishing. A syntax-only check, or a test command that failed to start, does not count; if only the declared dependencies are missing, install them with the project's own package manager. If no real check can run, say which one you skipped and why instead of reporting the work as done.
 
 ## Output format
 
@@ -143,7 +144,7 @@ name: pr-review-orchestrator
 description: Coordinates a multi-angle PR review by delegating to security, performance and style auditors and merging their findings into one prioritized report. Use when asked to "review this PR thoroughly", "do a full review", or after a significant feature merge.
 tools: Read, Grep, Glob, Agent
 model: opus
-effort: xhigh
+effort: high
 maxTurns: 25
 color: purple
 ---

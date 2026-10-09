@@ -27,8 +27,9 @@ Source of truth: https://code.claude.com/docs/en/sub-agents#supported-frontmatte
 | --- | --- | --- |
 | `tools` | inherit all | Comma-separated allowlist. Accepts `mcp__<server>` / `mcp__<server>__*`. If nothing in the list resolves to a tool, the agent fails to launch with an error naming the entries. Background runs remove non-whitelisted built-ins silently (see `tools.md`). To preload skills use `skills`, not `Skill` here. |
 | `disallowedTools` | empty | Denylist, applied *before* `tools`. `mcp__*` removes every MCP tool. |
-| `model` | inherit | `haiku`, `sonnet`, `opus`, `fable`, a full ID (`claude-opus-5`, `claude-sonnet-5`, `claude-fable-5-1`), or `inherit`. Resolution: per-invocation param → frontmatter → `CLAUDE_CODE_SUBAGENT_MODEL` → main session. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` makes the env var win over all. A value blocked by the org's `availableModels` is substituted with the newest permitted version of that family, else the inherited model. `/tasks` shows the model (and effort) each running agent is on. |
-| `effort` | inherit session | `low`, `medium`, `high`, `xhigh`, `max`. Omitting it inherits the session level (`high` by default). Unsupported level degrades silently to the highest supported level below it; Haiku honors none. |
+| `model` | inherit | `haiku`, `sonnet`, `opus`, `fable`, a full ID (`claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1`), or `inherit`. Resolution: per-invocation param → frontmatter → `CLAUDE_CODE_SUBAGENT_MODEL` → main session. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` makes the env var win over all. A value blocked by the org's `availableModels` is substituted with the newest permitted version of that family, else the inherited model. `/tasks` shows the model (and effort) each running agent is on. |
+| `effort` | inherit session | `low`, `medium`, `high`, `xhigh`, `max`. Omitting it inherits the session level, which is the model's default unless the user changed it (`medium` on Haiku 5.5 / Sonnet 5.5 / Opus 5.5, `high` on Fable). Overrides the session level but not `CLAUDE_CODE_EFFORT_LEVEL`; a per-invocation `effort` parameter on the Agent call overrides the field and persists on resume (v2.1.292+). Unsupported level degrades silently to the highest supported level below it. |
+| `omitClaudeMd` | false | `true` skips the user, project and local CLAUDE.md files. Shortens the prompt of a narrow worker; keep it off when the agent needs project conventions. |
 | `color` | none | `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`. Cosmetic. |
 | `maxTurns` | none | Hard cap on agentic turns. At the cap the output is returned **marked partial** and Claude can resume the agent (v2.1.246+). The subscriber's brake. |
 | `memory` | none | `user`, `project`, `local`. See below. |
@@ -81,7 +82,7 @@ Same `name` in several places → highest wins:
 - [ ] `tools` explicit; nothing in it that background strips as the *only* entry (`LSP` always next to `Grep`)
 - [ ] auditors include the Confidence Scoring block
 - [ ] read-only agents have no `Write`/`Edit`/`NotebookEdit` unless `memory` is set
-- [ ] `model` is a bare alias unless a pin is intentional; `effort` matches the model
-- [ ] `fable` only when billing allows (API or Max within 50 % weekly)
+- [ ] `model` is a bare alias unless a pin is intentional; `effort` is `medium` or `high` unless a measured miss justifies `xhigh`; never `max`
+- [ ] `fable` only when billing allows (API or Max within 50 % weekly) and the scope is broad, complex and critical at once
 - [ ] plugin agents: no `hooks`, `mcpServers`, `permissionMode`
 - [ ] `memory` scope matches shareability

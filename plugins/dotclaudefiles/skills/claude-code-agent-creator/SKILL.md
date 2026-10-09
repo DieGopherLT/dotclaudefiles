@@ -1,6 +1,7 @@
 ---
 name: claude-code-agent-creator
-description: Crea archivos markdown de sub-agentes de Claude Code (YAML frontmatter + system prompt) listos para ~/.claude/agents/, .claude/agents/ o agents/ de un plugin. Usa esta skill proactivamente cuando el usuario diga "crea un agente", "create an agent", "necesito un sub-agente que...", "scaffold an agent", "haz un auditor / reviewer / researcher", "agente que revise / audite / investigue", o describa trabajo especializado que conviene aislar en un contexto propio (ej. "algo que revise PRs", "un agente que analice seguridad"). Cubre tools de menor privilegio, description, arquetipo, model + effort segun carga y billing (API / Pro / Max), y confidence scoring para auditores.
+description: Crea o actualiza sub-agentes de Claude Code (frontmatter YAML + system prompt) para ~/.claude/agents/, .claude/agents/ o agents/ de un plugin. Usar proactivamente cuando el usuario diga "crea un agente", "create an agent", "scaffold an agent", "haz un auditor / reviewer / researcher", describa trabajo que conviene aislar en su propio contexto, o pida actualizar, revisar o recalibrar model / effort de un agente existente o de todos los del proyecto ("actualiza el agente", "update this agent", "actualiza todos los agentes"), tambien tras salir un modelo nuevo. Decide tools de menor privilegio, model + effort segun carga y billing, y confidence scoring para auditores.
+argument-hint: "[--update <path-to-agent.md> | --update-all]"
 ---
 
 # Claude Code Agent Creator
@@ -43,14 +44,14 @@ List tools explicitly; omitting `tools` inherits everything. Write the list as i
 
 ### 4. Calibrate thinking load: `model` + `effort`
 
-Mechanical and small → light model, low effort; open-ended and long-horizon → heavy model, high effort. Prices, benchmarks, effort semantics and subscription rules are in `references/thinking-load.md`.
+Mechanical and small → light model, low effort; open-ended and long-horizon → heavy model, higher effort. Prices, benchmarks, effort semantics and subscription rules are in `references/thinking-load.md`. Escalate one notch at a time. Past `high` on Haiku and Sonnet, change the model; Opus may take `xhigh` after a measured miss, then `fable`; `max` never pays for a sub-agent.
 
 | Archetype | Pairing | Escalate to |
 | --- | --- | --- |
-| Researcher | `haiku` (no effort) | `sonnet` + `low` if synthesis is needed |
-| Implementer | `sonnet` + `medium` | `sonnet` + `high` for multi-file; `opus` + `high` for architectural changes |
-| Auditor | `sonnet` + `high` | `opus` + `high`/`xhigh` when a miss is unacceptable (security, compliance) |
-| Orchestrator | `opus` + `xhigh` | `fable` + `xhigh` only for multi-hour, long-horizon runs on API or Max |
+| Researcher | `haiku` + `medium` | `haiku` + `high` when the answer needs synthesis; `sonnet` + `medium` only past that |
+| Implementer | `sonnet` + `medium` | `sonnet` + `high` for multi-file; `opus` + `medium` for architectural changes. `low` is not an implementer setting: it skips verification |
+| Auditor | `sonnet` + `high` | `opus` + `medium`/`high` when a miss is unacceptable (security, compliance) or the diff is cross-cutting |
+| Orchestrator | `opus` + `high` | `opus` + `xhigh` after a measured miss; `fable` + `high` when the scope is broad, complex and critical at once, on API or Max |
 
 The rule that bites: on a Pro subscription never put `fable` in a sub-agent; it stalls on a credits prompt or falls back.
 
@@ -68,6 +69,20 @@ Follow the file structure below. The agent cannot ask the user anything, so the 
 
 Run the checklist at the end of `references/frontmatter-spec.md`, then write the file. Claude Code watches `~/.claude/agents/` and `.claude/agents/`, so edits apply within seconds, except the first file in a brand-new `agents/` directory, which needs a restart.
 
+## Update mode: `--update <path>` and `--update-all`
+
+Arguments: $ARGUMENTS
+
+Invoked as `--update <path-to-agent.md>`, or when the user asks to update, review or recalibrate an existing agent. `--update-all` runs the same audit over every `*.md` under the project's `.claude/agents/` (recursive; files without `name` are documentation and are skipped): one table per agent, all tables printed before any write, then the same gate per agent. Agents that pass are listed as current in one line each. Ask the billing mode once, up front, when any agent in the batch names `fable`. With no path, Glob the three scopes in the table above for the agent named and ask only if more than one file matches; a path that does not exist or has no `name` in its frontmatter is reported and stops the run. The file answers scope, trigger and archetype (infer the archetype from `tools` and the body; if it fits none, say so and skip the pairing check); billing mode it cannot answer, so ask for it only when a `fable` decision depends on it.
+
+Re-run steps 3 to 7 as an audit against the current references, plus three checks the numbered steps do not carry:
+
+- an `Agent(a, b)` allowlist, which is ignored inside a sub-agent (`references/tools.md`);
+- a pinned model ID older than the Current model column in `references/thinking-load.md`;
+- `effort` missing on `fable`, or on an implementer whose inherited default would fall below `medium`.
+
+Print a table (field, before, after, reason) before touching the file. Write immediately when every row changes a frontmatter field other than `model` or `tools`; wait for a yes when a row changes `model`, `tools` or the body. Do not rewrite prose that still holds; an agent that passes every check is left untouched and reported as current.
+
 ## Output: file structure
 
 ```markdown
@@ -76,7 +91,7 @@ name: <kebab-case>
 description: <role + "Use proactively when..." + 3-6 trigger phrases. Keep it short.>
 tools: <explicit comma-separated list>
 model: <haiku|sonnet|opus|fable|inherit>   # bare alias; pin a full ID only for reproducibility
-effort: <low|medium|high|xhigh|max>        # omit to inherit the session level (high unless changed); never set on haiku
+effort: <low|medium|high|xhigh|max>        # omit to inherit the session level (the model's default, medium on haiku/sonnet/opus, unless changed)
 color: <red|blue|green|yellow|purple|orange|pink|cyan>   # optional
 memory: <user|project|local>               # optional, only for cross-session knowledge
 maxTurns: <int>                            # optional; output is marked partial and resumable at the cap
@@ -100,6 +115,7 @@ maxTurns: <int>                            # optional; output is marked partial 
 
 - `references/frontmatter-spec.md`: every field, valid values, plugin restrictions, model resolution order, validation checklist
 - `references/tools.md`: tool catalog with background/foreground availability
-- `references/thinking-load.md`: tiers, prices, cost-per-task benchmarks, effort semantics, subscription rules
+- `references/thinking-load.md`: tiers, prices, effort semantics, escalation ladder, subscription rules
+- `references/cost-intelligence-research.md`: the dated data and sources behind `thinking-load.md`, including when Fable earns its price
 - `references/patterns.md`: archetype templates
 - `references/confidence-system.md`: 0-100 scoring, >= 80 threshold
