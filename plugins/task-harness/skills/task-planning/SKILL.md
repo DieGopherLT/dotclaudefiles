@@ -64,10 +64,13 @@ block with this rubric (count call sites before planning, not by feel):
 | Exported signature or contract change | 2 + 1 per call site |
 | Nested dependency (the change forces a change that forces another) | 8 |
 
-To count call sites, load the `LSP` tool with `ToolSearch` when a language server covers the
-project: `findReferences` costs fewer tokens and runs faster than Grep, and the tool stays loaded
-for execution. Keep the references, not just their count: they become the block's file set in the
-next step.
+When a language server covers the project, load the `LSP` tool with `ToolSearch` and make it
+your default way to navigate code for the rest of the run, not only for this count. It asks the
+code for meaning instead of matching text: `findReferences` returns every call site with no false
+hits from strings or comments, and `goToDefinition` and `hover` answer what a Grep-then-Read chain
+would, faster and for a fraction of the tokens. Every token saved is budget the session keeps for
+its blocks. Grep stays for text that is not a symbol: comments, strings, config.
+Keep the references, not just their count: they become the block's file set in the next step.
 
 Cap a session at **12 points**; cap Session 1 at **7**, because the planning conversation already
 spent part of that window. A single block over 12 points is its own session; over 20, decompose it
