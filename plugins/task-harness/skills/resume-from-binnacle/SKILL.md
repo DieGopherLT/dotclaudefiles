@@ -26,12 +26,8 @@ it here.
    section in order, without summarizing, reordering, or skipping any. Do not restate those
    steps here — that section is their single source of truth.
 3. **Load LSP.** If a language server covers the project's languages, load the `LSP` tool with
-   `ToolSearch` (it is deferred) before touching code, and navigate with it for the rest of the
-   session. The entry's **Referencias** are written as `path::Symbol`: `goToDefinition` and
-   `hover` land on each one directly, and `findReferences` maps what depends on it with no false
-   hits. That is faster, more precise and far cheaper in tokens than Grep, Read chains or an
-   explorer, and the context it saves is the budget the binnacle exists to protect. Grep stays for
-   text that is not a symbol.
+   `ToolSearch` (it is deferred) before touching code. The entry's **Referencias** are written as
+   `path::Symbol`, which `goToDefinition` and `hover` resolve directly.
 4. **Warm context, only if needed.** After the binnacle skill's plan read, check the latest entry's
    **Siguiente** and **Referencias**: if they point at code this session must understand and
    neither the entry nor the plan explains it, launch read-only Explore agents in parallel — one

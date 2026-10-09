@@ -18,8 +18,8 @@ context resets, and the current session's task list.
 
 Execution then happens **in the main context** with your normal tools, guided by the binnacle's
 execution conventions; only blocks marked `delegable` below fan out to sub-agents, and the
-business logic never does. There is no execution skill: a substantial task does not fit one context
-window, so the work is split into sessions — each one cut by `/clear` or chained in the same
+business logic never does. A substantial task does not fit one context window, so the work is
+split into sessions — each one cut by `/clear` or chained in the same
 window, as `log-binnacle` decides when it closes — and the binnacle (a sibling skill in this
 plugin) is the durable state between them. The session plan always ends with a review session
 the run executes itself through the `review-session` skill.
@@ -33,7 +33,7 @@ once the user is executing.
 
 ## Always a worktree
 
-Every run gets a dedicated worktree — no branch-vs-worktree decision. The binnacle lives at the
+Every run gets a dedicated worktree. The binnacle lives at the
 worktree root; in the main working tree it would be inherited by whatever branch checks out there
 next, so if there is a binnacle, there is a worktree.
 
@@ -64,13 +64,10 @@ block with this rubric (count call sites before planning, not by feel):
 | Exported signature or contract change | 2 + 1 per call site |
 | Nested dependency (the change forces a change that forces another) | 8 |
 
-When a language server covers the project, load the `LSP` tool with `ToolSearch` and make it
-your default way to navigate code for the rest of the run, not only for this count. It asks the
-code for meaning instead of matching text: `findReferences` returns every call site with no false
-hits from strings or comments, and `goToDefinition` and `hover` answer what a Grep-then-Read chain
-would, faster and for a fraction of the tokens. Every token saved is budget the session keeps for
-its blocks. Grep stays for text that is not a symbol: comments, strings, config.
-Keep the references, not just their count: they become the block's file set in the next step.
+When a language server covers the project, load the `LSP` tool with `ToolSearch` and navigate
+with it for the rest of the run: `findReferences` returns call sites without false hits from
+strings or comments, which is what this count needs. Keep the references, not just their count:
+they become the block's file set in the next step.
 
 Cap a session at **12 points**; cap Session 1 at **7**, because the planning conversation already
 spent part of that window. A single block over 12 points is its own session; over 20, decompose it

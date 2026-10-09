@@ -20,8 +20,8 @@ immutable changelog of what every closed session did and decided.
 In pattern terms it is the run's memento — the externalized snapshot a later session restores
 without having lived the original context.
 
-Execution needs no skill of its own: each session works in the main context with its normal
-tools, guided by this file. The binnacle's *Convenciones de ejecución* section carries the few
+Each session works in the main context with its normal tools, guided by this file. The
+binnacle's *Convenciones de ejecución* section carries the few
 rules that must survive the cut (commit per block, immediate `TaskUpdate`, `log-binnacle` as the
 last task of every session).
 
