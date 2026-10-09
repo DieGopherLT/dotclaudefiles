@@ -21,8 +21,8 @@ execution conventions; only blocks marked `delegable` below fan out to sub-agent
 business logic never does. There is no execution skill: a substantial task does not fit one context
 window, so the work is split into sessions — each one cut by `/clear` or chained in the same
 window, as `log-binnacle` decides when it closes — and the binnacle (a sibling skill in this
-plugin) is the durable state between them. Code review is not automatic either — the session plan always ends
-with a review session the user runs manually.
+plugin) is the durable state between them. The session plan always ends with a review session
+the run executes itself through the `review-session` skill.
 
 ## Before anything: is this a run, or just a plan?
 
@@ -75,9 +75,10 @@ further before planning. The reason for the ceiling: a session that ends by runn
 cannot write its own closing entry. The caps hold even when sessions end up chained: chaining is
 decided at close from measured figures, never assumed while planning.
 
-The session plan always ends with **Sesión R — code review**: executed by the user, manually, in a
-clean session. The run's last working session leaves `status: ready-for-review` in the binnacle;
-it never runs the review itself.
+The session plan always ends with **Sesión R — code review**, run in a clean session by the
+`review-session` skill once the last working session leaves `status: ready-for-review`. Do not
+pick its `/code-review` effort now: that skill decides it at review time from the plan and the
+binnacle, because its rubric needs what execution actually did.
 
 ## Mark each block: main context or delegable
 

@@ -27,11 +27,11 @@
     {
       "id": 3,
       "prompt": "/resume-from-binnacle (el binnacle marca status: ready-for-review y la última entrada dice en Siguiente que el bloque pendiente toca un módulo que la entrada no describe)",
-      "expected_output": "The status gate wins over the explorer step: the agent registers no tasks and writes no code, reports that the run awaits the user's manual review, and launches no explorers because there is no work to warm context for.",
+      "expected_output": "The status gate wins over the explorer step: the agent registers no working tasks, completes the bounded read, git reconciliation and plan read, then invokes the review-session skill; it launches no explorers because Sesión R fans out its own reviews.",
       "files": [],
       "expectations": [
-        "The agent honors the status gate: no tasks registered, no code written",
-        "The agent reports the run is awaiting the user's manual review",
+        "The agent honors the status gate: no working tasks registered, no code written before the review",
+        "The agent invokes the review-session skill instead of reporting that the review is the user's to run",
         "The agent does not launch explorers for a run that has no pending work"
       ]
     },

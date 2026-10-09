@@ -4,13 +4,13 @@
     {
       "id": 1,
       "prompt": "Ejecuta el plan aprobado en ~/.claude/plans/session-tokens.md: migrar el módulo de auth de JWT a session tokens. Toca el middleware, los handlers de login/logout, los tests de integración y el CLAUDE.md.",
-      "expected_output": "The agent creates a dedicated worktree via the branching skill (no branch-vs-worktree deliberation), divides the work into lettered blocks grouped into sessions sized by friction, ends the session plan with a Sesión R executed manually by the user, opens the binnacle with plan_path pointing at the approved plan, and registers with TaskCreate only the current session's tasks with 'invoke log-binnacle' as the final one.",
+      "expected_output": "The agent creates a dedicated worktree via the branching skill (no branch-vs-worktree deliberation), divides the work into lettered blocks grouped into sessions sized by friction, ends the session plan with a Sesión R the review-session skill runs, opens the binnacle with plan_path pointing at the approved plan, and registers with TaskCreate only the current session's tasks with 'invoke log-binnacle' as the final one.",
       "files": [],
       "expectations": [
         "The agent always creates a dedicated worktree via the branching skill, without weighing a plain branch as an option",
         "The agent divides work into lettered blocks (A, B, C...) with numbered subtasks and groups blocks into sessions",
         "The agent justifies session boundaries by friction (call sites, nested dependencies) rather than block count alone",
-        "The session plan ends with a code-review session executed manually by the user, not by the run",
+        "The session plan ends with a Sesión R run by the review-session skill, and the agent does not pick its /code-review effort at planning time",
         "The agent opens the binnacle recording plan_path",
         "The agent registers with TaskCreate only the current session's tasks, not the whole run",
         "The final registered task is invoking log-binnacle",

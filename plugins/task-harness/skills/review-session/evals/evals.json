@@ -1,0 +1,41 @@
+{
+  "skill_name": "review-session",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Retoma el run desde la bitácora de este worktree. (La bitácora marca status: ready-for-review; el plan migra el módulo de pagos de Stripe a Adyen; las entradas dicen que no se escribieron tests nuevos y que el bloque C fue un rename mecánico delegado.)",
+      "expected_output": "The agent treats this as Sesión R: declares the /code-review effort with the rubric (base xhigh for payments, +1 no tests → max), scans the installed agents for project auditors, launches the auditors, /code-review max without --fix and /security-review (payments is a trust boundary) in the same turn, then arbitrates.",
+      "files": [],
+      "expectations": [
+        "The agent declares the effort as a base band plus modifiers, reading the modifiers from the binnacle entries rather than guessing",
+        "The agent scans for project auditors before finalizing the band",
+        "The agent launches auditors, /code-review and /security-review in the same turn and does not pass --fix",
+        "The agent does not run /code-review ultra"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "El code-review devolvió 6 hallazgos. Uno dice que el retry en PaymentClient debería ser exponencial; la entrada S2 de la bitácora registra la decisión de usar retry fijo porque el proveedor penaliza el jitter. Otro señala un null check faltante en un archivo que no toca el diff desde base_sha. Arbitra y despacha.",
+      "expected_output": "The agent discards the retry finding citing the S2 decision, classifies the null check as pre-existing and dispatches it fire-and-forget to a worktree agent cut from base_branch, groups the remaining in-scope findings by disjoint file sets, dispatches them in parallel in the background with haiku + high by default (sonnet + medium where tactical judgment is needed), then verifies, commits via the commit skill and closes via log-binnacle.",
+      "files": [],
+      "expectations": [
+        "The agent discards the retry finding by naming the binnacle decision that covers it",
+        "The agent does not fix the pre-existing finding on the current branch; it dispatches it to a worktree agent branching from base_branch",
+        "No two fix agents share a file",
+        "The default applier is haiku with high effort, escalating to sonnet medium only for findings needing tactical judgment",
+        "The agent closes through log-binnacle and leaves done to the user's confirmation"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Retoma el run desde la bitácora. (status: ready-for-review; el run completo fue mover tres archivos de configuración a otra carpeta y actualizar sus imports, todo en bloques delegables.)",
+      "expected_output": "The agent judges the changeset too small for the full pass, says so, skips the reviews and closes Sesión R through log-binnacle, telling the user the run awaits their confirmation of done.",
+      "files": [],
+      "expectations": [
+        "The agent explicitly judges that the changeset does not warrant the full pass and explains why",
+        "The agent does not launch /code-review or auditors",
+        "The agent still closes through log-binnacle and does not set done without the user"
+      ]
+    }
+  ]
+}

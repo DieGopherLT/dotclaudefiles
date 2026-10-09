@@ -5,7 +5,7 @@ worktree: <ruta absoluta>
 base_branch: <rama base — solo contexto humano, no usable como revisión>
 base_sha: <SHA del merge-base — congelado, nunca se reescribe>
 plan_path: </ruta/absoluta/al/plan.md | none>   # absoluta y expandida, nunca con ~
-status: in-progress | ready-for-review | done
+status: in-progress | ready-for-review | reviewed | done
 current_session: <n> of <total>   # total = solo sesiones de trabajo; la Sesión R nunca cuenta
 read_until_line: <N>   # Read con limit: N → frontmatter + convenciones + plan de sesiones + última entrada
 last_updated: <timestamp ISO>
@@ -26,14 +26,14 @@ last_updated: <timestamp ISO>
   frontera de bloque vía la skill `commit`.
 - `TaskUpdate` en el momento en que cada tarea se completa.
 - La última tarea de cada sesión es: invocar `log-binnacle` y escribir la entrada de la sesión.
-- Al cerrar la última sesión de trabajo, poner `status: ready-for-review`; el usuario ejecuta el
-  code review manualmente en una sesión limpia.
+- Al cerrar la última sesión de trabajo, poner `status: ready-for-review`; la siguiente sesión
+  fría es la Sesión R, que ejecuta la skill `review-session`.
 
 ## Plan de sesiones
 
 - [ ] Sesión 1 — A, B: <alcance corto>
 - [ ] Sesión 2 — C, D, E: <alcance corto>
-- [ ] Sesión R — code review: la ejecuta el usuario, manualmente, en una sesión limpia
+- [ ] Sesión R — code review: la ejecuta la skill `review-session` en una sesión limpia
 
 ### Bloques
 

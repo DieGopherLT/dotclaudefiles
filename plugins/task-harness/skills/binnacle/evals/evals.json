@@ -9,7 +9,7 @@
       "expectations": [
         "The agent copies references/binnacle-template.md to .claude/binnacle.md at the worktree root",
         "The agent fills the frontmatter including plan_path with the approved plan's path and base_sha as the frozen merge-base SHA and base_branch as human context only",
-        "The agent writes the Plan de sesiones ending with a Sesión R — code review executed manually by the user",
+        "The agent writes the Plan de sesiones ending with a Sesión R — code review run by the review-session skill",
         "The agent sets read_until_line to the last line of the file since no entries exist yet",
         "The agent appends .claude/binnacle.md to the git common dir's info/exclude only if absent, never editing the tracked .gitignore"
       ]

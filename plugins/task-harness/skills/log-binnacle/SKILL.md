@@ -56,8 +56,12 @@ In the same pass:
    |---|---|---|---|
    | n, with n < total | yes | `n+1 of <total>` | `in-progress` |
    | n, with n == total | no (only Sesión R remains) | `R of <total>` | `ready-for-review` |
+   | R, every surviving finding fixed and verified | no | `R of <total>` | `reviewed` — `done` only on the user's confirmation, set by whoever receives it |
+   | R, findings left that need a working session | yes | `<total+1> of <total+1>` | `in-progress`, with that session appended to *Plan de sesiones* and its blocks to *Bloques* |
 
-   `done` is set later by the review session on the user's confirmation, never here. Always stamp
+   Sesión R's entry header is `[SR]`; it lists the declared effort, the reviews that ran, every
+   discarded finding with the decision that covered it, the fixes committed and the pre-existing
+   worktrees handed off. Always stamp
    `last_updated` with the current ISO timestamp.
 3. **Recalculate `read_until_line`** — deterministic recipe, run from the worktree root:
    - `grep -n '^## \[' .claude/binnacle.md` — the line numbers of all entry headers.
@@ -84,14 +88,16 @@ holds; otherwise chain:
 
 - The block is absent (mod not loaded): no verdict, so close as a cut.
 - `budget_verdict` is `cut`.
-- `status` became `ready-for-review`: Sesión R always runs in a clean session.
+- `status` became `ready-for-review` or `reviewed`: Sesión R always runs in a clean session,
+  where the `review-session` skill gets the whole window for the reviews it fans out, and a
+  reviewed run only awaits the user's `done`.
 - The user asked for this checkpoint ahead of a `/clear`: their request wins over the figures.
 
 **Cut.** Tell the user the session is closed and what state the run is in, and hand them the
 exact resume prompt for the next session — for example: «tras el `/clear`, abre con: "retoma el
 run desde la bitácora de este worktree"» — so the cold session's first message contains the
 trigger, instead of relying on it discovering the file. When `status` became `ready-for-review`,
-say the next step is theirs: run `/code-review` manually in a clean session.
+the resume prompt is the same: the status gate routes the cold session into Sesión R.
 
 **Chain.** Report the decision in one line with the figures, so the user can audit it — for
 example: «312k/1M, sin compactación: encadeno S3». Skip the resume prompt. Register the next

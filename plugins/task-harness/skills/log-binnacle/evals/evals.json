@@ -19,11 +19,11 @@
     {
       "id": 2,
       "prompt": "Acabo de terminar la última sesión de trabajo del run — solo queda la Sesión R de code review. Registra el cierre en la bitácora.",
-      "expected_output": "The agent writes the closing entry, sets status: ready-for-review (not done), updates the cursor and frontmatter, and tells the user the next step is theirs: run /code-review manually in a clean session.",
+      "expected_output": "The agent writes the closing entry, sets status: ready-for-review (not done), updates the cursor and frontmatter, cuts the session, and hands the user the resume prompt — the cold session's status gate routes into Sesión R via the review-session skill.",
       "files": [],
       "expectations": [
         "The agent sets status to ready-for-review, not done",
-        "The agent tells the user to run the code review manually in a clean session",
+        "The agent cuts and hands over the resume prompt instead of telling the user to run the review by hand",
         "The agent does not run the code review itself",
         "The agent recalculates read_until_line so a bounded Read returns the new entry as the only entry in the hot prefix"
       ]

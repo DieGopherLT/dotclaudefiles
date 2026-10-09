@@ -55,7 +55,7 @@ Mutability is per zone, stated once:
 
 | Zone | Mutability | Who writes it |
 |---|---|---|
-| Frontmatter: `current_session`, `status`, `last_updated`, `read_until_line` | mutable | `log-binnacle`; `status: done` by the review session on the user's confirmation |
+| Frontmatter: `current_session`, `status`, `last_updated`, `read_until_line` | mutable | `log-binnacle`; `status: done` from `reviewed` by whoever receives the user's confirmation |
 | Frontmatter: `task`, `branch`, `worktree`, `base_branch`, `base_sha` | frozen after opening | nobody |
 | Frontmatter: `plan_path` | frozen after opening, except repair when the resume finds the file missing and the user confirms the new path (see Resuming, step 4) | that repair only |
 | Convenciones de ejecución | frozen | nobody |
@@ -77,7 +77,7 @@ task-planning opens the binnacle when it registers a run:
    recipe below), `status: in-progress`, `current_session: 1 of <total>` where total counts
    working sessions only (Sesión R never counts), `last_updated`.
 4. Write *Plan de sesiones* and *Bloques* from the decomposition. The plan always ends with a
-   `Sesión R — code review` executed manually by the user in a clean session — never by the run.
+   `Sesión R — code review`, run in a clean session by the `review-session` skill.
 5. Set `read_until_line` to the last line of the file, verified with a command
    (`awk 'END{print NR}' .claude/binnacle.md`), not by eye.
 
@@ -117,14 +117,14 @@ When a session starts cold in a worktree that carries a binnacle:
 
 0. **Status gate.** Read the frontmatter first (`Read` with `limit: 12`) and branch on `status`:
    - `in-progress` — continue with the steps below.
-   - `ready-for-review` — register no tasks and write no code until the user decides. Report
-     the run's state and that the review is theirs to run. Then:
-
-     | User's response in this session | Do |
-     |---|---|
-     | Confirms the run is finished | Set `status: done` and `last_updated`. Entries untouched. Stop. |
-     | Reports review findings to fix | Set `status: in-progress`, add a new working session to *Plan de sesiones* with its blocks, bump the total and `current_session`, register that session's tasks (final task `invoke log-binnacle`), then execute normally. |
-     | Says nothing, or asks something else | Stay read-only. Do not touch the frontmatter. |
+   - `ready-for-review` — this is Sesión R. Register no working tasks; run steps 1 through 4
+     below so the binnacle, git state and plan are in context and a review that died mid-way
+     gets its recovery entry, then invoke the `review-session` skill — it owns the review and
+     closes through `log-binnacle`. If the user instead confirms the run is finished without a
+     review, set `status: done` and `last_updated`, entries untouched, and stop.
+   - `reviewed` — Sesión R closed with everything fixed. Report the `[SR]` entry's summary and
+     wait: on the user's confirmation set `status: done` and `last_updated`, entries untouched;
+     otherwise stay read-only. Never re-run the review.
    - `done` — report that the run is closed and ask before doing anything in this worktree.
 1. `Read` the file with `offset: 1, limit: <read_until_line>`. `limit` is a line count, so it
    equals the cursor only when reading from line 1 — never start the bounded read at an offset.
@@ -162,5 +162,5 @@ The last task of every session is invoking the `log-binnacle` skill — it write
 entry, advances the checkbox and `current_session`, updates `status` and `last_updated`, and
 recalculates `read_until_line`, then decides from the measured context budget whether the next
 session follows a `/clear` or chains in the same window. When the final working session closes,
-`status` becomes `ready-for-review`: the user runs the code review manually (`/code-review`) in a
-clean session, and the run reaches `done` only through the status gate above.
+`status` becomes `ready-for-review`: the next cold session is Sesión R, which the status gate
+hands to the `review-session` skill, and the run reaches `done` only on the user's confirmation.
