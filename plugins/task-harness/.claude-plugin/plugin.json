@@ -1,6 +1,6 @@
 {
   "name": "task-harness",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "The harness for a substantial task that does not fit one context window: business logic always in the main context, mechanical blocks delegable by gate, split into sessions that are cut by /clear or chained in the same window. task-planning turns an approved plan into a dedicated worktree plus a session-by-blocks decomposition sized by friction; the binnacle — an immutable reverse-chronological changelog with a line-count read cursor — is the durable state a cold session resumes from with a single bounded Read; log-binnacle writes each session's closing entry and makes the cut-or-chain call from the context budget verdict a bundled mod injects, and /resume-from-binnacle is the user's shortcut to reopen a run cold. Code review is Sesión R, run in a clean session by review-session: effort for /code-review chosen by a declared rubric from plan and binnacle, project auditors and /security-review launched alongside it, findings contrasted against the plan and binnacle before parallel background fixes.",
   "author": {
     "name": "Diego",

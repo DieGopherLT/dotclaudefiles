@@ -116,8 +116,10 @@ A fix in a critical domain moves up one row even when it looks mechanical.
 **Pre-existing findings** never land on this branch. Dispatch them fire-and-forget: one Agent
 per disjoint file group, `isolation: "worktree"`, `run_in_background: true`, first instruction
 `git switch -c fix/<slug> <base_branch>` so the fix is cut from the base and not from this run,
-then fix only that, verify, commit with a `fix:` message, never push. List the dispatched
-worktrees in the closing entry and do not wait for them.
+then fix only that and verify. Like every sub-agent, it leaves the diff uncommitted in its
+worktree: committing is the main agent's job, after reviewing the report. List the dispatched
+worktrees in the closing entry and do not wait for them — the user reviews and commits each one
+when they get to it.
 
 When the in-scope appliers return, review their reports as `subagent-dispatch` prescribes, run
 the run's own verification command, and commit through the `commit` skill — one commit per
