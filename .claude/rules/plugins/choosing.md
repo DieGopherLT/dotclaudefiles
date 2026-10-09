@@ -57,7 +57,7 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 
 **Use git-toolkit when:**
 
-- Committing changes — the `commit` skill owns staging, linting, message format
+- Committing changes — the `commit` skill owns staging, linting, message format; the `commit-guard` hook enforces the message contract and blocks commits from sub-agents
 - Creating a new branch — the `branching` skill applies naming conventions before `git checkout -b`
 - Mid-rebase or mid-merge with conflicts — the `conflict-resolver` skill analyzes every branch's history in parallel via `git-history-retriever` before touching any conflict marker
 - Wanting to compact a branch's commit history before merging or opening a PR — the `squash-suggester` skill invokes `squash-planner` and produces a `squash-plan-<branch>.md` file with the rebase -i action table

@@ -38,16 +38,21 @@ produces changes, stage those too. A commit with unformatted code is already beh
 
 ### Format
 
-Single line only. Maximum 96 characters. No body. No bullet points.
+Conventional Commits, enforced by the plugin's `commit-guard` hook with these exact limits:
 
 ```
-<prefix>: <description>
+<type>(<scope>)?!?: <description>
+
+<body, only when the why does not fit the subject>
 ```
 
-### Prefixes
-
-Conventional Commits: `feat` `fix` `docs` `style` `refactor` `test` `chore`. Plus `wip:` for an
-intentionally incomplete checkpoint — use sparingly.
+- Subject: at most 72 characters, imperative mood, lowercase first word, no trailing period.
+- `type` is one of `feat` `fix` `docs` `style` `refactor` `test` `chore`, plus `wip` for an
+  intentionally incomplete checkpoint — use sparingly. `scope` is optional kebab-case naming the
+  plugin or module. `!` marks a breaking change.
+- Body: none by default. When the subject cannot carry the why, add one blank line and at most 6
+  lines of prose wrapped at 72 characters. The body explains the reason, never the steps or the
+  files touched — a commit is not a changelog. `BREAKING CHANGE:` footers are allowed.
 
 ### Good message anatomy
 
@@ -60,7 +65,7 @@ Forbidden — these make the history useless:
   diff does to the code; the review that prompted it is invisible to the reader
 - Emojis anywhere in the message
 - Co-author or attribution lines: `Co-authored-by: Claude <...>` or similar
-- Multi-line messages with a body or bullet points
+- Bullet points anywhere in the body
 
 ### Atomicity check
 
@@ -73,7 +78,20 @@ committing. One logical change per commit is the rule — not one file, not one 
 Commit directly, without asking for confirmation. Staging (Steps 1-2) and the atomicity check
 (Step 4) are the only points where the user is consulted.
 
-Execute with `git commit -m '<message>'`.
+Execute with `git commit -m '<subject>'`. When the message has a body, or the subject contains an
+apostrophe, use the heredoc form instead, which the hook also validates:
+
+```bash
+git commit -m "$(cat <<'EOF'
+<subject>
+
+<body>
+EOF
+)"
+```
+
+If `commit-guard` denies the commit, fix exactly what its reason names and retry; do not work
+around it with `-F`, `--no-verify`, or by splitting the message across other flags.
 
 Never use `--no-verify`, `--no-gpg-sign`, or `--amend` unless the user explicitly requests it.
 

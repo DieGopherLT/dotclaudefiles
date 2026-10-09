@@ -1,0 +1,17 @@
+{
+  "description": "commit-guard: validates git commit messages against the commit skill's contract and blocks commits from sub-agents",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/commit-guard/commit-guard.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
