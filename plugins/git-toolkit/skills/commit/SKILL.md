@@ -70,8 +70,8 @@ committing. One logical change per commit is the rule — not one file, not one 
 
 ## Step 5 — Commit
 
-Commit directly, without asking for confirmation. The staging decisions in Step 1 are the only
-point where the user is consulted.
+Commit directly, without asking for confirmation. Staging (Steps 1-2) and the atomicity check
+(Step 4) are the only points where the user is consulted.
 
 Execute with `git commit -m '<message>'`.
 
