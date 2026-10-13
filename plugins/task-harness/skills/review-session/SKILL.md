@@ -37,7 +37,7 @@ on what execution actually did — whether tests exist, which blocks turned out 
 deviated — and only the entries know that.
 
 The guiding question: *what does a false negative cost, and how much noise do I tolerate to
-avoid it?* `low`/`medium` optimize precision; `high` through `max` widen coverage and accept
+avoid it?* `low`/`medium` optimize precision; `high` and `xhigh` widen coverage and accept
 uncertain findings, which is what you want when a miss is expensive.
 
 **Step 1 — the cost of a miss sets the base band.** Read it from the plan's domain:
@@ -48,7 +48,7 @@ uncertain findings, which is what you want when a miss is expensive.
 | Moderate: normal business logic, visible but contained error | `high` |
 | Cheap: internal, mechanical, reversible, no new logic | `medium` |
 
-**Step 2 — yes/no modifiers of ±1 level**, bounded to `low → medium → high → xhigh → max`:
+**Step 2 — yes/no modifiers of ±1 level**, bounded to `low → medium → high → xhigh`:
 
 | Modifier | Effect | Where to read it |
 |---|---|---|
@@ -58,10 +58,11 @@ uncertain findings, which is what you want when a miss is expensive.
 | Pure mechanical transformation (rename, move, config) | −1 | `delegable` marks, *Hecho* |
 | Project auditors will cover this same patch | −1 | the scan in the next section |
 
-`low` is reachable only from base `medium` with a mitigator; `max` only from base `xhigh` with an
-aggravator. File count never sets the band by itself. Declare the decision in the report so it
-can be audited: «base high, +1 sin tests, −1 auditores → high». `ultra` is out of scope — it is
-user-triggered and billed.
+`low` is reachable only from base `medium` with a mitigator. `xhigh` is the ceiling: a `+1` on
+base `xhigh` changes nothing, and `max` is never chosen — repeated `max` reviews are too costly
+for the user's subscription. File count never sets the band by itself. Declare the decision in
+the report so it can be audited: «base high, +1 sin tests, −1 auditores → high». `ultra` is out
+of scope — it is user-triggered and billed.
 
 ## Identify the project's auditors
 

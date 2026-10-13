@@ -4,13 +4,13 @@
     {
       "id": 1,
       "prompt": "Retoma el run desde la bitácora de este worktree. (La bitácora marca status: ready-for-review; el plan migra el módulo de pagos de Stripe a Adyen; las entradas dicen que no se escribieron tests nuevos y que el bloque C fue un rename mecánico delegado.)",
-      "expected_output": "The agent treats this as Sesión R: declares the /code-review effort with the rubric (base xhigh for payments, +1 no tests → max), scans the installed agents for project auditors, launches the auditors, /code-review max without --fix and /security-review (payments is a trust boundary) in the same turn, then arbitrates.",
+      "expected_output": "The agent treats this as Sesión R: declares the /code-review effort with the rubric (base xhigh for payments, +1 no tests → capped at xhigh), scans the installed agents for project auditors, launches the auditors, /code-review xhigh without --fix and /security-review (payments is a trust boundary) in the same turn, then arbitrates.",
       "files": [],
       "expectations": [
         "The agent declares the effort as a base band plus modifiers, reading the modifiers from the binnacle entries rather than guessing",
         "The agent scans for project auditors before finalizing the band",
         "The agent launches auditors, /code-review and /security-review in the same turn and does not pass --fix",
-        "The agent does not run /code-review ultra"
+        "The agent does not run /code-review max or ultra; a +1 on base xhigh stays at xhigh"
       ]
     },
     {
