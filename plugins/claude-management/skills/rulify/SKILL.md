@@ -34,7 +34,7 @@ Read these when planning extractions or whenever a frontmatter / loading detail 
 Before anything else, ensure the target project has a short always-on rule that keeps every `CLAUDE.md` and `AGENTS.md` honest.
 
 - Check whether `<project>/.claude/rules/memory/keep-current.md` exists.
-- If it does, leave it alone — the user owns it.
+- If it does, leave it alone — the user owns it. If its frontmatter contains `paths`, tell the user it is the legacy scoped version, which does not load while editing module code. Point to `references/memory-currency-rule.md` for the current payload and let the user decide whether to replace it. Do not overwrite it.
 - If it does not, create the directory and write the file using the exact content in `references/memory-currency-rule.md`.
 
 This is idempotent and runs on every rulify invocation. Mention the bootstrap (created or skipped) in the Step 7 report. Why this is Step 0: the rest of rulify shrinks CLAUDE.md by moving content into rules, which means the agent will be reading and editing memory files more often — the currency rule must already be in place when that starts happening.

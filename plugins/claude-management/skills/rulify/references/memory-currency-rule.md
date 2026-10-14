@@ -33,6 +33,6 @@ CLAUDE.md and AGENTS.md files are the map this agent navigates by. A wrong map m
 ## Notes for rulify implementers
 
 - The directory `.claude/rules/memory/` may not exist; create it.
-- Do not modify or merge into an existing `keep-current.md` — if the file is there, the user owns it. If it still carries a `paths` frontmatter (the earlier payload), mention it in the Step 7 report so the user can decide whether to replace it.
+- Do not modify or merge into an existing `keep-current.md` — if the file is there, the user owns it.
 - After writing, mention the new rule in the Step 7 report so the user knows it was bootstrapped.
 - Keep `paths` out of the payload: see the explanation above.
