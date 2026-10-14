@@ -33,7 +33,7 @@ main() {
   set_marker "$marker"
 
   emit_additional_context "PostToolUse" \
-"${file_path} is now at ${line_count} lines, above the ${ceiling}-line ceiling where CLAUDE.md attention starts to dilute. Invoke the rulify skill on it to extract scoped sections into on-demand .claude/rules/ files."
+"${file_path} is now at ${line_count} lines, above the ${ceiling}-line ceiling where CLAUDE.md attention starts to dilute. Once the current task is done, suggest running the rulify skill on it to extract scoped sections into on-demand .claude/rules/ files."
 }
 
 main

@@ -10,7 +10,7 @@ description: >
   corrections), or refuted. Never modifies files. The premise: repetition measures habit,
   not correctness — this agent keeps bad habits from being stabilized.
 tools: Read, Grep, Glob, LSP, WebFetch, WebSearch, Bash
-model: sonnet
+model: opus
 effort: high
 color: red
 ---
