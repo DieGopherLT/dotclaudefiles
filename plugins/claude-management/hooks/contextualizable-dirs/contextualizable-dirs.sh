@@ -46,10 +46,7 @@ main() {
   emit_additional_context "Stop" \
 "This session touched director(ies) that structurally look like code modules and have no CLAUDE.md/AGENTS.md yet — they are candidates, not confirmed business logic:
 ${suggestions}
-Run claudify only on the ones YOU judge worth it, using what you just experienced in this session as the signal — qualifying structurally does not mean qualifying semantically:
-- Prioritize modules that are self-contained/cohesive over ones fragmented across many external pieces.
-- Prioritize modules that were costly for you to mentally reconstruct this session (by size or by how many relationships you had to track) — those pay off most from being pre-documented for next time.
-- Skip directories that are mostly types, helpers, or generic utilities with no real domain logic.
+Run claudify only on the ones you judge worth it: cohesive modules that were costly to reconstruct this session; skip directories that are mostly types, helpers, or generic utilities.
 claudify runs as a forked background task and costs you no context: invoke it once per chosen directory (fire-and-forget) and relay each one-line summary when it returns."
 }
 

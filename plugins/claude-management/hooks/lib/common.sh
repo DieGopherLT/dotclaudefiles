@@ -107,6 +107,15 @@ emit_additional_context() {
   # additionalContext on Stop was verified against the hooks guide; if a future
   # Claude Code release stops delivering it there, the fallback is emitting a
   # top-level {"systemMessage": ...} instead.
+  #
+  # When the observer mod is loaded it writes the .observer marker at session
+  # start; Stop findings then go to its inbox instead of the main agent's
+  # context, and the mod decides what reaches the next prompt.
+  if [ "$1" = "Stop" ] && marker_present "${HOOK_SESSION_ID}.observer"; then
+    printf '%s\n' "$2" >> "${HOOK_STATE_DIR}/${HOOK_SESSION_ID}.observer-inbox"
+    return 0
+  fi
+
   jq -n --arg event "$1" --arg context "$2" \
     '{hookSpecificOutput: {hookEventName: $event, additionalContext: $context}}'
 }
