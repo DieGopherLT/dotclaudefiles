@@ -15,7 +15,7 @@ declare module 'claude-code' {
       userFollowUps: number
       /** Keys of findings already handed to the main agent. */
       delivered: string[]
-      /** Bytes of the bash-hook inbox already read. */
+      /** Characters (UTF-16 units) of the bash-hook inbox already read. */
       inboxOffset: number
       /** Findings text waiting to ride on the next prompt. */
       pending: string | null

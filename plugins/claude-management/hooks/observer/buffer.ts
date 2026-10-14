@@ -2,6 +2,7 @@ import type { SessionAppendInput } from 'claude-code'
 import type { ObservedRow } from '../../types'
 
 export const MAX_TURNS = 8
+export const MAX_ROWS = 60
 
 const TEXT_CHARS = 600
 const TOOL_INPUT_CHARS = 200
@@ -11,10 +12,16 @@ const TOOL_ERROR_CHARS = 300
 // context, compaction, the observer's own notes) is noise or a feedback loop.
 const OBSERVED_DOORS: readonly SessionAppendInput['door'][] = ['prompt', 'response', 'tool-result']
 
+// The prompt door also carries task notifications, schedules and peer or
+// channel messages; only the user's own input counts as a user row.
+const HUMAN_ORIGINS: readonly string[] = ['composer', 'bridge', 'sdk']
+
 export function isObservable(e: SessionAppendInput): boolean {
   if (!OBSERVED_DOORS.includes(e.door)) return false
   if (e.agentId !== undefined) return false
   if (e.message.isMeta) return false
+
+  if (e.door === 'prompt') return HUMAN_ORIGINS.includes(e.origin.kind)
 
   return e.origin.kind !== 'plugin'
 }
@@ -32,9 +39,10 @@ export function toObservedRows(e: SessionAppendInput, turn: number): ObservedRow
   }
 }
 
-// Keeps the rows of the last MAX_TURNS turns, current one included.
+// Keeps the rows of the last MAX_TURNS turns, current one included, and at
+// most MAX_ROWS of them (newest win) so a long turn cannot grow the buffer.
 export function pushRows(buffer: readonly ObservedRow[], rows: readonly ObservedRow[], turn: number): ObservedRow[] {
-  return [...buffer, ...rows].filter(row => row.turn > turn - MAX_TURNS)
+  return [...buffer, ...rows].filter(row => row.turn > turn - MAX_TURNS).slice(-MAX_ROWS)
 }
 
 function textRows(e: SessionAppendInput, turn: number, kind: 'user' | 'assistant'): ObservedRow[] {

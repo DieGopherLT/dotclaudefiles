@@ -1,4 +1,4 @@
-import type { Register } from 'claude-code'
+import type { Hook, Register } from 'claude-code'
 import { isObservable, pushRows, toObservedRows } from './buffer'
 import { SWEEP_PERIOD_MS, runSweep } from './sweep'
 
@@ -12,18 +12,25 @@ const BUFFER = { plugin: 'claude-management', key: 'buffer' } as const
 const USER_FOLLOW_UPS = { plugin: 'claude-management', key: 'userFollowUps' } as const
 const PENDING = { plugin: 'claude-management', key: 'pending' } as const
 
+type Api = Parameters<Hook<'session.start'>>[0]
+
+const RETRY_COOLDOWN_MS = 60_000
+
+// /clear and resume change the session id without a new session.start, so the
+// timer re-checks it on every tick.
+let lastSessionId: string | null = null
+let retryAfter = 0
+
 export const register: Register = on => {
   // The marker tells the bash hooks to leave Stop findings in the inbox instead
   // of printing them; the timer drains it, outside any dispatch that could be
   // abandoned (a model call made inside one resolves `aborted`).
   on('session.start', async ($, e, next) => {
     const result = await next(e)
+    if (!e.isInteractive) return result
 
     try {
-      const sessionId = await $.session.id()
-      const markerPath = `${HOOK_STATE_DIR}/${sessionId}.observer`
-      const inboxPath = `${HOOK_STATE_DIR}/${sessionId}.observer-inbox`
-      await $.fs.write(markerPath, '')
+      await refreshMarker($)
 
       let isSweeping = false
       $.clock.every(SWEEP_PERIOD_MS, async () => {
@@ -31,7 +38,11 @@ export const register: Register = on => {
 
         isSweeping = true
         try {
-          await runSweep($, inboxPath)
+          const sessionId = await refreshMarker($)
+          if ((await $.clock.now()) < retryAfter) return
+
+          const outcome = await runSweep($, inboxPathOf(sessionId))
+          retryAfter = outcome === 'failed' ? (await $.clock.now()) + RETRY_COOLDOWN_MS : 0
         } catch {
           // A failed sweep only skips this round of suggestions.
         } finally {
@@ -52,9 +63,11 @@ export const register: Register = on => {
     if (!isObservable(e)) return stored
 
     try {
+      const unstamped = toObservedRows(e, 0)
+      if (unstamped.length === 0) return stored
+
       const { value: turn = 0 } = await $.state.get(TURN)
-      const rows = toObservedRows(e, turn)
-      if (rows.length === 0) return stored
+      const rows = unstamped.map(row => ({ ...row, turn }))
 
       const { value: buffer = [] } = await $.state.get(BUFFER)
       // shortcut: no version check, two concurrent appends can lose a row, which only blunts one finding.
@@ -99,8 +112,27 @@ export const register: Register = on => {
     if (pending === null) return next(e)
 
     const result = await next({ ...e, context: [...(e.context ?? []), pending] })
-    if (result.drop === undefined) await $.state.set(PENDING, null)
+    if (result.drop === undefined) {
+      // Residual race: a sweep writing between this read and the clear is still lost.
+      const { value: current = null } = await $.state.get(PENDING)
+      if (current === pending) await $.state.set(PENDING, null)
+    }
 
     return result
   })
+}
+
+// Writes the marker when the session id changed since the last call.
+async function refreshMarker($: Api): Promise<string> {
+  const sessionId = await $.session.id()
+  if (sessionId !== lastSessionId) {
+    await $.fs.write(`${HOOK_STATE_DIR}/${sessionId}.observer`, '')
+    lastSessionId = sessionId
+  }
+
+  return sessionId
+}
+
+function inboxPathOf(sessionId: string): string {
+  return `${HOOK_STATE_DIR}/${sessionId}.observer-inbox`
 }

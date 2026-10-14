@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'claude-code/testing'
-import { buildRequest, parseFindings, shouldSweep } from './sweep'
+import { buildRequest, parseFindings, runSweep, shouldSweep } from './sweep'
 
 const valid = { kind: 'gotcha', summary: 'npm build needs NODE_OPTIONS', evidence: 'build exploded', destination: 'memory', skill: 'remember' }
 
@@ -57,5 +57,90 @@ describe('buildRequest', () => {
     expect(typeof prompt).toBe('string')
     expect(prompt).toContain('- candidate')
     expect(prompt).toContain('gotcha:x')
+  })
+})
+
+describe('parseFindings sanitising', () => {
+  test('multiline text collapses and long fields are capped', () => {
+    const finding = parseFindings(
+      JSON.stringify({
+        findings: [{ ...valid, summary: `a\n\nb ${'x'.repeat(300)}`, evidence: 'y\n'.repeat(300), destination: 'evil' }],
+      }),
+    )[0]!
+    expect(finding.summary).toHaveLength(160)
+    expect(finding.summary.startsWith('a b x')).toBe(true)
+    expect(finding.evidence).toHaveLength(200)
+    expect(finding.evidence).not.toContain('\n')
+    expect(finding.destination).toBe('memory')
+  })
+})
+
+describe('buildRequest bounds', () => {
+  test('uses the haiku alias, the last 50 keys and the newest rows', () => {
+    const keys = Array.from({ length: 80 }, (_, i) => `k${i}`)
+    const manyRows = Array.from({ length: 100 }, (_, i) => ({ turn: 2, kind: 'user', text: `row${i}` }) as const)
+    const request = buildRequest(manyRows, 2, '', keys)
+    const text = String(request.prompt)
+    expect(request.model).toBe('haiku')
+    expect(text).toContain('k79')
+    expect(text).not.toContain('k29\n')
+    expect(text).toContain('row99')
+    expect(text).not.toContain('row39\n')
+  })
+})
+
+describe('runSweep', () => {
+  const answer = { isAnswered: true, text: JSON.stringify({ findings: [valid, { ...valid, summary: 'second' }] }) }
+
+  function fakeApi(initial: Record<string, unknown>, inbox: string, reply: unknown) {
+    const store = new Map<string, unknown>(Object.entries(initial))
+    let calls = 0
+    const api = {
+      state: {
+        get: async ({ key }: { key: string }) => ({ value: store.get(key) }),
+        set: async ({ key }: { key: string }, value: unknown) => void store.set(key, value),
+      },
+      fs: { read: async () => inbox },
+      model: {
+        complete: async () => {
+          calls++
+          return reply
+        },
+      },
+    }
+    return { api: api as never, store, calls: () => calls }
+  }
+
+  test('no signal returns idle without a model call', async () => {
+    const { api, calls } = fakeApi({ turnsSinceSweep: 1 }, '', answer)
+    expect(await runSweep(api, 'inbox')).toBe('idle')
+    expect(calls()).toBe(0)
+  })
+
+  test('an unanswered reply returns failed and leaves state untouched', async () => {
+    const { api, store } = fakeApi({ turnsSinceSweep: 7, userFollowUps: 2, inboxOffset: 3 }, '- candidate text', {
+      isAnswered: false,
+      reason: 'api-error',
+    })
+    expect(await runSweep(api, 'inbox')).toBe('failed')
+    expect(Object.fromEntries(store)).toEqual({ turnsSinceSweep: 7, userFollowUps: 2, inboxOffset: 3 })
+  })
+
+  test('an answered reply queues findings, advances the offset and resets counters', async () => {
+    const inbox = '- candidate text'
+    const { api, store } = fakeApi({ turnsSinceSweep: 7, userFollowUps: 2 }, inbox, answer)
+    expect(await runSweep(api, 'inbox')).toBe('done')
+    expect(String(store.get('pending'))).toContain('npm build needs NODE_OPTIONS')
+    expect(store.get('delivered')).toEqual(['gotcha:npm build needs node_options', 'gotcha:second'])
+    expect(store.get('inboxOffset')).toBe(inbox.length)
+    expect(store.get('turnsSinceSweep')).toBe(0)
+    expect(store.get('userFollowUps')).toBe(0)
+  })
+
+  test('findings that did not fit the pending budget are not marked delivered', async () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ ...valid, summary: `s${i}` }))
+    const { api, store } = fakeApi({}, '- c', { isAnswered: true, text: JSON.stringify({ findings: many }) })
+    await runSweep(api, 'inbox')
+    expect(store.get('delivered')).toHaveLength(9)
   })
 })

@@ -1,6 +1,6 @@
 import type { SessionAppendInput } from 'claude-code'
 import { describe, expect, test } from 'claude-code/testing'
-import { isObservable, MAX_TURNS, pushRows, toObservedRows } from './buffer'
+import { isObservable, MAX_ROWS, MAX_TURNS, pushRows, toObservedRows } from './buffer'
 
 type Blocks = SessionAppendInput['message']['content']
 
@@ -8,7 +8,7 @@ function append(door: SessionAppendInput['door'], content: Blocks, over: Partial
   return {
     door,
     uuid: 'row-1',
-    origin: { kind: 'model', model: 'm' },
+    origin: door === 'prompt' ? { kind: 'composer' } : { kind: 'model', model: 'm' },
     message: { type: 'user', content },
     ...over,
   }
@@ -30,6 +30,16 @@ describe('isObservable', () => {
   test('drops rows a plugin put in the conversation, the observer own included', () => {
     expect(isObservable(append('note', text('x'), { origin: { kind: 'plugin', event: 'prompt.submit' } }))).toBe(false)
     expect(isObservable(append('prompt', text('x'), { origin: { kind: 'plugin', event: 'prompt.submit' } }))).toBe(false)
+  })
+
+  test('keeps only human prompts on the prompt door', () => {
+    for (const kind of ['composer', 'bridge', 'sdk'] as const) {
+      expect(isObservable(append('prompt', text('x'), { origin: { kind } }))).toBe(true)
+    }
+    for (const kind of ['task-notification', 'scheduled-trigger', 'peer', 'coordinator', 'unclassified'] as const) {
+      expect(isObservable(append('prompt', text('x'), { origin: { kind } }))).toBe(false)
+    }
+    expect(isObservable(append('prompt', text('x'), { origin: { kind: 'channel', server: 's' } }))).toBe(false)
   })
 
   test('drops hidden prompts, hook context, compaction and notices', () => {
@@ -100,5 +110,14 @@ describe('pushRows', () => {
     const now = { turn: 1 + MAX_TURNS, kind: 'user' as const, text: 'now' }
 
     expect(pushRows([edge], [now], 1 + MAX_TURNS)).toEqual([edge, now])
+  })
+
+  test('caps the buffer at MAX_ROWS, newest kept', () => {
+    const rows = Array.from({ length: MAX_ROWS + 5 }, (_, i) => ({ turn: 3, kind: 'tool_use' as const, text: `r${i}` }))
+    const result = pushRows([], rows, 3)
+
+    expect(result).toHaveLength(MAX_ROWS)
+    expect(result[0]?.text).toBe('r5')
+    expect(result.at(-1)?.text).toBe(`r${MAX_ROWS + 4}`)
   })
 })
