@@ -10,11 +10,11 @@ The official docs confirm this directly: "Longer files consume more context and 
 
 ## Sweet spots
 
-| File | Hard ceiling | Practical target |
+| File | Official figure | Practical target |
 |---|---|---|
-| Base CLAUDE.md | 200 lines (official) | 150 lines |
+| Base CLAUDE.md | target under 200 lines (hard limit: a file over 4 MiB is skipped) | 150 lines |
 | Individual rule file | — | 100-150 lines |
-| `MEMORY.md` (auto memory) | 200 lines / 25KB (official) | keep concise, push detail to topic files |
+| `MEMORY.md` (auto memory) | loaded up to 200 lines / 25KB | keep concise, push detail to topic files |
 
 Past 150 lines, split a rule by sub-topic into a directory (e.g., `languages/ts/types.md` and `languages/ts/async.md` instead of one bloated `languages/ts.md`).
 

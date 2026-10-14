@@ -16,7 +16,7 @@ This is not just about token cost — it is primarily about **adherence**. A foc
 Concentration sweet spots:
 
 - **Rule file**: 100-150 lines. Past that, split by sub-topic.
-- **Base CLAUDE.md**: 200 lines maximum (official ceiling). Treat 150 as the real target.
+- **Base CLAUDE.md**: 200 lines is the official target (the only hard limit: Claude Code skips a file over 4 MiB). Treat 150 as the real target.
 
 ## Reference files (read on demand)
 
@@ -31,7 +31,7 @@ Read these when planning extractions or whenever a frontmatter / loading detail 
 
 ### 0. Bootstrap the memory-currency rule
 
-Before anything else, ensure the target project has a path-scoped rule that keeps every `CLAUDE.md` and `AGENTS.md` honest.
+Before anything else, ensure the target project has a short always-on rule that keeps every `CLAUDE.md` and `AGENTS.md` honest.
 
 - Check whether `<project>/.claude/rules/memory/keep-current.md` exists.
 - If it does, leave it alone — the user owns it.
@@ -43,9 +43,10 @@ This is idempotent and runs on every rulify invocation. Mention the bootstrap (c
 
 - If `$ARGUMENTS` is a path, use it.
 - Otherwise look for `CLAUDE.md` in the current working directory.
-- If absent, ask the user where it lives.
+- If absent, look for `AGENTS.md` there: with no `CLAUDE.md` in the directory or above, Claude Code reads `AGENTS.md` natively, so it is the target.
+- If neither exists, ask the user where the file lives.
 
-Detect the rules directory: `.claude/rules/` relative to the CLAUDE.md's directory. Create it if missing.
+Detect the rules directory: `.claude/rules/` relative to the target file's directory. Create it if missing.
 
 #### AGENTS.md convention check
 

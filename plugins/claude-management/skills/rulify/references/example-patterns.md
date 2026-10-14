@@ -18,12 +18,12 @@ paths:
 
 # <Workflow Name>
 
-<One sentence stating the non-negotiable: ALWAYS do X when working in this area.>
+<One sentence stating the rule: when working in this area, do X, because <reason>.>
 
 ## Mandatory Workflows
 
 - **<trigger>**: invoke `<skill or agent>` immediately before <action>. <One-line justification.>
-- **<trigger>**: <action>. Do not skip this step.
+- **<trigger>**: <action>. <One-line justification.>
 
 ## Quality Standards
 
@@ -172,9 +172,9 @@ These are the second-most-common extraction after language guides.
 
 ## Pattern 5: High-stakes single-action reminder
 
-A short, high-emphasis rule that locks in one critical action the model must take at a specific moment — typically before a destructive or irreversible operation. Different from Pattern 1 (multi-step workflow) and Pattern 2 (trigger table): this is one rule, one action, hammered with strong language so it cannot be skimmed past.
+A short rule that locks in one critical action the model must take at a specific moment — typically before a destructive or irreversible operation. Different from Pattern 1 (multi-step workflow) and Pattern 2 (trigger table): this is one rule, one action, stated plainly with its concrete consequence.
 
-**Why extracting this matters**: these rules earn their loud tone by being narrow. Buried in a 500-line CLAUDE.md, the urgency is lost. As a small focused rule that loads only when relevant, the emphasis lands and the action gets taken.
+**Why extracting this matters**: the rule works because it is narrow. Buried in a 500-line CLAUDE.md, the action competes with every other instruction. As a small focused rule that loads only when relevant, nothing competes with it. Plain wording plus the concrete consequence is enough; capitals and warnings make a model apply the rule too rigidly and add nothing the consequence does not already say.
 
 ### Shape
 
@@ -184,11 +184,11 @@ paths:
   - "<glob for the surface where this matters>"
 ---
 
-# WARNING: <Action Name> (<consequence prevention>)
+# <Action Name>
 
-**ALWAYS <do the action> BEFORE <the trigger event>.**
+Before <the trigger event>, <do the action>.
 
-<One sentence stating the consequence of skipping. Be vivid. The point is to be unmissable.>
+<One sentence with the concrete consequence of skipping, e.g. "Without the bump, the marketplace keeps serving the old version.">
 
 ```bash
 # 1. <step>
@@ -213,7 +213,7 @@ The CLAUDE.md section:
 - Mandates one specific action tied to one specific moment (pre-commit, pre-push, pre-deploy, pre-merge)
 - Was added because Claude forgot it once and broke something
 - Has a clear "before X, do Y" structure
-- Reads with raised voice — bold, ALL CAPS, warning emoji-equivalents
+- Reads with raised voice — bold, ALL CAPS, warnings (extract it, and tone it down to the plain shape above)
 
 ### Examples of the archetype
 
@@ -222,11 +222,11 @@ The CLAUDE.md section:
 - Running a migration linter before a PR touching `migrations/` is opened
 - Updating a CHANGELOG entry whose absence will fail CI but only at the very end
 
-This repository has one of these for plugin version bumps — it lives at `.claude/rules/plugins/version-management.md`, scoped to plugin paths, and it loads exactly when plugin work is happening. The dramatic phrasing ("Ragnarök will occur") is intentional and works because the rule is short, focused, and only present when it matters.
+This repository has one of these for plugin version bumps — it lives at `.claude/rules/plugins/version-management.md`, scoped to plugin paths, and it loads exactly when plugin work is happening.
 
-### Why dramatic phrasing belongs in rules, not CLAUDE.md
+### Why this archetype belongs in a rule, not CLAUDE.md
 
-Strong language ("ALWAYS", "NEVER", warnings, consequences) competes for attention. CLAUDE.md is full of competing instructions, so loud language gets normalized and ignored. A standalone rule loaded only at the relevant moment has no competition — the warning hits.
+CLAUDE.md is full of competing instructions, so a single critical action gets lost among them. A standalone rule loaded only at the relevant moment has no competition, and one sentence naming the consequence tells the model why it matters.
 
 ## Quick decision tree
 
