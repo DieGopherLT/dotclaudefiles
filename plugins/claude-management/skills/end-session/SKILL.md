@@ -20,6 +20,10 @@ Invoking this skill counts as explicit user approval to commit the classified ch
 - `references/commit-strategy.md` — classification heuristics for commit vs skip, WIP detection, and atomicity guidance. Read at Phase 1, Step 2.
 - `references/context-doc-template.md` — full structure and writing priorities for the session context document. Read at Phase 2, Step 2.
 
+## Before Phase 1: task-harness runs
+
+If the worktree root holds `.claude/binnacle.md`, this session belongs to a task-harness run and its binnacle is the session record. Stop and tell the user to close the session with the `log-binnacle` skill instead; writing a second context document here would duplicate it, and commits made here could straddle the run's block boundaries.
+
 ## Phase 1: Commit Changes
 
 ### Step 1: Assess git state
@@ -36,11 +40,10 @@ For each group of related changes, determine whether the work is complete or int
 
 ### Step 4: Stage and commit
 
-Group related changes into atomic commits — one logical change per commit. Then commit each group:
-- Complete work: use the appropriate conventional prefix (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`)
-- Incomplete or interrupted work: use `wip:` prefix
+Group related changes into atomic commits — one logical change per commit — and commit each group by invoking the `commit` skill, which owns the message format and its limits:
+- Complete work: the conventional prefix that fits (`feat`, `fix`, `refactor`, `chore`, `docs`, `test`)
+- Incomplete or interrupted work: `wip`
 - Never mix unrelated changes in a single commit
-- Format: single line, max 96 chars, no emojis, no co-author attribution
 
 Use `git mv` for moves and `git rm` for deletes. Never `rm` + `git add`.
 
@@ -55,7 +58,7 @@ Check for an existing tracking file in this order:
 2. `.claude/docs/<current-branch-name>.md` — the canonical location for branch-scoped session context
 
 If found: **update it in place**.
-If neither exists: **create a new memory entry**. Do not fuzzy-match across the project tree — if nothing is found through these two paths, use `AskUserQuestion` to confirm whether to write to a specific project file or fall back to memory.
+If neither exists, do not fuzzy-match across the project tree: use `AskUserQuestion` to confirm whether to write to a specific project file or to a new memory entry, with memory as the default option.
 
 ### Step 2: Write the context document
 

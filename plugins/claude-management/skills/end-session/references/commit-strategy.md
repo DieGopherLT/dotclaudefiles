@@ -81,13 +81,7 @@ Target: one logical change per commit, granular enough for `git bisect`.
 
 ## Commit Message Format
 
-```
-<prefix>(<scope>): <description>
-```
-
-- Max 96 characters, single line, no body, no bullet points
-- No emojis, no co-author attribution, no "CLAUDE" mentions
-- `<scope>` is optional; use it when the change is clearly scoped to one plugin, module, or subsystem
+The `commit` skill owns the message format and its limits, and the plugin's hook enforces them. Invoke it for each group. This table only maps the situation to the prefix:
 
 | Situation | Prefix |
 |---|---|

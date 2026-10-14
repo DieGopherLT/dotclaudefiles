@@ -147,13 +147,7 @@ Place the file where it will be found naturally:
 
 **Resolving the memory path:**
 
-Run `git rev-parse --show-toplevel` to get the project root (e.g., `/home/diego/projects/foo`). Convert it to a memory path by replacing every `/` with `-`:
-
-```
-/home/diego/projects/foo  →  ~/.claude/projects/-home-diego-projects-foo/memory/
-```
-
-Write the context document to `<memory-path>/<slug>.md`.
+Write the context document to `<memory-path>/<slug>.md`, where `<memory-path>` is the memory directory named in the session's system prompt. Never derive it from the repo root: all worktrees of a repo share one memory directory, and a path built from `git rev-parse --show-toplevel` is an orphan directory inside a worktree.
 
 **Memory file frontmatter:**
 
@@ -161,6 +155,7 @@ Write the context document to `<memory-path>/<slug>.md`.
 ---
 name: <kebab-case-slug matching the branch or topic>
 description: <one-line summary used to judge relevance in future sessions — be specific about what was being built>
+stale_when: <the branch is merged or deleted>
 metadata:
   type: project
 ---
@@ -168,6 +163,8 @@ metadata:
 Este archivo fue creado por la skill /end-session
 
 [document body]
+
+**Reference:** <branch name and the last commit SHA of the work>
 ```
 
 The `name` slug is what the user will cite in future sessions to retrieve the context. Make it memorable and specific: `auth-middleware-rewrite`, `end-session-skill-dev`, `payment-webhook-integration` — not `session-2025-05-30` or `work-notes`.
