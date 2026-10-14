@@ -42,7 +42,7 @@ Read `.pending` from the queue file and record the list you got — Step 6 remov
 
 One `transcript-digester` agent per pending transcript, all in parallel — they are read-only and share nothing. Pass each agent the transcript's absolute path and the project root.
 
-Prefer running this fan-out through the **Workflow tool**: its `agent()` accepts a JSON Schema, which forces the sub-agent through StructuredOutput and validates the digest at the tool-call layer (with automatic retry on mismatch) — malformed JSON never reaches you. This skill instructing the call counts as explicit Workflow opt-in. Sketch:
+Prefer running this fan-out through the **Workflow tool**: its `agent()` accepts a JSON Schema, which forces the sub-agent through StructuredOutput and validates the digest at the tool-call layer (with automatic retry on mismatch) — malformed JSON never reaches you. When the user invoked this skill, its instruction to call the Workflow tool is their opt-in; if the skill was loaded any other way, use the Agent-tool fallback below. Load `workflow-authoring` before writing the script. Sketch:
 
 ```javascript
 export const meta = {
@@ -60,7 +60,7 @@ return digests.filter(Boolean)
 
 If the Workflow tool is unavailable in the session, fall back to launching the agents with the Agent tool in parallel and parsing each final message as raw JSON — the agents are prompted to emit it fence-free either way.
 
-**Pass `transcripts` as a real JSON value in `args`, never as a JSON-encoded string.** A production run of this exact fan-out failed with `undefined is not an object (evaluating 'args.transcripts.map')` because the invocation serialized `args` to a string (`args: "{\"transcripts\":...}"`) instead of passing the object itself — the script then saw `args` as a string, so `args.transcripts` was `undefined`. The `Workflow` tool description already warns about this; the fix is on the calling side, not in the script above. If you find yourself reaching for a JSON.stringify-style workaround, inline the transcript list as a `const` in the script body instead of routing it through `args`.
+**Pass `transcripts` as a real JSON value in `args`, never as a JSON-encoded string.** A string makes `args.transcripts` undefined inside the script. If you find yourself reaching for a JSON.stringify-style workaround, inline the transcript list as a `const` in the script body instead of routing it through `args`.
 
 Each returns a digest JSON (`flows`, `conventions`, `user_corrections`, `session_summary`) — the contract is in `references/digest-schema.md`. A digest with empty arrays is a valid result, not a failure. Drop agents that error out and continue with the rest; note the dropped transcript in the final report. Failed transcripts are consumed along with the rest in Step 6 — they are not retried, because a transcript that failed to digest once will almost certainly fail again and would clog the queue.
 
@@ -74,7 +74,7 @@ A **candidate** is a flow or convention that shows up in **2 or more distinct se
 
 When merging occurrences into one candidate, keep the union of observed steps and note discrepancies — a step present in one session and absent in another is worth flagging for the verifier.
 
-This repetition bar applies only to `flows` and `conventions` — patterns inferred by observing behavior, where repetition is the only evidence that it's a habit rather than a one-off. Every entry in `user_corrections` is its own candidate regardless of how many times it appears, in this session or across others: it is feedback the user already gave directly, not something you inferred. Dedupe near-identical corrections across sessions (same rule, different wording) into one candidate, but never hold one back waiting for a second occurrence.
+This repetition bar applies only to `flows` and `conventions` — patterns inferred by observing behavior, where repetition is the only evidence that it's a habit rather than a one-off. Every entry in `user_corrections` is its own candidate regardless of how many times it appears, in this session or across others: it is feedback the user already gave directly, not something you inferred. Dedupe near-identical corrections across sessions (same rule, different wording) into one candidate, but never hold one back waiting for a second occurrence. Skip a correction that already exists as a `feedback` memory (`remember` may have captured it during its own session): check the project's memory index first, and update the existing entry instead of creating a sibling.
 
 ## Step 4 — Verify every candidate
 
@@ -94,12 +94,12 @@ For `user_corrections` candidates, the verifier's job is different: it is not ju
 
 For each surviving candidate, classify its destination with the decision tree in `../remember/references/storage-decision-guide.md`:
 
-- **Executable multi-step procedure** (flows) → `.claude/skills/<name>/SKILL.md`, following that guide's Skill destination spec — including its third-person description format
+- **Executable multi-step procedure** (flows) → `.claude/skills/<name>/SKILL.md`, following that guide's Skill destination spec, including its description format
 - **Convention tied to file types or directories** → `.claude/rules/<topic>.md` with a `paths` frontmatter scoped to the candidate's `applies_to` glob
 - **Project-wide orientation** (rare from mining, but possible) → the project's CLAUDE.md
 - **Explicit user correction** (`user_corrections`) → Memory, `type: feedback`, per the guide's Memory destination spec
 
-Name resources by intent (`prisma-migrations`, not `flow-1`). If a resource with the same purpose already exists, merge into it instead of creating a sibling — an update to an existing rule beats a near-duplicate.
+Name resources by intent (`prisma-migrations`, not `flow-1`). If a resource with the same purpose already exists (a skill, a rule, or a memory entry), merge into it instead of creating a sibling — an update to an existing rule beats a near-duplicate.
 
 ## Step 6 — Consume the queue and report
 

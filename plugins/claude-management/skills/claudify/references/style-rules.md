@@ -4,10 +4,10 @@ Apply these when writing or rebuilding a module CLAUDE.md.
 
 ## Size budget
 
-- **Hard ceiling**: 200 lines (official Claude Code memory ceiling).
+- **Official target**: under 200 lines per CLAUDE.md (Claude Code skips a file over 4 MiB).
 - **Practical target**: 150 lines.
 
-Past 150 lines, adherence drops sharply. The file becomes background noise instead of read-on-load context. If you are over budget, the fix is almost always "this section contains content the agent could infer from the code" — cut that first.
+Every line loads each time the module is touched, so inferable content costs context and dilutes the lines that matter. If you are over budget, the fix is almost always "this section contains content the agent could infer from the code" — cut that first.
 
 ## The `file::Symbol` LSP format
 

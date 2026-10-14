@@ -8,7 +8,7 @@ agent: claude-management:module-documenter
 
 # Claudify
 
-You are documenting the module at `$1`. You run in a forked context with no conversation history — everything you need is in this prompt, in the reference files it points to, and on disk. Generate or update the module-level memory file yourself, end to end, and return a one-line summary.
+You are documenting the module at `$0`. You run in a forked context with no conversation history — everything you need is in this prompt, in the reference files it points to, and on disk. Generate or update the module-level memory file yourself, end to end, and return a one-line summary.
 
 ## North Star
 
@@ -44,19 +44,19 @@ These paths are relative to this skill's own directory (the base directory annou
 
 ### Step 0: Validate the argument
 
-Fail fast at the boundary: if `$1` is empty, or `$1/` does not exist as a directory (resolve it relative to the working directory — the project root), do not explore anything. Return a single line asking to be re-invoked with the module's relative path, e.g. `error: claudify needs an existing module path — re-invoke as /claudify <module-relative-path>`. With no conversation history there is nothing to recover the target from; guessing a module would be worse than stopping.
+Fail fast at the boundary: if `$0` is empty, or `$0/` does not exist as a directory (resolve it relative to the working directory — the project root), do not explore anything. Return a single line asking to be re-invoked with the module's relative path, e.g. `error: claudify needs an existing module path — re-invoke as /claudify <module-relative-path>`. With no conversation history there is nothing to recover the target from; guessing a module would be worse than stopping.
 
 ### Step 1: Resolve paths and convention
 
 First, detect which memory-file convention the repo uses by inspecting the project root:
 
-- **CLAUDE.md only** (no `AGENTS.md` at root): generate `$1/CLAUDE.md`. Single file, standard path.
+- **CLAUDE.md only** (no `AGENTS.md` at root): generate `$0/CLAUDE.md`. Single file, standard path.
 - **AGENTS.md convention** (root has `AGENTS.md`, and root `CLAUDE.md` is essentially `@AGENTS.md`): generate **two** files at the module level.
-  - `$1/AGENTS.md` — the actual content, written from the template.
-  - `$1/CLAUDE.md` — a one-line file containing exactly `@AGENTS.md`.
+  - `$0/AGENTS.md` — the actual content, written from the template.
+  - `$0/CLAUDE.md` — a one-line file containing exactly `@AGENTS.md`.
   - Why both: Claude Code only auto-discovers `CLAUDE.md` in subdirectories, not `AGENTS.md`. The stub `CLAUDE.md` is what makes lazy loading work; the import pulls in the AGENTS.md content. Other agents read `AGENTS.md` directly.
 
-Then check whether the target file (CLAUDE.md, or AGENTS.md under the AGENTS convention) already exists at `$1/`:
+Then check whether the target file (CLAUDE.md, or AGENTS.md under the AGENTS convention) already exists at `$0/`:
 
 - If yes: keep its content as baseline (verify, update, fill gaps — do not start from scratch).
 - If no: proceed with fresh exploration.
@@ -65,9 +65,7 @@ For the rest of the workflow, "memory file" refers to whichever target file the 
 
 ### Step 2: Explore the module yourself
 
-Explore `$1` and its subdirectories directly with Glob, Read, Grep, and read-only Bash — never launch subagents. Include source, config, env vars, and tests (tests reveal patterns and invariants); exclude node_modules, vendor, dist, and build artifacts.
-
-Operational guide: Glob the tree first to grasp the shape, identify the entry points, trace imports pointing OUT of the module (they reveal its role and dependencies), and read the tests for the invariants they pin down. Read files with intent — you are hunting the deliverables below, not building a full inventory.
+Explore `$0` and its subdirectories directly with Glob, Read, Grep, and read-only Bash — never launch subagents. Include source, config, env vars, and tests (tests reveal patterns and invariants); exclude node_modules, vendor, dist, and build artifacts.
 
 Surface, focusing on what the code does NOT make obvious:
 
@@ -86,11 +84,11 @@ If a baseline exists (Step 1), verify each of its claims against the current cod
 
 ### Step 3: Read references and write
 
-Read `references/template.md` for the structure and `references/style-rules.md` for formatting rules. Write the content to the target memory file determined in Step 1 (`$1/CLAUDE.md` under the CLAUDE.md convention; `$1/AGENTS.md` plus a one-line `$1/CLAUDE.md` containing `@AGENTS.md` under the AGENTS convention).
+Read `references/template.md` for the structure and `references/style-rules.md` for formatting rules. Write the content to the target memory file determined in Step 1 (`$0/CLAUDE.md` under the CLAUDE.md convention; `$0/AGENTS.md` plus a one-line `$0/CLAUDE.md` containing `@AGENTS.md` under the AGENTS convention).
 
 Critical rules from those references:
 
-- 150-line budget. Past that, the file stops being read carefully.
+- 150-line budget (a style choice; the official target is under 200). Every line loads each time the module is touched.
 - Omit any section that has no non-obvious content. Empty sections are noise.
 - Use `file::Symbol` for LSP-resolvable references.
 - Keep descriptions under 20 words. "Why" beats "what".
