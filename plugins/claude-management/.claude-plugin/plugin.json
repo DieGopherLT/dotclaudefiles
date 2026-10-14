@@ -2,7 +2,7 @@
   "name": "claude-management",
   "version": "2.1.0",
   "types": "./types/index.d.ts",
-  "description": "Skills, hooks, and agents for managing Claude Code memory files as a self-improvement harness: splitting heavy CLAUDE.md into on-demand rules (rulify), generating token-efficient module-level documentation in a forked background context (claudify), routing information to the correct storage location (remember), automating session closing with commits and context documentation (end-session), mining harvested session transcripts for recurring flows worth stabilizing as project skills or rules (stabilize), and suggestion-only hooks that detect the right moment to invoke each skill or notify the user, with a practice-verifier gate so repetition never outranks correctness.",
+  "description": "Skills, hooks, and agents for managing Claude Code memory files as a self-improvement harness: splitting heavy CLAUDE.md into on-demand rules (rulify), generating token-efficient module-level documentation in a forked background context (claudify), routing information to the correct storage location (remember), automating session closing with commits and context documentation (end-session), mining harvested session transcripts for recurring flows worth stabilizing as project skills or rules (stabilize), suggestion-only hooks that detect the right moment to invoke each skill or notify the user, and an observer module where Haiku filters those suggestions and spots user corrections, delivering them as invisible context on the next prompt, with a practice-verifier gate so repetition never outranks correctness.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"

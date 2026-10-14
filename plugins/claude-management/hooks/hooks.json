@@ -1,12 +1,12 @@
 {
-  "description": "Self-improvement harness: deterministic detectors that suggest the right claude-management skill (remember, rulify, claudify) to the agent, or notify the user when the stabilize queue is ready. Suggestion/notification-only — no hook ever blocks, commits, or documents.",
+  "description": "Self-improvement harness: deterministic detectors that suggest the right claude-management skill (remember, rulify, claudify) to the agent, or notify the user when the stabilize queue is ready. Suggestion/notification-only — no hook ever blocks, commits, or documents. The observer module buffers the conversation and, through Haiku, filters those suggestions before they reach the agent.",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session-marker/session-marker.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-marker/session-marker.sh\"",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/claudemd-size/claudemd-size.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/claudemd-size/claudemd-size.sh\"",
             "timeout": 10
           }
         ]
@@ -29,17 +29,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/failure-scan/failure-scan.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/failure-scan/failure-scan.sh\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/contextualizable-dirs/contextualizable-dirs.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/contextualizable-dirs/contextualizable-dirs.sh\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session-harvest/session-harvest.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-harvest/session-harvest.sh\"",
             "timeout": 15
           }
         ]
