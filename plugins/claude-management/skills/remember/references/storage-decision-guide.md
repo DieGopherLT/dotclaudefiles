@@ -166,7 +166,7 @@ These rules load every session alongside `CLAUDE.md`. Keep them focused — one 
 
 ### Write format
 
-No frontmatter at all — not even empty `---` blocks. Starting the file with `---` converts it to a path-scoped rule with no triggers, which means it never loads.
+Omit `paths`. A rule without `paths` loads every session; plain markdown with no frontmatter is the simplest form.
 
 Check for an existing always-on rule covering the same standard. Merge into it if found; create new if not.
 
@@ -212,8 +212,7 @@ File structure:
 ```markdown
 ---
 name: deploy-to-staging
-description: Esta skill debe usarse cuando el usuario pide "deploy to staging", "despliega a staging", o quiere ejecutar el proceso de deploy al ambiente de staging.
-version: 1.0.0
+description: Despliega la aplicación a staging. Úsala cuando el usuario pide "deploy to staging", "despliega a staging", o quiere ejecutar el proceso de deploy al ambiente de staging.
 ---
 
 # Deploy to Staging
@@ -234,15 +233,14 @@ Write the body in imperative form — verb-first steps, no second person.
 
 The `description` field is how Claude decides when to auto-invoke the skill. Quality matters: a vague description means the skill never triggers automatically.
 
-Follow the official format from the Claude Code skill spec:
+State what the skill does and when to use it, key use case first (the description is truncated past 1,536 characters):
 
 ```
-This skill should be used when the user asks to "<phrase 1>", "<phrase 2>", "<phrase 3>".
+<What it does>. Use when the user asks to "<phrase 1>", "<phrase 2>", "<phrase 3>".
 ```
 
 Rules:
 
-- **Third person** — always "This skill should be used when..." never "Use this skill when..."
 - **Specific trigger phrases** — quote the exact words a user would say; avoid generic descriptions like "deploys the app"
 - **Bilingual when relevant** — include the Spanish phrasing if the user is likely to ask in Spanish (`"deploy to staging"`, `"despliega a staging"`)
 - **Concrete over abstract** — "deploy to staging", "run the migration", "set up local dev" not "deployment", "migration tasks", "environment setup"
@@ -256,12 +254,12 @@ description: Deploys the application.
 Good description:
 
 ```yaml
-description: This skill should be used when the user asks to "deploy to staging", "despliega a staging", "run the staging deploy", or wants to execute the full staging release flow.
+description: Runs the full staging release flow. Use when the user asks to "deploy to staging", "despliega a staging", or "run the staging deploy".
 ```
 
 ### Glob patterns
 
-Skills do not use `paths` frontmatter. They are invoked explicitly by the user or by Claude when the trigger matches the `description`.
+Skills accept an optional `paths` frontmatter with globs: the skill auto-loads only when working with matching files. Without it, the skill is invoked by the user or by Claude when the trigger matches the `description`.
 
 ---
 
@@ -301,6 +299,7 @@ Topic file structure:
 ---
 name: <kebab-case-slug>
 description: <one-line summary — used to judge relevance in future sessions>
+stale_when: <only for transient facts: a date, a branch event, or one line; omit for evergreen knowledge>
 metadata:
   type: project
 ---
@@ -309,6 +308,7 @@ metadata:
 
 **Why:** <the reason this is worth remembering>
 **How to apply:** <when this should influence suggestions>
+**Reference:** <file path at minimum; `path::Symbol` when tied to a symbol; commit SHA when about a specific change>
 ```
 
 After writing the topic file, add or update the pointer in `MEMORY.md`:
@@ -321,12 +321,6 @@ Place the pointer under the most relevant existing section in `MEMORY.md`, or cr
 
 ### Finding the project memory path
 
-The memory path is derived from the git repository root. For a repo at `/home/user/projects/myapp`, the path is:
+Write to the memory directory named in the session's system prompt; never derive it. All worktrees of a repo share one memory directory, and the `autoMemoryDirectory` setting can relocate it, so a path built from `git rev-parse --show-toplevel` points at an orphan directory inside a worktree.
 
-```
-~/.claude/projects/-home-user-projects-myapp/memory/
-```
-
-Slashes in the path become hyphens. Use `git rev-parse --show-toplevel` to find the repo root, then construct the path.
-
-If the current directory is not inside a git repository, the path cannot be derived automatically. In that case, ask the user to confirm the intended project path before writing.
+If the system prompt names no memory directory, ask the user to confirm the intended path before writing.

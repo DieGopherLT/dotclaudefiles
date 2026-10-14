@@ -49,7 +49,7 @@ If the information fits two buckets equally, use `AskUserQuestion` to clarify be
 
 ### Step 1: Classify
 
-Apply the decision sequence above. Use `$ARGUMENTS` as the information to store if provided; otherwise use the user's last message.
+Apply the decision sequence above. Use `$ARGUMENTS` as the information to store if provided; otherwise use whatever prompted this invocation: the user's last message or the context injected beside it.
 
 Check for secrets first: URLs with credentials, tokens, passwords, private keys. If found, stop and warn — do not write.
 
@@ -69,9 +69,9 @@ For each destination, see `references/storage-decision-guide.md` for the exact w
 - **CLAUDE.local.md**: verify `CLAUDE.local.md` is listed in `.gitignore` before writing; if not, warn the user and stop. Append at end; create file if absent.
 - **CLAUDE.md**: insert under the most relevant existing section; never create a new top-level section unless no section fits. If the file is at or above 180 lines, suggest running `rulify` first and stop.
 - **.claude/rules/ (path-scoped)**: check for an existing rule whose `paths` covers the same scope; merge into it if found, otherwise create a new file under `.claude/rules/<category>/<topic>.md` with `paths` frontmatter.
-- **.claude/rules/ (always-on)**: check for an existing rule covering the same standard; merge if found. Create new file without any frontmatter if no match. Never start the file with `---` — that converts it to a path-scoped rule with no triggers and it will never load.
+- **.claude/rules/ (always-on)**: check for an existing rule covering the same standard; merge if found. Create new file without `paths` frontmatter if no match: a rule with no `paths` loads every session.
 - **`.claude/skills/`**: check for an existing skill covering the same flow; merge into it if found. Otherwise create `.claude/skills/<skill-name>/SKILL.md`. See `references/storage-decision-guide.md` for format details.
-- **Memory**: write to a topic file (`~/.claude/projects/<project>/memory/<topic>.md`) using three-field frontmatter (`name`, `description`, `metadata.type`) plus body. Add or update the pointer line in `MEMORY.md`.
+- **Memory**: write to a topic file (`~/.claude/projects/<project>/memory/<topic>.md`) using frontmatter (`name`, `description`, `metadata.type`, plus `stale_when` for transient facts) and a body that ends with a `Reference` line. Add or update the pointer line in `MEMORY.md`.
 
 If the new information contradicts existing content in the target file, overwrite the stale entry rather than appending. Report the replacement in Step 4.
 
