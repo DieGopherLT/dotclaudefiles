@@ -1,0 +1,17 @@
+{
+  "name": "plan-opus-upgrade",
+  "version": "0.2.0",
+  "description": "With CLAUDE_PLAN_OPUS=1, a main-loop request that is exactly sonnet at medium effort in plan mode is sent as opus at high effort. Any other model, effort, mode or a missing env var is left untouched.",
+  "author": {
+    "name": "Diego",
+    "url": "https://github.com/DieGopherLT"
+  },
+  "repository": "https://github.com/DieGopherLT/dotclaudefiles",
+  "license": "MIT",
+  "keywords": [
+    "effort",
+    "plan-mode",
+    "opus",
+    "mod"
+  ]
+}

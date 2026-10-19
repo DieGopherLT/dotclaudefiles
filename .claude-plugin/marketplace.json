@@ -66,9 +66,9 @@
       "source": "./plugins/refactoring-guru"
     },
     {
-      "name": "opusplan-effort",
-      "description": "Mod: when the session model is opusplan, effort follows the phase - high while Opus plans, medium while Sonnet builds. Subagents and other session models are left untouched.",
-      "source": "./plugins/opusplan-effort"
+      "name": "plan-opus-upgrade",
+      "description": "Mod: with CLAUDE_PLAN_OPUS=1, a main-loop request that is exactly sonnet at medium effort in plan mode is sent as opus at high effort. Any other model, effort or mode is left untouched.",
+      "source": "./plugins/plan-opus-upgrade"
     }
   ]
 }
