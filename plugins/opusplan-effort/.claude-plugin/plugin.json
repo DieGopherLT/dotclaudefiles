@@ -1,0 +1,16 @@
+{
+  "name": "opusplan-effort",
+  "version": "0.1.0",
+  "description": "Effort follows the phase when the session model is opusplan: high while Opus plans, medium while Sonnet builds. Subagents and every other session model are left untouched.",
+  "author": {
+    "name": "Diego",
+    "url": "https://github.com/DieGopherLT"
+  },
+  "repository": "https://github.com/DieGopherLT/dotclaudefiles",
+  "license": "MIT",
+  "keywords": [
+    "effort",
+    "opusplan",
+    "mod"
+  ]
+}
