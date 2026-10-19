@@ -1,5 +1,9 @@
 import type { Register } from 'claude-code'
 
+// turn.step takes the resolved id, as e.model carries it: the 'opus' alias is
+// refused by the API. shortcut: pinned id, bump it when a newer Opus ships.
+const PLAN_MODEL = 'claude-opus-5-5'
+
 export const register: Register = on => {
   // shortcut: one transcript line per decision change to verify the mode and
   // model strings live, drop once confirmed.
@@ -34,6 +38,6 @@ export const register: Register = on => {
       }
     }
 
-    return yield* next(isUpgrade ? { ...e, model: 'opus', effort: 'high' } : e)
+    return yield* next(isUpgrade ? { ...e, model: PLAN_MODEL, effort: 'high' } : e)
   })
 }

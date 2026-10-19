@@ -35,7 +35,7 @@ function step(overrides: Partial<TurnStepInput> = {}): TurnStepInput {
   return { turnId: 't1', index: 0, model: 'claude-sonnet-5-5', effort: 'medium', messageCount: 1, ...overrides }
 }
 
-const UPGRADED: Sent = { model: 'opus', effort: 'high' }
+const UPGRADED: Sent = { model: 'claude-opus-5-5', effort: 'high' }
 const UNTOUCHED: Sent = { model: 'claude-sonnet-5-5', effort: 'medium' }
 
 describe('plan-mode opus upgrade', () => {
