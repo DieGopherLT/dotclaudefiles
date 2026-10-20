@@ -12,6 +12,7 @@ What each plugin in this repository actually ships. Read this before adding a ca
 
 Skills plugin for team setup and Claude Code authoring:
 
+- **Agents**: `plan-explorer` (read-only, `sonnet` + `medium`: one instance per aspect — reuse, architecture, gotchas, verification — returns facts with locations plus the key files to read), `plan-architect` (read-only, `opus` + `high`: one instance per design lens — minimal, balanced, ideal — returns a design with contracts, cost, what it opens and closes); both are molds whose angle arrives in the brief, dispatched by `plan-constraints`' research phase
 - **Skills**: `team-setup`, `claude-code-agent-creator` (scaffolds sub-agent markdown files with least-privilege tools, archetype selection, and model+effort calibration), `workflow-creator` (authors and audits dynamic Workflow-tool scripts with emphasis on per-role thinking load: pipeline vs parallel, schema, quality patterns, budget scaling, plus an audit checklist with severity rubric), `create-report` (produces Markdown for context preservation or interactive HTML for comprehension/sharing; self-contained, navigable, zero external deps)
 
 ## dotclaudehooks
