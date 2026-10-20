@@ -49,3 +49,21 @@ git worktree add .claude/worktrees/<type>-<description> -b <type>/<description>
 
 After creating the worktree, enter it with the `EnterWorktree` tool
 (`EnterWorktree({ path: ".claude/worktrees/<type>-<description>" })`) — never with `cd`.
+
+### Make the worktree runnable
+
+A new worktree has no gitignored files, so the app cannot start until the environment is
+rebuilt. Right after entering it:
+
+1. Copy the `.env` from the main worktree (the first entry of `git worktree list`), if it exists
+   and the worktree has none:
+   ```bash
+   main=$(git worktree list --porcelain | awk 'NR==1{print $2}')
+   [ -f "$main/.env" ] && [ ! -f .env ] && cp "$main/.env" .env
+   ```
+2. Install dependencies with the package manager the lockfile indicates: `pnpm-lock.yaml` →
+   `pnpm install`, `package-lock.json` → `npm ci`, `yarn.lock` → `yarn install --frozen-lockfile`,
+   `bun.lockb`/`bun.lock` → `bun install`, `go.mod` → `go mod download`, `*.csproj`/`*.sln` →
+   `dotnet restore`. Skip silently when none applies.
+
+Report in one line what was copied and installed. Never overwrite an existing `.env`.
