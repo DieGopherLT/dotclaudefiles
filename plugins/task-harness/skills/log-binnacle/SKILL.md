@@ -61,7 +61,7 @@ In the same pass:
 
    Sesión R's entry header is `[SR]`; it lists the declared effort, the reviews that ran, every
    discarded finding with the decision that covered it, the fixes committed and the pre-existing
-   worktrees handed off. Always stamp
+   findings logged to `.claude/preexisting-findings.md`. Always stamp
    `last_updated` with the current ISO timestamp.
 3. **Recalculate `read_until_line`** — deterministic recipe, run from the worktree root:
    - `grep -n '^## \[' .claude/binnacle.md` — the line numbers of all entry headers.

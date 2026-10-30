@@ -5,7 +5,8 @@ description: >
   the project's own auditors, /code-review at an effort chosen by a declared rubric, and
   /security-review when a trust boundary was touched; contrast every finding against the plan
   and the binnacle before accepting it, dispatch the survivors as parallel background fixes, and
-  close through log-binnacle. Invoke it whenever the binnacle's resume gate finds
+  close through log-binnacle. Pre-existing findings are logged to a file, never fixed; /simplify
+  runs last over the run's diff. Invoke it whenever the binnacle's resume gate finds
   status: ready-for-review, or when the user asks to review the run, run Sesión R, or review the
   branch of a worktree that carries a .claude/binnacle.md — in any language.
 ---
@@ -95,7 +96,7 @@ against the plan and the entries' *Decisiones* and *Desviaciones*:
 - A finding that contradicts a recorded decision whose reasoning the finding actually refutes is
   the most valuable kind: keep it and flag the decision as revised.
 - A finding about code outside `git diff <base_sha>..HEAD` is pre-existing: out of scope for
-  this branch, handled separately below.
+  this branch, logged to a file instead of fixed (see below).
 
 What remains is the in-scope set. Report the discards with their reasons — the user reads this
 to trust the filter.
@@ -114,23 +115,34 @@ briefed per `subagent-dispatch`, and calibrate per group to its heaviest finding
 
 A fix in a critical domain moves up one row even when it looks mechanical.
 
-**Pre-existing findings** never land on this branch. Dispatch them fire-and-forget: one Agent
-per disjoint file group, `isolation: "worktree"`, `run_in_background: true`, first instruction
-`git switch -c fix/<slug> <base_branch>` so the fix is cut from the base and not from this run,
-then fix only that and verify. Like every sub-agent, it leaves the diff uncommitted in its
-worktree: committing is the main agent's job, after reviewing the report. List the dispatched
-worktrees in the closing entry and do not wait for them — the user reviews and commits each one
-when they get to it.
+**Pre-existing findings** are never fixed and never dispatched: they are not this run's work.
+Append each one to `.claude/preexisting-findings.md` in the main worktree (first line of
+`git worktree list`), not the run's worktree, which is discarded after merge. Create the file if
+missing and make sure the repo's local exclude (`.git/info/exclude`) ignores it, as the binnacle
+does. One entry per finding: `file:line`, the defect, why it is outside `<base_sha>..HEAD`, the
+reviewer that raised it and its confidence, the run's branch and date. Skip a finding already
+listed. The user triages the file whenever they choose; the closing entry only names it.
 
 When the in-scope appliers return, review their reports as `subagent-dispatch` prescribes, run
 the run's own verification command, and commit through the `commit` skill — one commit per
 group is fine.
 
+## Simplify last
+
+Once the in-scope fixes are committed, invoke `/simplify` over `<base_sha>..HEAD`. It runs
+after the fixes, not beside them, for two reasons: what it finds is aesthetic, and it edits files,
+so running it alongside the appliers would collide with them. All four angles it provides —
+reuse, simplification, efficiency, altitude — are mandatory; do not drop one because the diff
+looks clean for it, and say in the report what each angle found, "nothing" included. Restrict it
+to code the run changed: anything it flags outside the range is pre-existing and goes to the file
+above. Run the verification command again and commit through the `commit` skill, separate from
+the fix commits.
+
 ## Close
 
 Invoke `log-binnacle` for Sesión R. Its entry carries the declared effort, the reviews that ran,
-every discarded finding with the decision that covered it, the fixes committed, and the
-pre-existing worktrees handed off. `done` is still the user's call: with every in-scope finding
+every discarded finding with the decision that covered it, the fixes committed, the `/simplify`
+result per angle, and how many pre-existing findings went to `.claude/preexisting-findings.md`. `done` is still the user's call: with every in-scope finding
 fixed and verified, `log-binnacle` leaves `reviewed` and you tell them the run awaits their
 confirmation — given in this session, set `status: done` and `last_updated` yourself, entries
 untouched; with findings this

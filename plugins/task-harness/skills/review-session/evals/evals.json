@@ -16,14 +16,14 @@
     {
       "id": 2,
       "prompt": "El code-review devolvió 6 hallazgos. Uno dice que el retry en PaymentClient debería ser exponencial; la entrada S2 de la bitácora registra la decisión de usar retry fijo porque el proveedor penaliza el jitter. Otro señala un null check faltante en un archivo que no toca el diff desde base_sha. Arbitra y despacha.",
-      "expected_output": "The agent discards the retry finding citing the S2 decision, classifies the null check as pre-existing and dispatches it fire-and-forget to a worktree agent cut from base_branch, groups the remaining in-scope findings by disjoint file sets, dispatches them in parallel in the background with haiku + high by default (sonnet + medium where tactical judgment is needed), then verifies, commits via the commit skill and closes via log-binnacle.",
+      "expected_output": "The agent discards the retry finding citing the S2 decision, classifies the null check as pre-existing and appends it to .claude/preexisting-findings.md in the main worktree without dispatching an agent, groups the remaining in-scope findings by disjoint file sets, dispatches them in parallel in the background with haiku + high by default (sonnet + medium where tactical judgment is needed), then verifies, commits via the commit skill and closes via log-binnacle.",
       "files": [],
       "expectations": [
         "The agent discards the retry finding by naming the binnacle decision that covers it",
-        "The agent does not fix the pre-existing finding on the current branch; it dispatches it to a worktree agent branching from base_branch",
+        "The agent does not fix the pre-existing finding on the current branch; it appends it to .claude/preexisting-findings.md in the main worktree and dispatches no agent for it",
         "No two fix agents share a file",
         "The default applier is haiku with high effort, escalating to sonnet medium only for findings needing tactical judgment",
-        "The agent closes through log-binnacle and leaves done to the user's confirmation"
+        "The agent runs /simplify after the fixes are committed, covering all four angles, then closes through log-binnacle and leaves done to the user's confirmation"
       ]
     },
     {

@@ -31,6 +31,6 @@ declara que fue reconstruida desde los commits, **Hecho** lista solo lo que `git
 
 Para la Sesión R el header es `## [SR] <fecha ISO> — alcance: review`, **Hecho** lista el effort
 declarado con su cálculo, las revisiones que corrieron y los fixes con su SHA, **Decisiones** recoge
-cada hallazgo descartado con la decisión que lo cubre, y **Referencias** incluye los worktrees de
-hallazgos preexistentes despachados en background. Si la Sesión R murió sin cerrar, la entrada de
+cada hallazgo descartado con la decisión que lo cubre, y **Referencias** incluye
+el conteo de hallazgos preexistentes anotados en `.claude/preexisting-findings.md` y el resultado de /simplify. Si la Sesión R murió sin cerrar, la entrada de
 recuperación lleva header `[SR-recuperada]` con las mismas reglas que `[S<n>-recuperada]`.
