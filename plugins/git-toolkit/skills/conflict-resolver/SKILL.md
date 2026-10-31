@@ -1,11 +1,12 @@
 ---
 name: conflict-resolver
 description: >
-  Resolves git conflicts in progress — for both rebases and merges. Invoke immediately whenever
+  Resolves git conflicts in progress — for rebases, merges and cherry-picks. Invoke immediately whenever
   the user says "help with rebase", "rebase conflict", "merge conflict", "I have conflicts",
-  "rebase is stuck", "resolve this conflict", "rebase went wrong", or is mid-rebase or mid-merge
+  "rebase is stuck", "resolve this conflict", "rebase went wrong", "cherry-pick conflict", or is
+  mid-rebase, mid-merge or mid-cherry-pick
   and needs guidance on what to keep. Don't wait for the user to ask explicitly — if git status
-  shows conflict markers or a rebase/merge is active, invoke this skill. Analyzes the commit
+  shows conflict markers or a rebase, merge or cherry-pick is active, invoke this skill. Analyzes the commit
   history of every branch involved via parallel sub-agents to understand each side's intent
   before touching any conflict marker.
 ---
@@ -17,8 +18,10 @@ more than necessary. Not "pick a side".
 
 ## Step 1 — Read the operation state
 
-`git status` names the operation (rebase or merge), the branches, and the conflicting files.
-For a rebase, `git rebase --show-current-patch` gives the commit currently being applied.
+`git status` names the operation (rebase, merge or cherry-pick), the branches, and the
+conflicting files. For a rebase, `git rebase --show-current-patch` gives the commit being
+applied; for a cherry-pick, `CHERRY_PICK_HEAD`. A `cherry-pick --no-commit` leaves unmerged paths
+but no operation in `git status`: the caller names the commit being applied.
 
 ## Step 2 — Bound the range
 
@@ -46,8 +49,9 @@ reasoning in terms of intent, not code structure.
 
 ## Step 5 — Execute
 
-After the user approves each resolution: resolve, stage, then `git rebase --continue` or
-`git merge --continue`.
+After the user approves each resolution: resolve, stage, then `git rebase --continue`,
+`git merge --continue` or `git cherry-pick --continue`. After a `cherry-pick --no-commit`, stage
+only and hand back to the caller: there is nothing to continue.
 
 If a later commit conflicts on files already analyzed, the history reports still hold — reuse
 them. New files, or lost context → restart from Step 1 for the new conflict set.

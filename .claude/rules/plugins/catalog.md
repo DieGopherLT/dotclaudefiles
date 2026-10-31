@@ -56,10 +56,10 @@ Retrofit testing pipeline that puts existing code under tests autonomously (NOT 
 
 ## git-toolkit
 
-Git workflow enforcement for commit standards, branch naming, conflict resolution, and squash planning:
+Git workflow enforcement for commit standards, branch naming, conflict resolution, and branch curation:
 
-- **Skills**: `commit` (staged deliberately, formatted, message crafted, committed without an approval prompt), `branching` (naming convention enforcement before any `git checkout -b`), `conflict-resolver` (resolves rebase and merge conflicts via parallel branch history analysis — agnostic to operation type), `squash-suggester` (analyzes branch commit history and produces a squash plan markdown file — pick/squash/fixup per commit — preserving atomicity and bisectability)
-- **Agents**: `git-history-retriever` (read-only historian: analyzes commits for a single branch within a bounded range `merge-base..branch-tip`, infers intent per conflicting file; one instance per branch, all launched in parallel by conflict-resolver), `squash-planner` (read-only analyst: groups commits by semantic intent and assigns squash actions maintaining git bisect safety; invoked by squash-suggester)
+- **Skills**: `commit` (staged deliberately, formatted, message crafted, committed without an approval prompt), `branching` (naming convention enforcement before any `git checkout -b`), `conflict-resolver` (resolves rebase and merge conflicts via parallel branch history analysis — agnostic to operation type), `curate-branch` (prepares a branch for PR or merge in the main agent: backup ref, rebase onto target, hygiene audit of the diff, history rebuilt by cherry-pick into atomic bisectable commits with hindsight messages and branch name, tree-equality check, force-with-lease push; one confirmation before rewriting)
+- **Agents**: `git-history-retriever` (read-only historian: analyzes commits for a single branch within a bounded range `merge-base..branch-tip`, infers intent per conflicting file; one instance per branch, all launched in parallel by conflict-resolver)
 - **Hooks**: `commit-guard` (PreToolUse on `Bash`: validates `git commit` messages against the commit skill contract — type/scope, 72-char subject, 72-char body lines, 6 body lines max, no bullets or attribution — and denies any commit issued from a sub-agent except `refactoring-reconciler`; pure bash + jq, denies via stdout JSON, fails closed)
 
 ## typescript-migration
