@@ -144,7 +144,13 @@ Invoke `log-binnacle` for Sesión R. Its entry carries the declared effort, the 
 every discarded finding with the decision that covered it, the fixes committed, the `/simplify`
 result per angle, and how many pre-existing findings went to `.claude/preexisting-findings.md`. `done` is still the user's call: with every in-scope finding
 fixed and verified, `log-binnacle` leaves `reviewed` and you tell them the run awaits their
-confirmation — given in this session, set `status: done` and `last_updated` yourself, entries
-untouched; with findings this
+confirmation — given in this session, curate the run's branch for merge, then
+set `status: done` and `last_updated` yourself, entries untouched. Curation comes after the review
+because it folds the review's fix and `/simplify` commits into the commits they correct, and
+before `done` because `done` means ready to merge. If the curation's rebase resolved conflicts,
+the branch now holds code nobody reviewed: run `/code-review` over the resolved files before
+`done` — `low` when the resolution only merged independent changes, `medium` when it changed
+logic — commit any fix and curate again. Until that review passes, nothing is pushed, merged or
+opened as a PR. With findings this
 session could not resolve — a design question, a fix that failed verification — `log-binnacle`
 reopens the run with a working session for them, and *Siguiente* names the first one.

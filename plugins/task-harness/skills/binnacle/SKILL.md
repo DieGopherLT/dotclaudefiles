@@ -121,9 +121,13 @@ When a session starts cold in a worktree that carries a binnacle:
      below so the binnacle, git state and plan are in context and a review that died mid-way
      gets its recovery entry, then invoke the `review-session` skill — it owns the review and
      closes through `log-binnacle`. If the user instead confirms the run is finished without a
-     review, set `status: done` and `last_updated`, entries untouched, and stop.
+     review, curate the run's branch for merge (a rebase that resolved conflicts gets the
+     re-review `review-session`'s *Close* prescribes), then set `status: done` and
+     `last_updated`, entries untouched, and stop.
    - `reviewed` — Sesión R closed with everything fixed. Report the `[SR]` entry's summary and
-     wait: on the user's confirmation set `status: done` and `last_updated`, entries untouched;
+     wait: on the user's confirmation curate the run's branch for merge (same re-review on
+     conflicts), then set
+     `status: done` and `last_updated`, entries untouched;
      otherwise stay read-only. Never re-run the review.
    - `done` — report that the run is closed and ask before doing anything in this worktree.
 1. `Read` the file with `offset: 1, limit: <read_until_line>`. `limit` is a line count, so it
