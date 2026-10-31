@@ -4,7 +4,7 @@ description: >
   Run Sesión R of a task-harness run: review everything the run committed since base_sha with
   the project's own auditors, /code-review at an effort chosen by a declared rubric, and
   /security-review when a trust boundary was touched; contrast every finding against the plan
-  and the binnacle before accepting it, dispatch the survivors as parallel background fixes, and
+  and the binnacle before accepting it, design and apply the survivors in the main context, and
   close through log-binnacle. Pre-existing findings are logged to a file, never fixed; /simplify
   runs last over the run's diff. Invoke it whenever the binnacle's resume gate finds
   status: ready-for-review, or when the user asks to review the run, run Sesión R, or review the
@@ -79,8 +79,8 @@ background while you wait:
 
 - Each selected auditor as an Agent, briefed per the `subagent-dispatch` skill with the diff
   range `<base_sha>..HEAD` and the plan path.
-- `/code-review <effort>` **without `--fix`**: applying fixes is delegated below, where this
-  session's context is spent arbitrating rather than editing.
+- `/code-review <effort>` **without `--fix`**: a fix is applied only after its finding survives
+  arbitration, and it is designed with the run's context, not the reviewer's.
 - `/security-review` only when the changeset touches a trust boundary — user input, auth or
   authz, API surfaces, calls to external services. Omitting it for purely internal changes is
   the intended outcome, not an oversight.
@@ -101,21 +101,20 @@ against the plan and the entries' *Decisiones* and *Desviaciones*:
 What remains is the in-scope set. Report the discards with their reasons — the user reads this
 to trust the filter.
 
-## Dispatch the fixes
+## Apply the fixes
 
-Group in-scope findings so no two agents share a file (the same disjointness the delegable gate
-uses) and prefer fewer agents with more fixes each. Launch them in parallel, in the background,
-briefed per `subagent-dispatch`, and calibrate per group to its heaviest finding:
+This session designs and applies every in-scope fix itself. It alone holds the plan, the
+binnacle and the arbitration; a sub-agent briefed cold would redesign the fix without them. That
+includes investigating the trigger of a PLAUSIBLE finding before deciding it is real.
 
-| Finding | Model + effort |
-|---|---|
-| Explicit fix: missing guard, off-by-one, rename, existing helper to call | `haiku` + `high` (default) |
-| Bounded fix that needs tactical judgment: restructure one function, touch one module's call sites | `sonnet` + `medium` |
-| Cross-cutting or design-level, or a PLAUSIBLE that needs its trigger investigated | `opus` + `medium`/`high` |
+The one exception is bulk application of a fix already designed here: the same edit repeated
+over many files (4+ of the same mold, as the delegable gate counts them). Delegate only the
+typing, with a brief that carries the exact edit, the file list and the verification command, so
+the agent decides nothing. Use `haiku` + `medium` when the edit is literal at every site, and
+`sonnet` + `low` when it must adapt to each site's surroundings. Its file set must not overlap
+any file this session edits.
 
-A fix in a critical domain moves up one row even when it looks mechanical.
-
-**Pre-existing findings** are never fixed and never dispatched: they are not this run's work.
+**Pre-existing findings** are never fixed: they are not this run's work.
 Append each one to `.claude/preexisting-findings.md` in the main worktree (first line of
 `git worktree list`), not the run's worktree, which is discarded after merge. Create the file if
 missing and make sure the repo's local exclude (`.git/info/exclude`) ignores it, as the binnacle
@@ -123,15 +122,14 @@ does. One entry per finding: `file:line`, the defect, why it is outside `<base_s
 reviewer that raised it and its confidence, the run's branch and date. Skip a finding already
 listed. The user triages the file whenever they choose; the closing entry only names it.
 
-When the in-scope appliers return, review their reports as `subagent-dispatch` prescribes, run
-the run's own verification command, and commit through the `commit` skill — one commit per
-group is fine.
+Review any delegated report as `subagent-dispatch` prescribes, run the run's own verification
+command, and commit through the `commit` skill — one commit per related group of fixes is fine.
 
 ## Simplify last
 
 Once the in-scope fixes are committed, invoke `/simplify` over `<base_sha>..HEAD`. It runs
 after the fixes, not beside them, for two reasons: what it finds is aesthetic, and it edits files,
-so running it alongside the appliers would collide with them. All four angles it provides —
+so running it alongside the fixes would collide with them. All four angles it provides —
 reuse, simplification, efficiency, altitude — are mandatory; do not drop one because the diff
 looks clean for it, and say in the report what each angle found, "nothing" included. Restrict it
 to code the run changed: anything it flags outside the range is pre-existing and goes to the file
