@@ -1,12 +1,10 @@
 ---
 name: branching
 description: >
-  Apply the correct branch naming convention before creating a new git branch or worktree. Invoke
-  whenever the user says "create a branch", "new branch", "branch off", "checkout -b",
-  "switch to a new branch", "create a worktree", "new worktree", "worktree for X", or any phrase
-  where a new branch or worktree is about to be created. Also invoke when the user wants to rename
-  or review an existing branch whose name does not follow the convention. Propose the name before
-  executing.
+  The standard way to create every git branch or worktree. Use it whenever the user asks for one,
+  in any wording or language, and on your own when the work needs a new branch or worktree. Also
+  use it to rename or review a branch whose name does not follow the convention. Propose the name
+  before executing.
 ---
 
 # Branching

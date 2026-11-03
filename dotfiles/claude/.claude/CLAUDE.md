@@ -11,7 +11,6 @@
 
 - **Preferred programming languages**: Go, TypeScript, C#
 - He has strong expertise with GoF design patterns and applies them frequently. Reference pattern names as shared vocabulary — do not explain them from scratch. When proposing solutions, proactively frame them in GoF terms when a pattern applies.
-  - **Not fully experienced in**: Mediator, Memento, State, Template Method, Visitor, Flyweight, Proxy, Composite — explain these when they come up rather than assuming familiarity.
 - When managing situations where multiple states are implied, go by default with a Finite State Machine approach, unless the problem clearly calls for a different pattern.
 
 ## Session Behavior
@@ -19,8 +18,11 @@
 - No emojis in responses, code, or commit messages. Remove them from files you are already editing in repos owned by DieGopherLT; leave other repos alone.
 - All code and comments generated must be in English.
 - Parse JSON via `jq`, never Python-based approaches.
-- In repos owned by DieGopherLT, HansLove, or TaloonStudio, tighten the comments and docs you edit: same information in fewer words and plain language, never dropping a non-obvious fact to save words.
+- In repos owned by DieGopherLT, HansLove, or TaloonStudio, tighten the comments and docs you edit with the `de-claudish` skill.
 - If that tightening changes more than a fifth of a CLAUDE.md's lines, rewrite the whole file in the same style so no inconsistencies remain, and commit it on its own with the `commit` skill.
+- Prefer to use Edit over Bash for code changes, so the user has a glance at the diff before committing. use Bash only for code bulk operations.
+- When about to perform any code change that will change signatures, confirm with LSP all references to the changed symbols are updated.
+  - LSP is available on TS and Go projects as a deferred tool: load it with `ToolSearch`.
 
 ## Planning Behavior
 
@@ -30,6 +32,8 @@
 - Plan mode blocks mocking, so if UI surfaces mid-plan, ask the user to exit, mock, then re-enter.
 - In plan mode, invoke `plan-constraints` before drafting.
 
+Under `/goal`, skip these rules and do not enter plan mode. When a goal involves designing a solution, design it for extension without modifying existing code (Open-Closed), and add extension points only where the goal implies variation.
+
 ## Task Execution Behavior
 
 Substantial requests go through the `task-planning` skill.
@@ -38,6 +42,7 @@ Substantial requests go through the `task-planning` skill.
 
 The main agent's context is the scarce resource: it keeps business logic, documentation, and decisions, and delegates the rest. Every dispatch goes through `subagent-dispatch`.
 
+- The main agent decides every design and dispatches sub-agents to write it. A sub-agent that writes code never designs; read-only agents may propose designs for the main agent to choose from. The main agent reviews the code and commits it if it passes.
 - Mechanical work that can be fully specified and easily checked (tests, exploration, gathering references, bulk renames, checking a hypothesis) goes to a cheap model.
 - When several angles materially matter (correctness, security, performance, UX, migration cost...), run one read-only agent per angle on a reasoning model and synthesize their reports yourself.
 - Write agents never share files; sub-agents never commit.
@@ -45,18 +50,19 @@ The main agent's context is the scarce resource: it keeps business logic, docume
 
 ## Git Behavior
 
-- Use `commit` skill to commit changes. Either by request or autonomously.
-- Use `branching`  skill to create new branches or worktrees. Either by request or autonomously.
-- When moving or deleting tracked files, use `git mv` and `git rm` respectively to preserve history. Do not delete and re-create files.
+- When moving or deleting tracked files, use `git mv` and `git rm` respectively to preserve history.
 
 ## Database Behavior
 
 All local databases run in containers. Use `docker exec` with the container name to run any database shell command.
+Instead of creating a new container for each project database, keep a single container running all the databases of the same engine (PostgreSQL, MySQL, Redis, etc.)
+and connect to the right database from there.
 
 ## SSH Behavior
 
 - Check SSH aliases before connecting to any server.
-- Batch SSH commands to avoid rate limiting.
+- If no alias exists, check if the repo has ansible inventory files and get the host from there.
+- Reuse one SSH connection per host through multiplexing: `ssh -o ControlMaster=auto -o ControlPath=~/.ssh/cm-%r@%h-%p -o ControlPersist=10m <host> <command>`.
 
 ## Memory Behavior
 

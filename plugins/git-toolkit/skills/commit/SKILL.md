@@ -1,11 +1,9 @@
 ---
 name: commit
 description: >
-  Execute a complete, standards-compliant git commit. Invoke immediately whenever the user says
-  "commit", "make a commit", "commit these changes", "let's commit", "ship this", "stage and commit",
-  or any phrase that signals they want to record changes to git history. Do not wait for the user to
-  specify format details — own the full workflow: staging, linting, message authoring, and execution.
-  If in doubt, invoke it — a bad commit message is permanent history.
+  The standard way to create every git commit. Use it whenever the user asks for a commit, in any
+  wording or language, and on your own when a logical unit of work is finished and verified:
+  autonomous commits are the default. Owns staging, linting, the message, and execution.
 ---
 
 # Commit

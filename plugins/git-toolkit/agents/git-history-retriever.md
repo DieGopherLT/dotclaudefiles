@@ -8,7 +8,7 @@ description: >
   Reports a structured intent analysis per conflicting file so the caller can make an informed
   consolidation decision.
 tools: Bash, Read, Grep
-model: sonnet
+model: haiku
 effort: high
 color: red
 ---

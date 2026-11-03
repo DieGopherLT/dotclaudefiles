@@ -31,6 +31,7 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 - Scaffolding a Claude Code sub-agent (`claude-code-agent-creator`)
 - Authoring a dynamic workflow / orchestrating subagents at scale with `ultracode` (`workflow-creator`)
 - Creating an on-demand report or shareable artifact mid-session — without git workflow involvement (`create-report`)
+- Rewriting AI-styled prose, comments, or reports into plain, verifiable statements (`de-claudish`)
 
 **Use dotclaudehooks when:**
 
@@ -60,7 +61,7 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 - Committing changes — the `commit` skill owns staging, linting, message format; the `commit-guard` hook enforces the message contract and blocks commits from sub-agents
 - Creating a new branch — the `branching` skill applies naming conventions before `git checkout -b`
 - Mid-rebase or mid-merge with conflicts — the `conflict-resolver` skill analyzes every branch's history in parallel via `git-history-retriever` before touching any conflict marker
-- Preparing a branch for PR or merge — the `curate-branch` skill rebases, audits the diff, rebuilds the history into atomic commits with hindsight messages and renames the branch, after one confirmation
+- Polishing a finished, unpublished branch before a merge, PR, or first push — the `curate-branch` skill rebases, audits the diff, rebuilds the history into atomic commits with hindsight messages and renames the branch, after one confirmation
 
 **Use typescript-migration when:**
 

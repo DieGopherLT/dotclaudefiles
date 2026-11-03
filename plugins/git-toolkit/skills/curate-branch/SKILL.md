@@ -1,12 +1,14 @@
 ---
 name: curate-branch
 description: >
-  Curate a branch before it becomes a PR or gets merged: back it up, rebase it onto the target,
-  audit the diff for leftovers, accidental files and secrets, then rebuild its history into
-  atomic, bisectable commits with messages and a branch name rewritten in hindsight, executing
-  the rewrite after one confirmation. Use it whenever a branch is about to leave its author's
-  hands: preparing a PR or a merge, squashing or reordering commits, or fixing commit messages or
-  the branch name after the fact, in any language ("cura la rama", "prepare the branch for PR").
+  Polish a finished, unpublished branch before presenting it through a merge, a PR, or its first
+  push; a branch already on the remote is never curated. Use it once the branch's work is done
+  and it is about to leave its author's hands, or to squash or reorder commits or fix commit
+  messages or the branch name after the fact, in any language ("cura la rama", "prepare the
+  branch for PR"). It backs up the branch, rebases it onto the target, audits
+  the diff for leftovers, accidental files and secrets, then rebuilds its history into atomic,
+  bisectable commits with messages and a branch name rewritten in hindsight, executing the rewrite
+  after one confirmation.
 argument-hint: "[target-branch]"
 ---
 
@@ -16,7 +18,7 @@ Curating rewrites history so the branch reads as if it had been written knowing 
 The tree the branch delivers never changes, except for hygiene fixes the user approved.
 
 ```
-1 Preflight -> 2 Backup -> 3 Sync -> 4 Hygiene -> 5 Plan + confirm -> 6 Rebuild -> 7 Verify -> 8 Publish
+1 Preflight -> 2 Backup -> 3 Sync -> 4 Hygiene -> 5 Plan + confirm -> 6 Rebuild -> 7 Verify -> 8 Report
 ```
 
 The backup in step 2 precedes every change, so any step can be undone. Step 3 only rebases;
@@ -38,9 +40,8 @@ Stop and report if any of these fails:
 - Every commit in `<target>..HEAD` was authored by the user (`git log --format='%ae'` against
   `git config user.email`). Rewriting someone else's commits breaks their local copy, so ask
   before going on.
-
-Also note whether the branch exists on the remote and whether it has an open PR
-(`gh pr view --json number,state 2>/dev/null`); steps 5 and 8 depend on it.
+- The branch is not on the remote (`git ls-remote --heads origin <branch>` prints nothing).
+  Rewriting published history would require a force-push, so a published branch is never curated.
 
 ## 2. Backup
 
@@ -69,16 +70,13 @@ Read `git diff <target>...HEAD` and list every finding:
 |---|---|---|
 | Leftovers | debug prints, `console.log`, commented-out code, TODOs added on this branch | fix if the user agrees |
 | Accidental files | `.env`, binaries, large files, editor or OS files, generated plans | remove if the user agrees |
-| Secrets | tokens, keys, passwords, connection strings | remove; see below |
+| Secrets | tokens, keys, passwords, connection strings | remove |
 | Out of scope | unrelated formatting, opportunistic refactors | flag only |
 | Missing release chores | version bump or changelog the repo requires | fix if the user agrees |
 
 Commit the approved fixes on the tip with any valid message; step 6 folds each into the commit it
 corrects, so the problem disappears from every commit, not just the last one. Then set `<synced>`
 to the new tip.
-
-If a secret was already pushed, rewriting removes it from the branch but not from the remote's
-caches or anyone's clone: tell the user to rotate it.
 
 ## 5. Plan and confirm
 
@@ -99,8 +97,7 @@ conversation, never in a file.
   format (Step 4) and commit form (Step 5: heredoc when there is a body or an apostrophe). Keep
   scopes consistent across the branch.
 - Invoke `branching` to propose a name that describes what the branch turned out to be. Keep
-  the current name if it already fits. With an open PR, do not propose a rename: renaming the
-  remote branch closes the PR.
+  the current name if it already fits.
 
 Show the plan as a table, oldest commit first (SHAs are the post-rebase ones), plus the findings
 flagged in step 4:
@@ -112,7 +109,6 @@ flagged in step 4:
 | 2 | test(auth): cover expired tokens      | 9c8b7a6                   |
 Dropped: 5e4d3c2 + its revert 2b1a0f9
 Branch: feature/jwt-stuff -> feature/jwt-validation
-Push: force-with-lease to origin (branch already published)
 ```
 
 Wait for the user's approval. Apply corrections they request and show the plan again.
@@ -152,22 +148,13 @@ git branch -f <branch> HEAD && git switch <branch>
 git branch -m <branch> <new-name>   # only if a rename was approved
 ```
 
-## 8. Publish and report
+## 8. Report
 
-If step 3 resolved conflicts, do not push: the resolution is code nobody has reviewed, and step 7
-cannot catch it because it compares against the rebased tree. Report the resolved files and stop
-there. The branch is pushed, merged or opened as a PR only after that resolution is reviewed;
-curating again after the review finds no conflicts and publishes.
+This skill never pushes: the merge, PR or first push comes after it, as a separate step.
 
-Otherwise, if the branch was on the remote, push the plan's approved way:
-
-```bash
-git push --force-with-lease origin <name>
-# on rename, also: git push origin --delete <old-name> && git branch -u origin/<new-name>
-```
-
-`--force-with-lease` refuses the push if someone else pushed in the meantime; report that instead
-of forcing.
+If step 3 resolved conflicts, say the branch must not be presented until that resolution is
+reviewed: it is code nobody has reviewed, and step 7 cannot catch it because it compares against
+the rebased tree.
 
 Report the before and after commit lists, the files whose conflicts step 3 resolved (none
 included), the hygiene changes, anything flagged but untouched, whether tests ran per commit, and
