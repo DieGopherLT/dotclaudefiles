@@ -138,8 +138,9 @@ When a session starts cold in a worktree that carries a binnacle:
    disagree, trust git.
 3. **Recovery.** If git shows commits that no entry above the cursor references, the previous
    session died before closing. Do not continue silently: invoke `log-binnacle` to write a
-   recovery entry first (it defines the shape), listing only what `git show` proves and never
-   inventing decisions no commit evidences. Then re-run steps 0 and 1: `log-binnacle` rewrote
+   recovery entry first (it defines the shape and how to find the dead session's transcript),
+   listing as done only what `git show` proves and never inventing decisions that neither a
+   commit nor that transcript evidences. Then re-run steps 0 and 1: `log-binnacle` rewrote
    `current_session`, `status`, `read_until_line`, and `last_updated`, so every value read before
    the recovery entry is stale. If the refreshed `status` is no longer `in-progress`, follow that
    branch of the gate and stop — a recovery entry can close the run's last working session.

@@ -26,8 +26,10 @@ primero lo caro de reconstruir (estado, decisiones, desviaciones), al final los 
 
 Para una entrada de recuperación (la sesión anterior murió sin cerrar), el header es
 `## [S<n>-recuperada] <fecha ISO> — alcance: <bloques con commits>`, el **Estado al cierre**
-declara que fue reconstruida desde los commits, **Hecho** lista solo lo que `git show` prueba, y
-**Decisiones** dice `no recuperables — la sesión murió sin cerrar`.
+declara que fue reconstruida desde los commits y, si existe, el transcript de la sesión muerta,
+**Hecho** lista solo lo que `git show` prueba, y **Decisiones** recoge lo que muestre ese
+transcript, cada decisión con `(transcript <session-id>)`. Para los commits sin transcript que
+hable de ellos, **Decisiones** dice `no recuperables — la sesión murió sin cerrar`.
 
 Para la Sesión R el header es `## [SR] <fecha ISO> — alcance: review`, **Hecho** lista el effort
 declarado con su cálculo, las revisiones que corrieron y los fixes con su SHA, **Decisiones** recoge

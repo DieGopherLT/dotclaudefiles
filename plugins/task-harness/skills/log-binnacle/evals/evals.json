@@ -38,6 +38,19 @@
         "The agent rewrites only the remaining unchecked sessions and unfinished blocks in the session plan",
         "The agent does not rewrite or annotate past entries to reflect the re-plan"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Al retomar el run, git muestra dos commits que ninguna entrada referencia: la sesión anterior murió sin cerrar. Escribe la entrada de recuperación.",
+      "expected_output": "The agent runs find-commit-session.sh for each orphan commit, reads the resulting session with session-tail.sh, and writes an [S<n>-recuperada] entry whose Hecho lists only what git show proves and whose Decisiones cite (transcript <session-id>). It writes 'no recuperables' only if no transcript discusses those commits.",
+      "files": [],
+      "expectations": [
+        "The agent looks up each orphan commit with find-commit-session.sh before composing the entry",
+        "Hecho lists only what git show proves, not what the transcript claims",
+        "Each recovered decision carries (transcript <session-id>)",
+        "The agent ignores a candidate session whose messages do not discuss the commit's change",
+        "The agent writes 'no recuperables' for a commit whose lookup exits 1"
+      ]
     }
   ]
 }
