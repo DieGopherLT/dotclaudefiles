@@ -62,6 +62,7 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 - Creating a new branch — the `branching` skill applies naming conventions before `git checkout -b`
 - Mid-rebase or mid-merge with conflicts — the `conflict-resolver` skill analyzes every branch's history in parallel via `git-history-retriever` before touching any conflict marker
 - Polishing a finished, unpublished branch before a merge, PR, or first push — the `curate-branch` skill rebases, audits the diff, rebuilds the history into atomic commits with hindsight messages and renames the branch, after one confirmation
+- Branches and worktrees have piled up — the `clean-branches` skill deletes the merged prefixed ones, and before removing a worktree saves the lessons in its `.claude/binnacle.md` (memory or repo docs) and triages its uncommitted changes (discard or cherry-pick)
 
 **Use typescript-migration when:**
 

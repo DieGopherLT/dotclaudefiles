@@ -1,7 +1,7 @@
 {
   "name": "git-toolkit",
-  "version": "3.0.0",
-  "description": "Diego's git workflow toolkit: commit standards enforcement, conflict resolution for rebases and merges, branch naming conventions, and branch curation before PR or merge.",
+  "version": "3.1.0",
+  "description": "Diego's git workflow toolkit: commit standards enforcement, conflict resolution for rebases and merges, branch naming conventions, branch curation before PR or merge, and cleanup of merged branches and worktrees.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"
