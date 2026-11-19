@@ -87,6 +87,12 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 - Implementing a closed spec and wanting the execution strategy chosen automatically by scale and orchestration closure (`implement-spec`)
 - Running the whole create → close-design → implement cycle over one source of truth alongside the `/goal` command
 
+**Use ansible-toolkit when:**
+
+- Writing, reviewing or running any Ansible playbook, role, inventory or template (`ansible-conventions`)
+- A playbook change moves data that hosts already hold, or leaves something behind to remove (`ansible-migrations`)
+- Auditing an Ansible change before applying it to a host (`ansible-auditor`)
+
 **Use refactoring-guru when:**
 
 - Scanning a specific file, directory, function, or class for code smells — `smell-scan` produces located, confidence-scored findings mapped to concrete techniques, not generic Clean Code advice

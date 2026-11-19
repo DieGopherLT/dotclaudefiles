@@ -103,6 +103,13 @@ The harness for a substantial task that does not fit one context window. Busines
 - **Hooks** (mod, `hooks/register.ts`): `session.compact` stamps main-conversation compactions in `$.state`; `skill.prompt` appends a `## Context budget` block (`context_tokens`, `context_window`, `compacted_this_session`, `budget_verdict`) to `log-binnacle`'s prompt; the cut threshold (`register.ts::BUDGET_TOKENS`, an absolute token count) lives only there, and a compaction or unknown token count also yields `cut`. Known ceiling: `$.state` dies with the process, so a compaction before `--resume` reads as false
 - **Session plan invariant**: the plan always ends with `Sesión R — code review`, run in a clean session by `review-session`; its effort is never fixed at planning time
 
+## ansible-toolkit
+
+Diego's Ansible conventions, split by concern, plus the auditor that enforces them:
+
+- **Skills**: `ansible-conventions` (structure only: layout, roles vs standalone playbooks, variable layers, per-environment inventories, groups per configuration domain, shared hosts, service installation order and one instance per host, web server vhosts, task rules, verification; ships `references/unix-checklist.md` for host conventions and `references/recipes.md`, the recipe book that overrides the general rules), `ansible-migrations` (transitional tasks between playbook versions: migrations in `tasks/migrations/<date>-<what>.yml` imported first under the `migrations` tag, literal paths, guarded by the old state's `stat` instead of a ledger, an `assert` that refuses an existing destination before the service stops (`mv -T` silently overwrites files); cleanup tasks in `references/cleanup-tasks.md`, imported last, with stops guarded by the unit file's `stat` because `systemd_service` fails on a missing unit; both deleted once `--check --tags <tag>` reports ok on every production host)
+- **Agents**: `ansible-auditor` (read-only, `opus` + `high`: compliance pass over both skills and the checklist, then an adversarial pass per created user, shared-host impact and secrets; Bash only for reading, never runs a play; confidence >= 80 findings plus an Ambiguities list)
+
 ## Installing
 
 Each plugin installs independently:
@@ -124,4 +131,5 @@ Each plugin installs independently:
 /plugin install spec-kit@diegopher
 /plugin install refactoring-guru@diegopher
 /plugin install task-harness@diegopher
+/plugin install ansible-toolkit@diegopher
 ```

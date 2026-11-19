@@ -69,6 +69,11 @@
       "name": "plan-opus-upgrade",
       "description": "Mod: with CLAUDE_PLAN_OPUS=1, a main-loop request that is exactly sonnet at medium effort in plan mode is sent as opus at high effort. Any other model, effort or mode is left untouched.",
       "source": "./plugins/plan-opus-upgrade"
+    },
+    {
+      "name": "ansible-toolkit",
+      "description": "Ansible toolkit: structural conventions for playbooks, roles and inventories plus a recipe book, rules for data migrations and cleanup tasks between playbook versions, and an adversarial read-only auditor that checks both before a change reaches a host.",
+      "source": "./plugins/ansible-toolkit"
     }
   ]
 }
