@@ -1,7 +1,7 @@
 {
   "name": "ansible-toolkit",
-  "version": "1.0.0",
-  "description": "Diego's Ansible toolkit: structural conventions for playbooks, roles and inventories with a recipe book, data migrations and cleanup tasks between playbook versions, and an adversarial read-only auditor.",
+  "version": "1.0.1",
+  "description": "Ansible toolkit: structural conventions for playbooks, roles and inventories with a recipe book, data migrations and cleanup tasks between playbook versions, and an adversarial read-only auditor.",
   "author": {
     "name": "Diego",
     "url": "https://github.com/DieGopherLT"

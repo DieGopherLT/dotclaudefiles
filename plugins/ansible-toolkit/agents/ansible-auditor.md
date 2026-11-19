@@ -1,7 +1,7 @@
 ---
 name: ansible-auditor
 description: >
-  Adversarial read-only reviewer of Ansible code against Diego's ansible-conventions and
+  Adversarial read-only reviewer of Ansible code against the ansible-conventions and
   ansible-migrations skills and the Unix host checklist. Use proactively right after writing or
   changing a playbook, role, inventory, template or migration, and before applying it to a host.
   Trigger on "audita el ansible", "revisa el playbook", "¿cumple las convenciones?", "review this

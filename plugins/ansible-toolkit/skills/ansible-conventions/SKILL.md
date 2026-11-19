@@ -1,11 +1,11 @@
 ---
 name: ansible-conventions
-description: Diego's strict conventions for writing and running Ansible - layout, variables, per-environment inventories, shared hosts, web server vhosts, tasks, and verification - plus his recipe book of solved problems. Use whenever writing, reviewing, refactoring, or running Ansible playbooks, roles, inventories, group_vars/host_vars, or templates, even for a one-task change. Trigger on "ansible", "playbook", "role", "inventario", "group_vars", "host_vars", "ansible-playbook", "ansible-vault", "agrega un host", "host compartido", "VM de prueba", "vhost", "nginx", "apache", "caddy", "despliega un servicio", "agrega esto como receta", "guarda la receta".
+description: Strict conventions for writing and running Ansible - layout, variables, per-environment inventories, shared hosts, web server vhosts, tasks, and verification - plus a recipe book of solved problems. Use whenever writing, reviewing, refactoring, or running Ansible playbooks, roles, inventories, group_vars/host_vars, or templates, even for a one-task change. Trigger on "ansible", "playbook", "role", "inventario", "group_vars", "host_vars", "ansible-playbook", "ansible-vault", "agrega un host", "host compartido", "VM de prueba", "vhost", "nginx", "apache", "caddy", "despliega un servicio", "agrega esto como receta", "guarda la receta".
 ---
 
 # Ansible conventions
 
-Diego is strict about how Ansible code is written. Treat everything below as the rules for any playbook, role, or inventory you touch, and before solving a problem check `references/recipes.md`: if a recipe covers it, follow the recipe.
+Treat everything below as the rules for any playbook, role, or inventory you touch, and before solving a problem check `references/recipes.md`: if a recipe covers it, follow the recipe.
 
 The principle behind the rules: **maximize declarativity.** A playbook describes the state each host must end up in, not the steps to get there. A task or role that reads like a script (chains of commands, `register` + `when` plumbing to emulate control flow) is a design smell; look for the module, data structure, or template that turns it back into a state declaration. When a situation is not covered below, choose the most declarative option.
 
@@ -67,11 +67,11 @@ Only if non-secret values are truly common to every environment, put them in a `
 
 ## Inventory and hosts
 
-- **No personal SSH aliases.** Inventory must not rely on aliases from Diego's `~/.ssh/config`; set `ansible_host` to the real address and `ansible_user` explicitly so the inventory works on any machine.
-- **No SSH keys in inventory.** Never set `ansible_ssh_private_key_file`: a key path is local to one machine and goes stale on rotation. The operator's SSH client picks the key: Diego lists each host's IP next to its alias in `~/.ssh/config` (`Host <alias> <ip>`), so a connection by IP gets the alias's `IdentityFile`. His keys have passphrases and Ansible cannot answer the prompt, so load the key into the agent first (connect once by alias, or `ssh-add -t 30m <key>`). On `Permission denied (publickey)`, check `ssh -G <ip>` and `ssh-add -l` before touching the inventory.
+- **No personal SSH aliases.** Inventory must not rely on aliases from the operator's `~/.ssh/config`; set `ansible_host` to the real address and `ansible_user` explicitly so the inventory works on any machine.
+- **No SSH keys in inventory.** Never set `ansible_ssh_private_key_file`: a key path is local to one machine and goes stale on rotation. The operator's SSH client picks the key: list each host's IP next to its alias in `~/.ssh/config` (`Host <alias> <ip>`), so a connection by IP gets the alias's `IdentityFile`. If the key has a passphrase, Ansible cannot answer the prompt: load the key into the agent first (connect once by alias, or `ssh-add -t 30m <key>`). On `Permission denied (publickey)`, check `ssh -G <ip>` and `ssh-add -l` before touching the inventory.
 - **Numbered host names:** `<host>-01`, `<host>-02`, and so on, even when there is only one.
 - **One inventory directory per environment.** Ansible loads `group_vars/` and `host_vars/` from the inventory file's directory, so `inventories/production/` and `inventories/vm/` each get only their own variables and vaults. Two inventory files in one directory share its `group_vars/all`, and a VM run then loads production secrets. Values both environments share go in role defaults, never in `group_vars/` next to the playbooks, which loads for every inventory. The one exception is a project without roles: see "Variables without roles".
-- **Test VMs carry `vm` in their name** (`<host>-vm-01`), never the production host's name. Diego tests plays on local libvirt (`virsh`) VMs; a VM named like a production host gets confused with it in output, logs, and `--limit`.
+- **Test VMs carry `vm` in their name** (`<host>-vm-01`), never the production host's name. A VM named like a production host gets confused with it in output, logs, and `--limit`.
 
 ### Groups per configuration domain
 
@@ -110,7 +110,7 @@ all:
 
 ## Shared hosts
 
-Several of Diego's apps share a host, each provisioned from its own repo. Before adding a host to an inventory, search for its IP in the other projects' Ansible directories. `<project-roots>` are the directories that hold Diego's repos; ask him if you do not know them:
+Several apps may share a host, each provisioned from its own repo. Before adding a host to an inventory, search for its IP in the other projects' Ansible directories. `<project-roots>` are the directories that hold the user's repos; ask the user if you do not know them:
 
 ```sh
 grep -rlF --include='*.yml' '<ip>' <project-roots> | grep '/ansible/'
@@ -146,7 +146,7 @@ Services without tenants (chrony, fail2ban, node_exporter, tailscale, backup tim
 
 ### Mail
 
-Apps that only send mail get a relay (Postfix as a null client, or msmtp to an external SMTP server), never a full mail server. A server that receives mail (MX, SPF, DKIM, DMARC) is a project of its own: ask Diego before building one.
+Apps that only send mail get a relay (Postfix as a null client, or msmtp to an external SMTP server), never a full mail server. A server that receives mail (MX, SPF, DKIM, DMARC) is a project of its own: ask the user before building one.
 
 ## Web servers
 
@@ -175,10 +175,10 @@ Whenever a play deploys a service, creates users, places files on disk, or touch
 
 ## Verification
 
-Before the `--check` run, dispatch the `ansible-toolkit:ansible-auditor` sub-agent with the changed paths. It reviews them adversarially against this plugin's skills and their references, and never touches hosts. Fix its Critical findings before applying; answer its Ambiguities or bring them to Diego.
+Before the `--check` run, dispatch the `ansible-toolkit:ansible-auditor` sub-agent with the changed paths. It reviews them adversarially against this plugin's skills and their references, and never touches hosts. Fix its Critical findings before applying; answer its Ambiguities or bring them to the user.
 
 Run every change with `ansible-playbook -i inventories/<env> --check --diff` before applying it. Some tasks fail in check mode only because of the dry run (e.g. a service task whose package was not actually installed yet). When the failure is a dry-run artifact, re-run the check with `--skip-tags` for those tags instead of changing the task to make check mode pass. A failure that is not a dry-run artifact is a real bug: fix it.
 
 ## Recipes
 
-`references/recipes.md` is Diego's recipe book: problems he solved and how he wants them solved from now on. When he asks to save something as a recipe, or confirms a non-obvious solution you worked out together, append it there in the format the file describes. Recipes override the general rules above when they conflict, since they record a decision made on the real case.
+`references/recipes.md` is the recipe book: solved problems and how they must be solved from now on. When the user asks to save something as a recipe, or confirms a non-obvious solution you worked out together, append it there in the format the file describes. Recipes override the general rules above when they conflict, since they record a decision made on the real case.

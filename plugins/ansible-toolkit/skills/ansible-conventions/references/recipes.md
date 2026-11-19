@@ -1,6 +1,6 @@
 # Ansible recipes
 
-Problems Diego solved and how he wants them solved from now on. Append new recipes at the end, one `##` section each:
+Solved problems and how they must be solved from now on. Append new recipes at the end, one `##` section each:
 
 - **Problem**: the situation, in terms someone would search for.
 - **Solution**: the modules, variables, or template involved; a short snippet when it saves explaining.
@@ -23,7 +23,7 @@ Problems Diego solved and how he wants them solved from now on. Append new recip
     state: present
 ```
 
-**Why**: Diego keeps the cache refresh as its own step instead of folding `update_cache` into the install task. Passing the list to `name` installs everything in one apt transaction, faster than a `loop`.
+**Why**: the cache refresh stays its own step instead of folding `update_cache` into the install task. Passing the list to `name` installs everything in one apt transaction, faster than a `loop`.
 
 ## Enable ufw without locking out SSH
 
@@ -157,7 +157,7 @@ roles:
 
 **Problem**: several apps share a host on rootful Docker, and a leaked CI secret gives root on the whole host. Each app must run as its own unprivileged user, and its CI key must only redeploy that app to a commit that already has an image.
 
-**Source**: Diego's shared role `docker_rootless`, pinned by tag in each app repo's `requirements.yml`, which gives its git URL. Its README documents the descriptor, the deploy script's exit codes and the operator commands.
+**Source**: a shared role `docker_rootless`, pinned by tag in each app repo's `requirements.yml`, which gives its git URL. Its README documents the descriptor, the deploy script's exit codes and the operator commands.
 
 **Assumptions**:
 

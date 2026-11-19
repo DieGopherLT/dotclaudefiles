@@ -11,7 +11,7 @@ What every service deployed with Ansible must satisfy on the host.
 
 ## Service users
 
-- Every service runs as its own system user (`ansible.builtin.user` with `system: true`, `shell: /usr/sbin/nologin`), never as root or as Diego's user.
+- Every service runs as its own system user (`ansible.builtin.user` with `system: true`, `shell: /usr/sbin/nologin`), never as root or as the operator's user.
 - Create it with a home directory (`create_home: true`), so tools that expect a writable `$HOME` (caches, CLI configs, container runtimes) do not break.
 - If it needs elevated commands, grant exactly those commands through sudoers (`community.general.sudoers`, one file per service in `/etc/sudoers.d/`). No `ALL`, and never add the user to the `sudo`/`wheel` group.
 
@@ -21,8 +21,8 @@ An app deployed from CI gets a dedicated deploy user, and CI's SSH key is author
 
 1. Generate a fresh ed25519 pair in a temporary directory on the control machine: `ssh-keygen -t ed25519 -N '' -C '<app>-deploy@<ci> <host>' -f <tmp>/<app>-deploy`.
 2. Put the public key in the inventory (`host_vars`; it is not a secret) and authorize it for the deploy user.
-3. Hand Diego the private key's file path so he stores it as the CI secret where it belongs (e.g. `DROPLET_SSH_KEY` in the GitHub environment). Never paste the private key into the chat, the repo, or the vault: it would persist in transcripts or history.
-4. Once Diego confirms the secret is stored, delete the private key from the control machine. CI's secret is the only copy.
+3. Hand the user the private key's file path so they store it as the CI secret where it belongs (e.g. `DROPLET_SSH_KEY` in the GitHub environment). Never paste the private key into the chat, the repo, or the vault: it would persist in transcripts or history.
+4. Once the user confirms the secret is stored, delete the private key from the control machine. CI's secret is the only copy.
 
 Its sudoers file follows the service-user rule above, scoped to its own app: `systemctl restart <app>` and whatever else that deploy needs (e.g. writing `/etc/<app>/image.env`), each with an absolute path and the full argument list. No wildcards in arguments: `systemctl restart *` would let it restart any unit, other apps' included on a shared host.
 
