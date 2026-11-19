@@ -9,17 +9,21 @@ interface Engine {
   compaction?: SessionCompactResult
   startedAt?: number
   context?: SessionContextUsage
+  autoCompactWindow?: string
 }
 
 // Stands for the engine beneath the plugin: a session that began at STARTED_AT,
-// a clock past it, and a compaction that stands unless `skip` is given.
+// a clock past it, the auto-compact window env, and a compaction that stands
+// unless `skip` is given.
 function engineBeneath(on: On, engine: Engine = {}) {
   const {
     compaction = { messages: SUMMARY },
     startedAt = STARTED_AT,
     context = { tokens: 312_450, window: 1_000_000, percent: 31 },
+    autoCompactWindow,
   } = engine
   mock.clock(on, { now: 1_000 })
+  on('env.get', () => ({ value: autoCompactWindow }))
   on('session.usage', () => ({ value: { startedAt, context, rateLimits: [] } }))
   on('session.compact', () => compaction)
   on('skill.prompt', ($, e) => ({ text: e.text }))
@@ -42,12 +46,23 @@ describe('log-binnacle context budget', () => {
     expect(text).toContain('- budget_verdict: chain')
   })
 
-  for (const [name, context] of [
-    ['over 400k tokens', { tokens: 400_001, window: 1_000_000 }],
-    ['unknown tokens', { window: 1_000_000 }],
+  test('chains up to 90% of the env window', async ($, on) => {
+    engineBeneath(on, { context: { tokens: 540_000, window: 1_000_000 }, autoCompactWindow: '600000' })
+
+    const { text } = await $.skill.prompt({ skill: 'log-binnacle', text: SKILL_TEXT })
+
+    expect(text).toContain('- budget_tokens: 540000')
+    expect(text).toContain('- budget_verdict: chain')
+  })
+
+  for (const [name, context, autoCompactWindow] of [
+    ['over the 500k default', { tokens: 500_001, window: 1_000_000 }, undefined],
+    ['over the default with a non-numeric env', { tokens: 500_001, window: 1_000_000 }, 'abc'],
+    ['over 90% of the env window', { tokens: 540_001, window: 1_000_000 }, '600000'],
+    ['unknown tokens', { window: 1_000_000 }, undefined],
   ] as const) {
     test(`${name} cuts`, async ($, on) => {
-      engineBeneath(on, { context })
+      engineBeneath(on, { context, autoCompactWindow })
 
       const { text } = await $.skill.prompt({ skill: 'log-binnacle', text: SKILL_TEXT })
 

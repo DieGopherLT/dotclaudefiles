@@ -3,9 +3,10 @@ import type { EngineInterface, Register, SessionContextUsage } from 'claude-code
 
 const lastCompactAt = atom({ plugin: 'task-harness', key: 'lastCompactAt' } as const, 0)
 
-// Absolute on purpose: the window is capped to auto-compact near 500k, so
-// past 400k the next session has too little room left to chain into.
-const BUDGET_TOKENS = 400_000
+// Cut at 90% of the auto-compact window: past it the next session has too
+// little room left to chain into before compaction fires.
+const BUDGET_RATIO = 0.9
+const DEFAULT_BUDGET_TOKENS = 500_000
 
 export const register: Register = on => {
   // Precompute installs nothing and subagents compact their own transcripts:
@@ -44,15 +45,23 @@ async function stampCompaction($: EngineInterface): Promise<void> {
 async function describeContextBudget($: EngineInterface): Promise<string> {
   const { context, startedAt } = await $.session.usage()
   const hasCompacted = (await read($, lastCompactAt)) > startedAt
-  const isOverBudget = context.tokens === undefined || context.tokens > BUDGET_TOKENS
+  const budget = await budgetTokens($)
+  const isOverBudget = context.tokens === undefined || context.tokens > budget
 
   return [
     '## Context budget (measured by task-harness mod)',
     `- context_tokens: ${context.tokens ?? 'unknown'}`,
     `- context_window: ${describeWindow(context)}`,
+    `- budget_tokens: ${budget}`,
     `- compacted_this_session: ${hasCompacted}`,
     `- budget_verdict: ${isOverBudget || hasCompacted ? 'cut' : 'chain'}`,
   ].join('\n')
+}
+
+// An unset or non-numeric window falls back to the default budget.
+async function budgetTokens($: EngineInterface): Promise<number> {
+  const window = Number(await $.env.get('CLAUDE_CODE_AUTO_COMPACT_WINDOW'))
+  return window > 0 ? Math.floor(window * BUDGET_RATIO) : DEFAULT_BUDGET_TOKENS
 }
 
 function describeWindow(context: SessionContextUsage): string {
