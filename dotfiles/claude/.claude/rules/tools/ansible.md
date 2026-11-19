@@ -12,11 +12,11 @@ paths:
 - Do not use personal aliases to declare hosts; use IP addresses instead. You may
   look at the aliases to find out the IPs, but never reference the alias itself.
 - Never state a playbook works without verifying it with `--diff` and `--check`.
-  If a task fails specifically because of `--check`, add a skip for check mode to
-  that task.
+  If a task fails only because of the dry run, rerun the check with `--skip-tags`
+  for its tags; never change the task to make check mode pass.
 - For a stronger verification than check mode, run the playbook for real against
-  a disposable local VM (cloud-init setup for Ubuntu qcow2 VMs in `~/vms`) before
-  any run targeting real hosts.
+  a disposable local libvirt VM (cloud-init Ubuntu qcow2) before any run targeting
+  real hosts.
 
 ## Tags
 
