@@ -48,9 +48,16 @@ The main agent's context is the scarce resource: it keeps business logic, docume
 - Write agents never share files; sub-agents never commit.
 - Review every deliverable before it counts as done. If it falls short, resume the same agent once with corrections; after that, start a fresh one.
 
+## Redaction Behavior
+
+- Never mention local paths, secrets or references thighed to user's local environment in any document, commit, or code.
+- When referring to a repository, prefer mentioning its remote URL or its GitHub owner and name, rather than a local path.
+- Do not mention non tracked references in versioned files, CLAUDE.md, or commit messages. If a reference is not tracked, it is not part of the repo's knowledge and should not be mentioned.
+
 ## Git Behavior
 
 - When moving or deleting tracked files, use `git mv` and `git rm` respectively to preserve history.
+- On commit messages, do not include user's personal context on a change, focus to describe the change itself.
 
 ## Database Behavior
 
@@ -63,6 +70,8 @@ and connect to the right database from there.
 - Check SSH aliases before connecting to any server.
 - If no alias exists, check if the repo has ansible inventory files and get the host from there.
 - Reuse one SSH connection per host through multiplexing: `ssh -o ControlMaster=auto -o ControlPath=~/.ssh/cm-%r@%h-%p -o ControlPersist=10m <host> <command>`.
+- Keys Claude creates (tests, CI, throwaway automation) go in the scratchpad, never in `~/.ssh`, and are deleted once the test ends or the key is stored in its final secret store.
+- Operator keys with a passphrase are created by the user with their own command, so the passphrase never goes through Claude, and then live in `~/.ssh`.
 
 ## Memory Behavior
 
