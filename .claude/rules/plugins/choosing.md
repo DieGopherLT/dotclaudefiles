@@ -32,6 +32,7 @@ Which plugin owns which job. Check here before adding a capability, so a new ski
 - Authoring a dynamic workflow / orchestrating subagents at scale with `ultracode` (`workflow-creator`)
 - Creating an on-demand report or shareable artifact mid-session — without git workflow involvement (`create-report`)
 - Rewriting AI-styled prose, comments, or reports into plain, verifiable statements (`de-claudish`)
+- A mature module with a way to verify its behavior grew hard to change, and you want its abstractions rethought from what the module is for: Facades judged from client code, patterns kept only for what they delete, data structures tied to their owner's lifetime, modernization against current language features (`re-abstract` — diagnosis and design only; a smell at one known location belongs to refactoring-guru, a pure file move to domain-restructure)
 
 **Use dotclaudehooks when:**
 
